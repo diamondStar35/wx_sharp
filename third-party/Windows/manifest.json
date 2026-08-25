@@ -1,0 +1,37 @@
+{
+  "name": "wxWidgets",
+  "version": "3.3.3",
+  "source": "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.3/wxWidgets-3.3.3.7z",
+  "target": "win-x64",
+  "toolchain": "MSVC 19.51.36014",
+  "linkage": "shared wxWidgets with static MSVC runtime (/MT)",
+  "distribution": "Runtime DLLs, import libraries, generated configuration, and wrapper-required headers are vendored",
+  "components": [
+    "base",
+    "core"
+  ],
+  "archives": [
+    {
+      "name": "wxWidgets-3.3.3.7z",
+      "sha256": "8DD5CCBFA24FCCFE05C82475382B0A0C5A571DB9EF7FBB70FA84971A6EA57081"
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "wxbase333u_vc_x64.dll",
+      "sha256": "E56E1868CEA0E7ECF0391107CE8885745A9F33592A64DE5B2FC5D53F3EEF40B0"
+    },
+    {
+      "name": "wxmsw333u_core_vc_x64.dll",
+      "sha256": "658E71842AB36B0D9869CED04438887D30BE21E8491227389489CA44D81A6A16"
+    },
+    {
+      "name": "wxbase33u.lib",
+      "sha256": "1647ACC3A08619D9E6EA60C8E9736EC95EE433C4250682462FAE320E5E383753"
+    },
+    {
+      "name": "wxmsw33u_core.lib",
+      "sha256": "70A2D4CB780A2109EF9F93FE0667BA974A578A9E639F9AAA00D0997094107768"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <RootNamespace>WxSharp</RootNamespace>
+    <AssemblyName>WxSharp</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This binding is the AOT-clean replacement for the WPF UI: source-generated P/Invoke only,
+         no reflection. The analyzer flags anything that would break Native AOT. -->
+    <IsAotCompatible>true</IsAotCompatible>
+
+    <PackageId>WxSharp</PackageId>
+    <Description>A Native AOT-compatible .NET wrapper over wxWidgets.</Description>
+    <Authors>WxSharp contributors</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/diamondStar35/wx_sharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/diamondStar35/wx_sharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>wxwidgets;gui;native-aot;desktop;accessibility</PackageTags>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>preview.1</VersionSuffix>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\third-party\Windows\licence.txt"
+          Pack="true"
+          PackagePath="licenses\wxWidgets.txt" />
+    <None Include="$(WindowsNativeAssetsDir)\wxsharp.dll"
+          Condition="'$(WindowsNativeAssetsDir)' != ''"
+          Pack="true"
+          PackagePath="runtimes\win-x64\native\" />
+    <None Include="$(WindowsNativeAssetsDir)\wxbase*.dll"
+          Condition="'$(WindowsNativeAssetsDir)' != ''"
+          Pack="true"
+          PackagePath="runtimes\win-x64\native\" />
+    <None Include="$(WindowsNativeAssetsDir)\wxmsw*_core*.dll"
+          Condition="'$(WindowsNativeAssetsDir)' != ''"
+          Pack="true"
+          PackagePath="runtimes\win-x64\native\" />
+  </ItemGroup>
+
+  <Target Name="ValidateWindowsNativeAssets"
+          BeforeTargets="GenerateNuspec"
+          Condition="'$(IsPacking)' == 'true'">
+    <Error Condition="'$(WindowsNativeAssetsDir)' == ''"
+           Text="WindowsNativeAssetsDir must point to the staged win-x64 native directory when packing WxSharp." />
+    <Error Condition="!Exists('$(WindowsNativeAssetsDir)\wxsharp.dll')"
+           Text="Missing staged native shim: $(WindowsNativeAssetsDir)\wxsharp.dll" />
+    <Error Condition="'@(WxBaseRuntime)' == ''"
+           Text="Missing staged wxWidgets base DLL." />
+    <Error Condition="'@(WxCoreRuntime)' == ''"
+           Text="Missing staged wxWidgets core DLL." />
+  </Target>
+
+  <ItemGroup Condition="'$(WindowsNativeAssetsDir)' != ''">
+    <WxBaseRuntime Include="$(WindowsNativeAssetsDir)\wxbase*.dll" />
+    <WxCoreRuntime Include="$(WindowsNativeAssetsDir)\wxmsw*_core*.dll" />
+  </ItemGroup>
+
+</Project>

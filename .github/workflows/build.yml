@@ -1,0 +1,73 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  managed:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore WxSharp.slnx
+      - run: dotnet build WxSharp.slnx --configuration Release --no-restore
+
+  native-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: sudo apt-get update && sudo apt-get install -y libwxgtk3.2-dev xvfb
+      - run: sh ./scripts/build-native.sh Release
+      - run: ctest --test-dir build/native --output-on-failure
+      - name: Run UTF-8 and lifecycle smoke test
+        run: xvfb-run -a dotnet run --project tests/WxSharp.Smoke/WxSharp.Smoke.csproj -c Release
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/build/native
+          WXSHARP_NATIVE_LIBRARY: ${{ github.workspace }}/build/native/libwxsharp.so
+
+  native-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install wxwidgets
+      - run: sh ./scripts/build-native.sh Release
+      - run: ctest --test-dir build/native --output-on-failure
+
+  native-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Build, test, pack, and test the package
+        shell: pwsh
+        run: |
+          .\scripts\build-windows.ps1 `
+            -Configuration Release `
+            -PackageVersion "0.1.0-ci.${{ github.run_number }}"
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: WxSharp-windows-nuget
+          path: |
+            build/packages/*.nupkg
+            build/packages/*.snupkg
+          if-no-files-found: error
