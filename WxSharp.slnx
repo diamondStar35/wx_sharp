@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WxSharp/WxSharp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WxSharp.Smoke/WxSharp.Smoke.csproj" />
+  </Folder>
+</Solution>

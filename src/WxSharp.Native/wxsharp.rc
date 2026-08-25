@@ -1,0 +1,5 @@
+// Embeds the Common-Controls v6 manifest into wxsharp.dll as resource id 100 (RT_MANIFEST = 24). Ids 1-3 are
+// reserved for the loader's own manifests (the DLL already gets id 2), so a custom id is used. wxsharp_init
+// creates an activation context from this resource and activates it, so the themed (and screen-reader-
+// accessible) common controls are used regardless of whether the hosting executable supplies its own manifest.
+100 24 "wxsharp.manifest"
