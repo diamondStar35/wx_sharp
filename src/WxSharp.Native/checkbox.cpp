@@ -1,13 +1,12 @@
 // Check box. The accessible name is set from the managed side (accessible.cpp / Control.AccessibleName).
 #include "internal.h"
 
-wxsharp_handle wxsharp_checkbox_create(wxsharp_handle parent, const char* label, int style, int id)
+wxsharp_handle wxsharp_checkbox_create(wxsharp_handle parent, int id, const char* label, int style, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    auto* ctrl = new wxCheckBox(p, wxID_ANY, Str(label), wxDefaultPosition, wxDefaultSize, MapCheckBoxStyle(style));
-    ctrl->Bind(wxEVT_CHECKBOX, [id](wxCommandEvent&) { Fire(id, WXSHARP_EVT_TOGGLE); });
-    BindCommon(ctrl, id);
-    AddToPanel(p, ctrl, wxALL);
+    auto* ctrl = new wxCheckBox(p, id, Str(label), wxDefaultPosition, wxDefaultSize, MapCheckBoxStyle(style));
+    ctrl->Bind(wxEVT_CHECKBOX, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TOGGLE, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

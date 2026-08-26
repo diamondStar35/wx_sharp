@@ -1,14 +1,13 @@
 // Radio button. Pass group_start on the first button of a mutually-exclusive group.
 #include "internal.h"
 
-wxsharp_handle wxsharp_radio_create(wxsharp_handle parent, const char* label, bool group_start, int id)
+wxsharp_handle wxsharp_radio_create(wxsharp_handle parent, int id, const char* label, bool group_start, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    auto* ctrl = new wxRadioButton(p, wxID_ANY, Str(label), wxDefaultPosition, wxDefaultSize,
+    auto* ctrl = new wxRadioButton(p, id, Str(label), wxDefaultPosition, wxDefaultSize,
                                    group_start ? wxRB_GROUP : 0);
-    ctrl->Bind(wxEVT_RADIOBUTTON, [id](wxCommandEvent&) { Fire(id, WXSHARP_EVT_SELECT); });
-    BindCommon(ctrl, id);
-    AddToPanel(p, ctrl, wxALL);
+    ctrl->Bind(wxEVT_RADIOBUTTON, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

@@ -5,12 +5,14 @@ namespace WxSharp;
 /// <summary>A check box.</summary>
 public class CheckBox : Control
 {
-    public event Action? Toggled;
+    public event EventHandler<CommandEventArgs>? Toggled;
 
-    public CheckBox(Container parent, string label, CheckBoxStyle style = CheckBoxStyle.TwoState)
+    public CheckBox(Window parent, int id = WindowId.Any, string label = "", CheckBoxStyle style = CheckBoxStyle.TwoState,
+        Point? position = null, Size? size = null) : base(parent, id)
     {
-        Init(parent, NativeMethods.wxsharp_checkbox_create(parent.Panel, label, (int)style, Id));
+        Initialize(NativeMethods.wxsharp_checkbox_create(parent.Handle, id, label, (int)style, Token));
         AccessibleName = label; // wx would otherwise announce "check"; make screen readers read the label
+        ApplyInitialGeometry(position, size);
     }
 
     public bool Checked
@@ -19,9 +21,9 @@ public class CheckBox : Control
         set => NativeMethods.wxsharp_checkbox_set(Handle, value);
     }
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        if (evt == EventKind.Toggle)
-            Toggled?.Invoke();
+        if (e.Kind != EventKind.Toggle) return base.Dispatch(e);
+        return RaiseCommand(new CommandEventArgs(this, e.Id), Toggled);
     }
 }

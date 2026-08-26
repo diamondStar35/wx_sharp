@@ -15,6 +15,7 @@ public static class FileDialog
     /// <summary>Shows a folder picker; returns the chosen folder, or null if cancelled.</summary>
     public static unsafe string? Folder(string title, string? initialDir = null, Window? parent = null)
     {
+        _ = App.RequireCurrent();
         var buffer = new byte[8192];
         bool ok;
         fixed (byte* p = buffer)
@@ -24,6 +25,7 @@ public static class FileDialog
 
     private static unsafe string? Show(string title, string wildcard, bool save, Window? parent)
     {
+        _ = App.RequireCurrent();
         var buffer = new byte[8192];
         bool ok;
         fixed (byte* p = buffer)

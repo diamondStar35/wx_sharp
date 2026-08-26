@@ -20,7 +20,7 @@ public enum Border
     Theme = 6,
 }
 
-/// <summary>Horizontal alignment of a control's text (e.g. a <see cref="Label"/>).</summary>
+/// <summary>Horizontal alignment of a control's text.</summary>
 public enum Alignment
 {
     Left = 0,
@@ -28,16 +28,16 @@ public enum Alignment
     Right = 2,
 }
 
-/// <summary>Creation styles for a <see cref="TextBox"/>. Some (multi-line, password) can only be chosen at
+/// <summary>Creation styles for a <see cref="TextCtrl"/>. Some (multi-line, password) can only be chosen at
 /// creation time.</summary>
 [Flags]
-public enum TextBoxStyle
+public enum TextCtrlStyle
 {
     None = 0,
     MultiLine = 1 << 0,
     Password = 1 << 1,
     ReadOnly = 1 << 2,
-    /// <summary>Raise <see cref="TextBox.EnterPressed"/> on Enter (implied for single-line boxes).</summary>
+    /// <summary>Raise <see cref="TextCtrl.EnterPressed"/> on Enter (implied for single-line boxes).</summary>
     ProcessEnter = 1 << 3,
     /// <summary>Let Tab be typed into the box instead of moving focus.</summary>
     ProcessTab = 1 << 4,

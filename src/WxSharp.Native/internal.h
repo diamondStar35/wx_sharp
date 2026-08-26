@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstring>
+#include <vector>
 
 // Event types reported to the managed side (kept in sync with EventKind in C#).
 enum
@@ -34,7 +35,14 @@ enum
     WXSHARP_EVT_MOUSE_MOVE = 22,   // pointer moved over the control
     WXSHARP_EVT_PAINT = 23,        // a canvas needs repainting (draw during the managed handler)
     WXSHARP_EVT_WHEEL_UP = 24,     // mouse wheel scrolled up/away
-    WXSHARP_EVT_WHEEL_DOWN = 25,   // mouse wheel scrolled down/toward
+    WXSHARP_EVT_WHEEL_DOWN = 25,   // retained ABI value; new code reports MouseWheel with delta
+    WXSHARP_EVT_DESTROYED = 26,
+    WXSHARP_EVT_CALL_AFTER = 27,
+    WXSHARP_EVT_KEY_HOOK = 28,
+    WXSHARP_EVT_KEY_DOWN = 29,
+    WXSHARP_EVT_KEY_UP = 30,
+    WXSHARP_EVT_MENU = 31,
+    WXSHARP_EVT_TIMER = 32,
 };
 
 // Key event kinds reported through the key callback (kept in sync with KeyKind in C#). The callback returns
@@ -65,35 +73,56 @@ inline int CopyToBuffer(const wxString& s, char* buffer, int buffer_length)
     return len;
 }
 
-// The managed callbacks (defined in app.cpp, set via wxsharp_set_event_handler / wxsharp_set_key_handler).
+// The managed callback (defined in app.cpp and set through wxsharp_set_event_handler).
 extern wxsharp_event_cb g_event_cb;
-extern wxsharp_key_cb g_key_cb;
 
-inline void Fire(int id, int evt)
+inline unsigned int Fire(long long token, int kind, int id = wxID_ANY, int x = 0, int y = 0,
+                         int width = 0, int height = 0, int keyCode = 0, int modifiers = 0,
+                         int mouseButton = 0, int wheelDelta = 0, bool active = false, bool canVeto = false)
 {
-    if (g_event_cb)
-        g_event_cb(id, evt);
+    if (!g_event_cb)
+        return 0;
+    wxsharp_event eventData = {};
+    eventData.size = sizeof(eventData);
+    eventData.version = 1;
+    eventData.token = token;
+    eventData.kind = kind;
+    eventData.id = id;
+    eventData.x = x;
+    eventData.y = y;
+    eventData.width = width;
+    eventData.height = height;
+    eventData.key_code = keyCode;
+    eventData.modifiers = modifiers;
+    eventData.mouse_button = mouseButton;
+    eventData.wheel_delta = wheelDelta;
+    eventData.active = active ? 1 : 0;
+    eventData.can_veto = canVeto ? 1 : 0;
+    return g_event_cb(&eventData);
 }
 
 // Packs the modifier state of a key event into the bitfield the managed side expects (bit0 Ctrl, 1 Shift, 2 Alt).
-inline int KeyMods(const wxKeyEvent& e)
+inline int KeyMods(const wxKeyboardState& e)
 {
     return (e.ControlDown() ? 1 : 0) | (e.ShiftDown() ? 2 : 0) | (e.AltDown() ? 4 : 0);
 }
 
 // Reports a key event to the managed key callback; returns true if the managed side consumed it.
-inline bool FireKey(int id, int kind, const wxKeyEvent& e)
+inline bool FireKey(long long token, int kind, const wxKeyEvent& e)
 {
-    return g_key_cb && g_key_cb(id, kind, e.GetKeyCode(), KeyMods(e));
+    const int eventKind = kind == WXSHARP_KEY_HOOK ? WXSHARP_EVT_KEY_HOOK
+                        : kind == WXSHARP_KEY_DOWN ? WXSHARP_EVT_KEY_DOWN : WXSHARP_EVT_KEY_UP;
+    return (Fire(token, eventKind,
+                 e.GetId(), 0, 0, 0, 0, e.GetKeyCode(), KeyMods(e)) & WXSHARP_EVENT_HANDLED) != 0;
 }
 
 // Forwards key presses on a top-level window to the managed key hook; if the managed side does not consume
 // the key it is skipped so normal processing (tab navigation, typing, Esc-to-close, ...) still happens.
-inline void BindKeyHook(wxWindow* top, int id)
+inline void BindKeyHook(wxWindow* top, long long token)
 {
-    top->Bind(wxEVT_CHAR_HOOK, [id](wxKeyEvent& e)
+    top->Bind(wxEVT_CHAR_HOOK, [token](wxKeyEvent& e)
     {
-        if (!FireKey(id, WXSHARP_KEY_HOOK, e))
+        if (!FireKey(token, WXSHARP_KEY_HOOK, e))
             e.Skip();
     });
 }
@@ -104,33 +133,36 @@ inline wxString Str(const char* s)
 }
 
 // Binds the mouse events every control shares. Skipped so the control's own click/hover handling still runs.
-inline void BindMouse(wxWindow* ctrl, int id)
+inline void BindMouse(wxWindow* ctrl, long long token)
 {
-    ctrl->Bind(wxEVT_LEFT_DOWN, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_DOWN); e.Skip(); });
-    ctrl->Bind(wxEVT_LEFT_UP, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_UP); e.Skip(); });
-    ctrl->Bind(wxEVT_RIGHT_DOWN, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_RIGHT); e.Skip(); });
-    ctrl->Bind(wxEVT_LEFT_DCLICK, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_DOUBLE); e.Skip(); });
-    ctrl->Bind(wxEVT_ENTER_WINDOW, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_ENTER); e.Skip(); });
-    ctrl->Bind(wxEVT_LEAVE_WINDOW, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_LEAVE); e.Skip(); });
-    ctrl->Bind(wxEVT_MOTION, [id](wxMouseEvent& e) { Fire(id, WXSHARP_EVT_MOUSE_MOVE); e.Skip(); });
-    ctrl->Bind(wxEVT_MOUSEWHEEL, [id](wxMouseEvent& e)
+    auto fire = [token](wxMouseEvent& e, int kind, int button)
     {
-        Fire(id, e.GetWheelRotation() > 0 ? WXSHARP_EVT_WHEEL_UP : WXSHARP_EVT_WHEEL_DOWN);
-        e.Skip();
-    });
+        if (!(Fire(token, kind, e.GetId(), e.GetX(), e.GetY(), 0, 0, 0, KeyMods(e), button,
+                   e.GetWheelRotation()) & WXSHARP_EVENT_HANDLED))
+            e.Skip();
+    };
+    ctrl->Bind(wxEVT_LEFT_DOWN, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_DOWN, 1); });
+    ctrl->Bind(wxEVT_LEFT_UP, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_UP, 1); });
+    ctrl->Bind(wxEVT_RIGHT_DOWN, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_RIGHT, 2); });
+    ctrl->Bind(wxEVT_LEFT_DCLICK, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_DOUBLE, 1); });
+    ctrl->Bind(wxEVT_ENTER_WINDOW, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_ENTER, 0); });
+    ctrl->Bind(wxEVT_LEAVE_WINDOW, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_LEAVE, 0); });
+    ctrl->Bind(wxEVT_MOTION, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_MOVE, 0); });
+    ctrl->Bind(wxEVT_MOUSEWHEEL, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_WHEEL_UP, 0); });
 }
 
 // Binds the events every control shares - focus in/out, key down/up and the mouse events - to the managed
 // callbacks. Called by each widget's create() so focus, keyboard and pointer input are reported uniformly and
 // can drive managed behaviour (e.g. the custom slider's key handling). Unconsumed keys/events are skipped so
 // native processing still runs.
-inline void BindCommon(wxWindow* ctrl, int id)
+inline void BindCommon(wxWindow* ctrl, long long token)
 {
-    ctrl->Bind(wxEVT_SET_FOCUS, [id](wxFocusEvent& e) { Fire(id, WXSHARP_EVT_FOCUS_GAINED); e.Skip(); });
-    ctrl->Bind(wxEVT_KILL_FOCUS, [id](wxFocusEvent& e) { Fire(id, WXSHARP_EVT_FOCUS_LOST); e.Skip(); });
-    ctrl->Bind(wxEVT_KEY_DOWN, [id](wxKeyEvent& e) { if (!FireKey(id, WXSHARP_KEY_DOWN, e)) e.Skip(); });
-    ctrl->Bind(wxEVT_KEY_UP, [id](wxKeyEvent& e) { if (!FireKey(id, WXSHARP_KEY_UP, e)) e.Skip(); });
-    BindMouse(ctrl, id);
+    ctrl->Bind(wxEVT_SET_FOCUS, [token](wxFocusEvent& e) { Fire(token, WXSHARP_EVT_FOCUS_GAINED, e.GetId()); e.Skip(); });
+    ctrl->Bind(wxEVT_KILL_FOCUS, [token](wxFocusEvent& e) { Fire(token, WXSHARP_EVT_FOCUS_LOST, e.GetId()); e.Skip(); });
+    ctrl->Bind(wxEVT_KEY_DOWN, [token](wxKeyEvent& e) { if (!FireKey(token, WXSHARP_KEY_DOWN, e)) e.Skip(); });
+    ctrl->Bind(wxEVT_KEY_UP, [token](wxKeyEvent& e) { if (!FireKey(token, WXSHARP_KEY_UP, e)) e.Skip(); });
+    BindMouse(ctrl, token);
+    ctrl->Bind(wxEVT_DESTROY, [token](wxWindowDestroyEvent& e) { Fire(token, WXSHARP_EVT_DESTROYED, e.GetId()); e.Skip(); });
 }
 
 // ---- Colour ---------------------------------------------------------------------------------------------
@@ -254,60 +286,4 @@ inline wxFont MakeFont(int pointSize, int family, int weight, int style, bool un
     if (face && *face) info.FaceName(Str(face));
 
     return wxFont(info);
-}
-
-// Adds a control to its parent panel's vertical sizer with a small border.
-inline void AddToPanel(wxWindow* parent, wxWindow* ctrl, int flags)
-{
-    if (auto* sizer = parent->GetSizer())
-        sizer->Add(ctrl, 0, flags, 6);
-}
-
-// Gives a top-level window a content panel (with a vertical sizer for controls to stack into) that fills it.
-inline void SetupContentPanel(wxWindow* top)
-{
-    auto* panel = new wxPanel(top, wxID_ANY);
-    panel->SetSizer(new wxBoxSizer(wxVERTICAL));
-    auto* mainSizer = new wxBoxSizer(wxVERTICAL);
-    mainSizer->Add(panel, 1, wxEXPAND | wxALL, 8);
-    top->SetSizer(mainSizer);
-}
-
-// A bare content area: the vertical sizer lives directly on the window with no intermediate wxPanel (which a
-// screen reader announces as a grouping). Controls become direct children of the window.
-inline void SetupBareContent(wxWindow* top)
-{
-    top->SetSizer(new wxBoxSizer(wxVERTICAL));
-}
-
-// The container controls are created against: the content wxPanel if one was created, otherwise the window
-// itself (bare mode - controls are direct children).
-inline wxWindow* ContentPanel(wxWindow* top)
-{
-    auto& kids = top->GetChildren();
-    if (!kids.IsEmpty())
-    {
-        wxWindow* first = kids.GetFirst()->GetData();
-        if (wxDynamicCast(first, wxPanel))
-            return first;
-    }
-    return top;
-}
-
-// Puts keyboard focus on the first focusable, visible control of a window/dialog. Hidden controls (e.g. the
-// inline edit box before a prompt) are skipped - AcceptsFocus() alone ignores visibility, so focusing one
-// would surface it; if nothing qualifies, focus stays on the frame.
-inline void FocusFirst(wxWindow* top)
-{
-    auto* panel = ContentPanel(top);
-    if (!panel)
-        return;
-    for (wxWindow* child : panel->GetChildren())
-    {
-        if (child->IsShown() && child->AcceptsFocus())
-        {
-            child->SetFocus();
-            break;
-        }
-    }
 }

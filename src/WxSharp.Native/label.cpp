@@ -1,11 +1,11 @@
 // Static text label.
 #include "internal.h"
 
-wxsharp_handle wxsharp_label_create(wxsharp_handle parent, const char* text, int style)
+wxsharp_handle wxsharp_label_create(wxsharp_handle parent, int id, const char* text, int style, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    auto* ctrl = new wxStaticText(p, wxID_ANY, Str(text), wxDefaultPosition, wxDefaultSize, MapAlignment(style));
-    AddToPanel(p, ctrl, wxLEFT | wxRIGHT | wxTOP);
+    auto* ctrl = new wxStaticText(p, id, Str(text), wxDefaultPosition, wxDefaultSize, MapAlignment(style));
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

@@ -11,13 +11,13 @@ namespace
     class WxSharpCanvas : public wxWindow
     {
     public:
-        WxSharpCanvas(wxWindow* parent, const wxSize& size, int id)
-            : wxWindow(parent, wxID_ANY, wxDefaultPosition, size, wxFULL_REPAINT_ON_RESIZE),
-              m_id(id), m_dc(nullptr)
+        WxSharpCanvas(wxWindow* parent, int id, const wxSize& size, long long token)
+            : wxWindow(parent, id, wxDefaultPosition, size, wxFULL_REPAINT_ON_RESIZE),
+              m_token(token), m_dc(nullptr)
         {
             SetBackgroundStyle(wxBG_STYLE_PAINT); // required for wxAutoBufferedPaintDC
             Bind(wxEVT_PAINT, &WxSharpCanvas::OnPaint, this);
-            Bind(wxEVT_SIZE, [this](wxSizeEvent& e) { Fire(m_id, WXSHARP_EVT_RESIZE); Refresh(); e.Skip(); });
+            Bind(wxEVT_SIZE, [this](wxSizeEvent& e) { const wxSize s = e.GetSize(); Fire(m_token, WXSHARP_EVT_RESIZE, e.GetId(), 0, 0, s.x, s.y); Refresh(); e.Skip(); });
         }
 
         // Not focusable and skipped by keyboard traversal, so it stays out of the reader's and tab order's way.
@@ -36,28 +36,22 @@ namespace
             dc.SetTextForeground(GetForegroundColour());
             dc.SetBackgroundMode(wxTRANSPARENT);
             m_dc = &dc;
-            Fire(m_id, WXSHARP_EVT_PAINT);
+            Fire(m_token, WXSHARP_EVT_PAINT, GetId());
             m_dc = nullptr;
         }
 
-        int m_id;
+        long long m_token;
         wxDC* m_dc;
     };
 
     inline wxDC* Dc(wxsharp_handle h) { return static_cast<WxSharpCanvas*>(h)->Dc(); }
 }
 
-wxsharp_handle wxsharp_canvas_create(wxsharp_handle parent, int width, int height, bool fill, int id)
+wxsharp_handle wxsharp_canvas_create(wxsharp_handle parent, int id, int width, int height, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    // fill: cover the parent's client area at (0,0) and stay out of any sizer - a full-window visual layer the
-    // caller resizes to follow the window; otherwise take the given size and stack in the parent's sizer.
-    auto* canvas = new WxSharpCanvas(p, fill ? p->GetClientSize() : wxSize(width, height), id);
-    BindMouse(canvas, id); // mouse events (move/click/wheel) drive hover + selection; it takes no keyboard focus
-    if (fill)
-        canvas->Move(0, 0);
-    else
-        AddToPanel(p, canvas, wxEXPAND | wxALL);
+    auto* canvas = new WxSharpCanvas(p, id, wxSize(width, height), token);
+    BindCommon(canvas, token);
     return canvas;
 }
 

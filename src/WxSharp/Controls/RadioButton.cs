@@ -6,12 +6,14 @@ namespace WxSharp;
 /// follow it (until the next group start) are mutually exclusive.</summary>
 public class RadioButton : Control
 {
-    public event Action? Selected;
+    public event EventHandler<CommandEventArgs>? Selected;
 
-    public RadioButton(Container parent, string label, bool groupStart = false)
+    public RadioButton(Window parent, int id = WindowId.Any, string label = "", bool groupStart = false,
+        Point? position = null, Size? size = null) : base(parent, id)
     {
-        Init(parent, NativeMethods.wxsharp_radio_create(parent.Panel, label, groupStart, Id));
+        Initialize(NativeMethods.wxsharp_radio_create(parent.Handle, id, label, groupStart, Token));
         AccessibleName = label; // wx would otherwise announce "radiobutton"; read the label instead
+        ApplyInitialGeometry(position, size);
     }
 
     public bool Value
@@ -20,9 +22,9 @@ public class RadioButton : Control
         set => NativeMethods.wxsharp_radio_set(Handle, value);
     }
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        if (evt == EventKind.Select)
-            Selected?.Invoke();
+        if (e.Kind != EventKind.Select) return base.Dispatch(e);
+        return RaiseCommand(new CommandEventArgs(this, e.Id), Selected);
     }
 }

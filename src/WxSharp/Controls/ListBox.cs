@@ -7,10 +7,14 @@ namespace WxSharp;
 /// <see cref="SelectedIndex"/> is -1 when nothing is selected.</summary>
 public class ListBox : Control
 {
-    public event Action? SelectionChanged;
+    public event EventHandler<CommandEventArgs>? SelectionChanged;
 
-    public ListBox(Container parent, ListBoxStyle style = ListBoxStyle.Single)
-        => Init(parent, NativeMethods.wxsharp_listbox_create(parent.Panel, (int)style, Id));
+    public ListBox(Window parent, int id = WindowId.Any, ListBoxStyle style = ListBoxStyle.Single,
+        Point? position = null, Size? size = null) : base(parent, id)
+    {
+        Initialize(NativeMethods.wxsharp_listbox_create(parent.Handle, id, (int)style, Token));
+        ApplyInitialGeometry(position, size);
+    }
 
     /// <summary>Appends an item to the end.</summary>
     public void Add(string item) => NativeMethods.wxsharp_listbox_append(Handle, item);
@@ -75,9 +79,9 @@ public class ListBox : Control
         return Utf8String.Decode(buffer, length);
     }
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        if (evt == EventKind.Select)
-            SelectionChanged?.Invoke();
+        if (e.Kind != EventKind.Select) return base.Dispatch(e);
+        return RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged);
     }
 }
