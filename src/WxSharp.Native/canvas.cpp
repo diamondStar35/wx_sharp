@@ -17,7 +17,7 @@ namespace
         {
             SetBackgroundStyle(wxBG_STYLE_PAINT); // required for wxAutoBufferedPaintDC
             Bind(wxEVT_PAINT, &WxSharpCanvas::OnPaint, this);
-            Bind(wxEVT_SIZE, [this](wxSizeEvent& e) { const wxSize s = e.GetSize(); Fire(m_token, WXSHARP_EVT_RESIZE, e.GetId(), 0, 0, s.x, s.y); Refresh(); e.Skip(); });
+            Bind(wxEVT_SIZE, [this](wxSizeEvent& e) { Refresh(); e.Skip(); });
         }
 
         // Not focusable and skipped by keyboard traversal, so it stays out of the reader's and tab order's way.
@@ -36,7 +36,7 @@ namespace
             dc.SetTextForeground(GetForegroundColour());
             dc.SetBackgroundMode(wxTRANSPARENT);
             m_dc = &dc;
-            Fire(m_token, WXSHARP_EVT_PAINT, GetId());
+            Fire(m_token, WXSHARP_EV_PAINT, GetId());
             m_dc = nullptr;
         }
 
@@ -51,7 +51,7 @@ wxsharp_handle wxsharp_canvas_create(wxsharp_handle parent, int id, int width, i
 {
     auto* p = static_cast<wxWindow*>(parent);
     auto* canvas = new WxSharpCanvas(p, id, wxSize(width, height), token);
-    BindCommon(canvas, token);
+    TrackWindow(canvas, token);
     return canvas;
 }
 

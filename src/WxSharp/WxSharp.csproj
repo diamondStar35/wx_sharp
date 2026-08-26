@@ -60,4 +60,10 @@
     <WxCoreRuntime Include="$(WindowsNativeAssetsDir)\wxmsw*_core*.dll" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The smoke test exercises the accessible reverse-callback bridge, which is deliberately not public
+         API: wxAccessible has no such member. -->
+    <InternalsVisibleTo Include="WxSharp.Smoke" />
+  </ItemGroup>
+
 </Project>

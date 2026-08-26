@@ -11,9 +11,11 @@ public class StaticBitmap : Control
 
 public class BitmapButton : Control
 {
-    public event EventHandler<CommandEventArgs>? Click;
+    public event EventHandler<CommandEventArgs> Click
+    {
+        add => AddHandler(WxEvents.ButtonClicked, value);
+        remove => RemoveHandler(WxEvents.ButtonClicked, value);
+    }
     public BitmapButton(Window parent, Bitmap bitmap, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_bitmapbutton_create(parent.Handle, id, bitmap?.Handle ?? throw new ArgumentNullException(nameof(bitmap)), Token));
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Click
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), Click) : base.Dispatch(e);
 }

@@ -32,17 +32,44 @@ int wxsharp_clipboard_get_text(char* buffer, int buffer_length)
     return CopyToBuffer(s, buffer, buffer_length);
 }
 
-bool wxsharp_file_dialog(wxsharp_handle parent, const char* title, const char* wildcard, bool save,
-                      char* buffer, int buffer_length)
+namespace
 {
-    auto* p = static_cast<wxWindow*>(parent);
-    const long style = save ? (wxFD_SAVE | wxFD_OVERWRITE_PROMPT) : (wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+    // The paths from the last file dialog. Holding them here means a multiple selection does not have to be
+    // squeezed into a buffer the caller sized before it knew how many files there would be.
+    wxArrayString& LastFileDialogResult()
+    {
+        static wxArrayString paths;
+        return paths;
+    }
+}
+
+int wxsharp_file_dialog(wxsharp_handle parent, const char* title, const char* wildcard,
+                        const char* default_dir, const char* default_file, int style)
+{
+    wxArrayString& paths = LastFileDialogResult();
+    paths.Clear();
+
     const wxString filter = (wildcard && *wildcard) ? Str(wildcard) : wxString("All files (*.*)|*.*");
-    wxFileDialog dlg(p, Str(title), wxEmptyString, wxEmptyString, filter, style);
+    wxFileDialog dlg(static_cast<wxWindow*>(parent), Str(title),
+                     default_dir ? Str(default_dir) : wxString(),
+                     default_file ? Str(default_file) : wxString(),
+                     filter, MapFileDialogStyle(style));
     if (dlg.ShowModal() != wxID_OK)
-        return false;
-    CopyToBuffer(dlg.GetPath(), buffer, buffer_length);
-    return true;
+        return 0;
+
+    if (dlg.GetWindowStyleFlag() & wxFD_MULTIPLE)
+        dlg.GetPaths(paths);
+    else
+        paths.Add(dlg.GetPath());
+    return static_cast<int>(paths.GetCount());
+}
+
+int wxsharp_file_dialog_result(int index, char* buffer, int buffer_length)
+{
+    const wxArrayString& paths = LastFileDialogResult();
+    if (index < 0 || static_cast<size_t>(index) >= paths.GetCount())
+        return 0;
+    return CopyToBuffer(paths[static_cast<size_t>(index)], buffer, buffer_length);
 }
 
 bool wxsharp_dir_dialog(wxsharp_handle parent, const char* title, const char* initial_dir,

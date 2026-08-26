@@ -41,6 +41,7 @@ endif()
 
 add_library(wxsharp SHARED
   app.cpp
+  events.cpp
   window.cpp
   dialog.cpp
   control.cpp

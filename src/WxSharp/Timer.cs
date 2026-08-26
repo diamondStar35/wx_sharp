@@ -2,6 +2,14 @@ using System;
 
 namespace WxSharp;
 
+/// <summary>A wxTimer owned by a window. Ticks arrive on the UI thread as
+/// <see cref="WxEvents.Timer"/> events carrying this timer's ID.</summary>
+///
+/// <remarks>
+/// The ID works as it does in wxWidgets: with the default of <see cref="WindowId.Any"/> the timer's events
+/// carry no distinguishing ID, so a window running more than one timer should give each an ID of its own -
+/// otherwise every timer's handler sees every timer's tick.
+/// </remarks>
 public sealed class Timer : IDisposable
 {
     private readonly Window _owner;
@@ -12,7 +20,7 @@ public sealed class Timer : IDisposable
     public Timer(Window owner, int id = WindowId.Any)
     {
         ArgumentNullException.ThrowIfNull(owner);
-        _owner = owner; Id = id == WindowId.Any ? unchecked((int)(owner.Token & 0x3fffffff) + 10000) : id;
+        _owner = owner; Id = id;
         _handle = NativeMethods.wxsharp_timer_create(Id, owner.Token);
         if (_handle == 0) throw new InvalidOperationException("wxWidgets failed to create the timer.");
         _binding = owner.Bind(WxEvents.Timer, (_, _) => Tick?.Invoke(this, EventArgs.Empty), Id);

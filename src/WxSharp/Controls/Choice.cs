@@ -5,7 +5,11 @@ namespace WxSharp;
 /// <summary>A drop-down list of items; <see cref="SelectedIndex"/> is -1 when nothing is selected.</summary>
 public class Choice : Control
 {
-    public event EventHandler<CommandEventArgs>? SelectionChanged;
+    public event EventHandler<CommandEventArgs> SelectionChanged
+    {
+        add => AddHandler(WxEvents.ChoiceSelected, value);
+        remove => RemoveHandler(WxEvents.ChoiceSelected, value);
+    }
 
     public Choice(Window parent, int id = WindowId.Any, ChoiceStyle style = ChoiceStyle.Unsorted,
         Point? position = null, Size? size = null) : base(parent, id)
@@ -52,11 +56,5 @@ public class Choice : Control
         fixed (byte* p = buffer)
             _ = NativeMethods.wxsharp_choice_get_string(Handle, index, p, length + 1);
         return Utf8String.Decode(buffer, length);
-    }
-
-    internal override uint Dispatch(in NativeEvent e)
-    {
-        if (e.Kind != EventKind.Select) return base.Dispatch(e);
-        return RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged);
     }
 }

@@ -37,12 +37,21 @@ namespace
     int MapSizerFlags(int value)
     {
         int flags = 0;
-        if (value & 1) flags |= wxEXPAND;
-        if (value & 2) flags |= wxALIGN_CENTER;
-        if (value & 4) flags |= wxLEFT;
-        if (value & 8) flags |= wxTOP;
-        if (value & 16) flags |= wxRIGHT;
-        if (value & 32) flags |= wxBOTTOM;
+        if (value & 1)     flags |= wxEXPAND;
+        if (value & 2)     flags |= wxALIGN_CENTER;
+        if (value & 4)     flags |= wxLEFT;
+        if (value & 8)     flags |= wxTOP;
+        if (value & 16)    flags |= wxRIGHT;
+        if (value & 32)    flags |= wxBOTTOM;
+        if (value & 64)    flags |= wxALIGN_LEFT;
+        if (value & 128)   flags |= wxALIGN_RIGHT;
+        if (value & 256)   flags |= wxALIGN_TOP;
+        if (value & 512)   flags |= wxALIGN_BOTTOM;
+        if (value & 1024)  flags |= wxALIGN_CENTER_VERTICAL;
+        if (value & 2048)  flags |= wxALIGN_CENTER_HORIZONTAL;
+        if (value & 4096)  flags |= wxSHAPED;
+        if (value & 8192)  flags |= wxFIXED_MINSIZE;
+        if (value & 16384) flags |= wxRESERVE_SPACE_EVEN_IF_HIDDEN;
         return flags;
     }
 }

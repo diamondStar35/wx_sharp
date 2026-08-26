@@ -40,7 +40,7 @@ internal static unsafe partial class NativeMethods
     internal static partial bool wxsharp_yield([MarshalAs(UnmanagedType.U1)] bool onlyIfNeeded);
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial int wxsharp_message_box(string message, string caption, int style);
+    internal static partial int wxsharp_message_box(nint parent, string message, string caption, int style);
 
     [LibraryImport(Library)]
     internal static partial void wxsharp_shutdown();
@@ -48,7 +48,7 @@ internal static unsafe partial class NativeMethods
     // ---- Window ----
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial nint wxsharp_window_create(nint parent, int id, string title, int x, int y,
-        int width, int height, long token);
+        int width, int height, int style, long token);
 
     [LibraryImport(Library)]
     internal static partial void wxsharp_window_show(nint window, [MarshalAs(UnmanagedType.U1)] bool show);
@@ -77,7 +77,7 @@ internal static unsafe partial class NativeMethods
     // ---- Dialog ----
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial nint wxsharp_dialog_create(nint parent, int id, string title, int x, int y,
-        int width, int height, long token);
+        int width, int height, int style, long token);
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial void wxsharp_dialog_set_title(nint dialog, string title);
@@ -105,7 +105,7 @@ internal static unsafe partial class NativeMethods
 
     // ---- Layout ----
     [LibraryImport(Library)]
-    internal static partial nint wxsharp_panel_create(nint parent, int id, long token);
+    internal static partial nint wxsharp_panel_create(nint parent, int id, int style, long token);
 
     // ---- Canvas ----
     [LibraryImport(Library)]
@@ -246,25 +246,14 @@ internal static unsafe partial class NativeMethods
     internal static partial void wxsharp_control_set_name(nint ctrl, string name);
 
     [LibraryImport(Library)]
-    internal static partial void wxsharp_control_set_role(nint ctrl, int role);
+    internal static partial int wxsharp_control_get_name(nint ctrl, byte* buffer, int bufferLength);
 
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_control_set_description(nint ctrl, string text);
 
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_control_set_help(nint ctrl, string text);
 
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_control_set_accessible_value(nint ctrl, string text);
 
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_control_set_accessible_keyboard_shortcut(nint ctrl, string text);
 
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_control_set_accessible_default_action(nint ctrl, string text);
 
-    [LibraryImport(Library)]
-    internal static partial void wxsharp_control_set_accessible_state(nint ctrl, uint state);
+
 
     [LibraryImport(Library)]
     internal static partial void wxsharp_control_set_accessible(nint ctrl, long token);
@@ -577,7 +566,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_datetime_set(nint ctrl, int year, int month, int day, int hour, int minute, int second);
 
     // ---- Containers ----
-    [LibraryImport(Library)] internal static partial nint wxsharp_scrolled_create(nint parent, int id, long token);
+    [LibraryImport(Library)] internal static partial nint wxsharp_scrolled_create(nint parent, int id, int style, long token);
     [LibraryImport(Library)] internal static partial void wxsharp_scrolled_set_rate(nint ctrl, int xStep, int yStep);
     [LibraryImport(Library)] internal static partial void wxsharp_scrolled_scroll(nint ctrl, int x, int y);
     [LibraryImport(Library)] internal static partial void wxsharp_scrolled_get_view_start(nint ctrl, out int x, out int y);
@@ -607,7 +596,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial nint wxsharp_simplebook_create(nint parent, int id, long token);
 
     // ---- Data controls ----
-    [LibraryImport(Library)] internal static partial nint wxsharp_listctrl_create(nint parent, int id, long token);
+    [LibraryImport(Library)] internal static partial nint wxsharp_listctrl_create(nint parent, int id, int style, long token);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int wxsharp_listctrl_insert_column(nint ctrl, int column, string heading, int width);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
@@ -622,7 +611,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_listctrl_select(nint ctrl, long item, [MarshalAs(UnmanagedType.U1)] bool select);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_listctrl_is_selected(nint ctrl, long item);
 
-    [LibraryImport(Library)] internal static partial nint wxsharp_treectrl_create(nint parent, int id, long token);
+    [LibraryImport(Library)] internal static partial nint wxsharp_treectrl_create(nint parent, int id, int style, long token);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial long wxsharp_tree_add_root(nint ctrl, string text);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial long wxsharp_tree_append(nint ctrl, long parent, string text);
     [LibraryImport(Library)] internal static partial void wxsharp_tree_delete(nint ctrl, long item);
@@ -666,17 +655,120 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_dataviewtree_set_selection(nint ctrl, long item);
 
     // ---- Menus and frame chrome ----
+    // ---- Dialog button sizer ----
+    [LibraryImport(Library)] internal static partial nint wxsharp_dialog_create_button_sizer(nint dialog, int flags);
+
+    // ---- wxListCtrl columns, focus and selection ----
+    [LibraryImport(Library)] internal static partial int wxsharp_listctrl_column_count(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_listctrl_delete_column(nint ctrl, int column);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_clear_columns(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_listctrl_get_column_width(nint ctrl, int column);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_listctrl_set_column_width(nint ctrl, int column, int width);
+    [LibraryImport(Library)] internal static partial int wxsharp_listctrl_get_column_heading(nint ctrl, int column, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_listctrl_set_column_heading(nint ctrl, int column, string heading);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_ensure_visible(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial long wxsharp_listctrl_get_focused(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_set_focused(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial int wxsharp_listctrl_selected_count(nint ctrl);
+    [LibraryImport(Library)] internal static partial long wxsharp_listctrl_next_selected(nint ctrl, long after);
+
+    // ---- wxTreeCtrl navigation ----
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_unselect(nint ctrl);
+    [LibraryImport(Library)] internal static partial long wxsharp_tree_get_root(nint ctrl);
+    [LibraryImport(Library)] internal static partial long wxsharp_tree_get_parent(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial long wxsharp_tree_get_first_child(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial long wxsharp_tree_get_next_sibling(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial long wxsharp_tree_get_prev_sibling(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial int wxsharp_tree_child_count(nint ctrl, long item, [MarshalAs(UnmanagedType.U1)] bool recursive);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_ensure_visible(nint ctrl, long item);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial long wxsharp_tree_insert(nint ctrl, long parent, int position, string text);
+
+    // ---- wxComboBox items ----
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_combobox_insert(nint ctrl, string value, int index);
+    [LibraryImport(Library)] internal static partial void wxsharp_combobox_delete(nint ctrl, int index);
+    [LibraryImport(Library)] internal static partial int wxsharp_combobox_get_string(nint ctrl, int index, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_combobox_set_string(nint ctrl, int index, string text);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int wxsharp_combobox_find_string(nint ctrl, string text);
+
+    // ---- wxTextCtrl lines ----
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_line_count(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_line_length(nint ctrl, int line);
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_get_line_text(nint ctrl, int line, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_show_position(nint ctrl, int position);
+
+    // ---- Event binding ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_bind(nint window, int eventId, long token);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_unbind(nint window, int eventId);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_unbind_all(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_event_propagates(int eventId);
+
+    // ---- Update UI, dropped files, hot keys ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_updateui_enable([MarshalAs(UnmanagedType.U1)] bool enable);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_updateui_check([MarshalAs(UnmanagedType.U1)] bool check);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_updateui_show([MarshalAs(UnmanagedType.U1)] bool show);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_updateui_set_text(string text);
+    [LibraryImport(Library)] internal static partial void wxsharp_updateui_set_interval(int milliseconds);
+    [LibraryImport(Library)] internal static partial void wxsharp_updateui_set_process_all([MarshalAs(UnmanagedType.U1)] bool processAll);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_update_ui(nint window, [MarshalAs(UnmanagedType.U1)] bool recurse);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_accept_dropped_files(nint window, [MarshalAs(UnmanagedType.U1)] bool accept);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_capture_mouse(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_release_mouse(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_has_capture(nint window);
+    [LibraryImport(Library)] internal static partial int wxsharp_dropfiles_count();
+    [LibraryImport(Library)] internal static partial int wxsharp_dropfiles_path(int index, byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_register_hotkey(nint window, int hotKeyId, int modifiers, int keyCode);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_unregister_hotkey(nint window, int hotKeyId);
+
+    // ---- Menus ----
     [LibraryImport(Library)] internal static partial nint wxsharp_menu_create();
     [LibraryImport(Library)] internal static partial void wxsharp_menu_destroy(nint menu);
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_menu_append(nint menu, int id, string text, string help, int kind);
-    [LibraryImport(Library)] internal static partial void wxsharp_menu_append_separator(nint menu);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_menu_append(nint menu, int id, string text, string help, int kind);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_menu_insert(nint menu, int position, int id, string text, string help, int kind);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_menu_append_submenu(nint menu, int id, string text, nint submenu, string help);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_menu_insert_submenu(nint menu, int position, int id, string text, nint submenu, string help);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menu_append_separator(nint menu);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menu_insert_separator(nint menu, int position);
+    [LibraryImport(Library)] internal static partial int wxsharp_menu_count(nint menu);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menu_item_at(nint menu, int position);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menu_find_item(nint menu, int id);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menu_remove(nint menu, nint item);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menu_delete(nint menu, nint item);
     [LibraryImport(Library)] internal static partial void wxsharp_menu_enable(nint menu, int id, [MarshalAs(UnmanagedType.U1)] bool enable);
     [LibraryImport(Library)] internal static partial void wxsharp_menu_check(nint menu, int id, [MarshalAs(UnmanagedType.U1)] bool check);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menu_is_checked(nint menu, int id);
+    [LibraryImport(Library)] internal static partial int wxsharp_menu_get_title(nint menu, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_menu_set_title(nint menu, string title);
+
+    // ---- Menu items ----
+    [LibraryImport(Library)] internal static partial int wxsharp_menuitem_get_id(nint item);
+    [LibraryImport(Library)] internal static partial int wxsharp_menuitem_get_kind(nint item);
+    [LibraryImport(Library)] internal static partial int wxsharp_menuitem_get_label(nint item, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_menuitem_set_label(nint item, string label);
+    [LibraryImport(Library)] internal static partial int wxsharp_menuitem_get_help(nint item, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_menuitem_set_help(nint item, string help);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menuitem_is_enabled(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_menuitem_enable(nint item, [MarshalAs(UnmanagedType.U1)] bool enable);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menuitem_is_checked(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_menuitem_check(nint item, [MarshalAs(UnmanagedType.U1)] bool check);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menuitem_is_checkable(nint item);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menuitem_get_submenu(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_menuitem_set_bitmap(nint item, nint bitmap);
+
+    // ---- Menu bar ----
     [LibraryImport(Library)] internal static partial nint wxsharp_menubar_create();
     [LibraryImport(Library)] internal static partial void wxsharp_menubar_destroy(nint menuBar);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menubar_append(nint menuBar, nint menu, string title);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_menubar_insert(nint menuBar, int position, nint menu, string title);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menubar_remove(nint menuBar, int position);
+    [LibraryImport(Library)] internal static partial int wxsharp_menubar_count(nint menuBar);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menubar_menu_at(nint menuBar, int position);
+    [LibraryImport(Library)] internal static partial void wxsharp_menubar_enable_top(nint menuBar, int position, [MarshalAs(UnmanagedType.U1)] bool enable);
+    [LibraryImport(Library)] internal static partial int wxsharp_menubar_get_label_top(nint menuBar, int position, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_menubar_set_label_top(nint menuBar, int position, string label);
+    [LibraryImport(Library)] internal static partial nint wxsharp_menubar_find_item(nint menuBar, int id);
     [LibraryImport(Library)] internal static partial void wxsharp_frame_set_menubar(nint frame, nint menuBar);
+    [LibraryImport(Library)] internal static partial void wxsharp_frame_update_menus(nint frame);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_popup_menu(nint window, nint menu, int x, int y);
     [LibraryImport(Library)] internal static partial nint wxsharp_statusbar_create(nint frame, int fields, long token);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_statusbar_set_text(nint status, string text, int field);
     [LibraryImport(Library)] internal static partial int wxsharp_statusbar_get_text(nint status, int field, byte* buffer, int bufferLength);
@@ -686,7 +778,13 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_toolbar_realize(nint toolbar);
     [LibraryImport(Library)] internal static partial void wxsharp_toolbar_enable(nint toolbar, int id, [MarshalAs(UnmanagedType.U1)] bool enable);
     [LibraryImport(Library)] internal static partial void wxsharp_toolbar_toggle(nint toolbar, int id, [MarshalAs(UnmanagedType.U1)] bool toggle);
-    [LibraryImport(Library)] internal static partial void wxsharp_frame_set_accelerators(nint frame, NativeAccelerator* entries, int count);
+    // ---- Accelerators and identifiers ----
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_accelerators(nint window, NativeAccelerator* entries, int count);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_accelerator_parse(string text, out int modifiers, out int keyCode);
+    [LibraryImport(Library)] internal static partial int wxsharp_accelerator_format(int modifiers, int keyCode, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_new_id();
+    [LibraryImport(Library)] internal static partial void wxsharp_release_id(int id);
+    [LibraryImport(Library)] internal static partial int wxsharp_stock_id(int which);
     [LibraryImport(Library)] internal static partial nint wxsharp_timer_create(int id, long ownerToken);
     [LibraryImport(Library)] internal static partial void wxsharp_timer_destroy(nint timer);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_timer_start(nint timer, int milliseconds, [MarshalAs(UnmanagedType.U1)] bool oneShot);
@@ -724,9 +822,11 @@ internal static unsafe partial class NativeMethods
     internal static partial int wxsharp_clipboard_get_text(byte* buffer, int bufferLength);
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    [return: MarshalAs(UnmanagedType.U1)]
-    internal static partial bool wxsharp_file_dialog(nint parent, string title, string wildcard,
-        [MarshalAs(UnmanagedType.U1)] bool save, byte* buffer, int bufferLength);
+    internal static partial int wxsharp_file_dialog(nint parent, string title, string wildcard,
+        string defaultDir, string defaultFile, int style);
+
+    [LibraryImport(Library)]
+    internal static partial int wxsharp_file_dialog_result(int index, byte* buffer, int bufferLength);
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.U1)]

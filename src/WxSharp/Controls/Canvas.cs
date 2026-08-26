@@ -13,10 +13,11 @@ namespace WxSharp;
 public class Canvas : Control
 {
     /// <summary>Raised when the canvas must repaint. Issue draw calls from the handler.</summary>
-    public event EventHandler<PaintEventArgs>? Paint;
-
-    /// <summary>Raised when the canvas is resized (a good moment to re-lay-out drawn content).</summary>
-    public event EventHandler<SizeEventArgs>? Resized;
+    public event EventHandler<PaintEventArgs> Paint
+    {
+        add => AddHandler(WxEvents.Paint, value);
+        remove => RemoveHandler(WxEvents.Paint, value);
+    }
 
     /// <summary>Creates a canvas at an optional position and size. Add it to a sizer for managed layout.</summary>
     public Canvas(Window parent, int id = WindowId.Any, Point? position = null, Size? size = null) : base(parent, id)
@@ -76,15 +77,5 @@ public class Canvas : Control
     {
         NativeMethods.wxsharp_canvas_measure_text(Handle, text, out var w, out var h);
         return new Size(w, h);
-    }
-
-    internal override uint Dispatch(in NativeEvent e)
-    {
-        switch (e.Kind)
-        {
-            case EventKind.Paint: return Raise(new PaintEventArgs(this, e.Id), Paint);
-            case EventKind.Resize: return Raise(new SizeEventArgs(this, e), Resized);
-            default: return base.Dispatch(e);
-        }
     }
 }

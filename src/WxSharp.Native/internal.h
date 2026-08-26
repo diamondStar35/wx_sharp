@@ -2,57 +2,99 @@
 #pragma once
 
 #include <wx/wx.h>
+#include <wx/dataview.h>
+#include <wx/filedlg.h>
+#include <wx/listctrl.h>
+#include <wx/scrolwin.h>
+#include <wx/treectrl.h>
 #include "wxsharp.h"
 #include <algorithm>
 #include <climits>
 #include <cstring>
 #include <vector>
 
-// Event types reported to the managed side (kept in sync with EventKind in C#).
-enum
-{
-    WXSHARP_EVT_CLICK = 1,       // button pressed
-    WXSHARP_EVT_CLOSE = 2,       // window/dialog close requested
-    WXSHARP_EVT_TEXT = 3,        // text control changed
-    WXSHARP_EVT_TOGGLE = 4,      // checkbox toggled
-    WXSHARP_EVT_SELECT = 5,      // choice/listbox/radio selection changed
-    WXSHARP_EVT_SLIDER = 6,      // slider value changed
-    WXSHARP_EVT_SHOWN = 7,       // window shown
-    WXSHARP_EVT_ACTIVATE = 8,    // window activated (got focus)
-    WXSHARP_EVT_DEACTIVATE = 9,  // window deactivated (lost focus)
-    WXSHARP_EVT_RESIZE = 10,     // window resized
-    WXSHARP_EVT_FOCUS_GAINED = 11, // control gained keyboard focus
-    WXSHARP_EVT_FOCUS_LOST = 12,   // control lost keyboard focus
-    WXSHARP_EVT_TEXT_ENTER = 13,   // Enter pressed in a text control
-    WXSHARP_EVT_MOVE = 14,         // window moved
-    WXSHARP_EVT_MAXIMIZE = 15,     // window maximized
-    WXSHARP_EVT_MOUSE_DOWN = 16,   // left mouse button pressed on a control
-    WXSHARP_EVT_MOUSE_UP = 17,     // left mouse button released on a control
-    WXSHARP_EVT_MOUSE_RIGHT = 18,  // right mouse button pressed (context click)
-    WXSHARP_EVT_MOUSE_DOUBLE = 19, // left double-click
-    WXSHARP_EVT_MOUSE_ENTER = 20,  // pointer entered the control
-    WXSHARP_EVT_MOUSE_LEAVE = 21,  // pointer left the control
-    WXSHARP_EVT_MOUSE_MOVE = 22,   // pointer moved over the control
-    WXSHARP_EVT_PAINT = 23,        // a canvas needs repainting (draw during the managed handler)
-    WXSHARP_EVT_WHEEL_UP = 24,     // mouse wheel scrolled up/away
-    WXSHARP_EVT_WHEEL_DOWN = 25,   // retained ABI value; new code reports MouseWheel with delta
-    WXSHARP_EVT_DESTROYED = 26,
-    WXSHARP_EVT_CALL_AFTER = 27,
-    WXSHARP_EVT_KEY_HOOK = 28,
-    WXSHARP_EVT_KEY_DOWN = 29,
-    WXSHARP_EVT_KEY_UP = 30,
-    WXSHARP_EVT_MENU = 31,
-    WXSHARP_EVT_TIMER = 32,
-};
+// Reports one event to the managed callback. Used for the handful of events the table in events.cpp does
+// not own - window destruction, canvas paints, timer ticks and CallAfter - where the native side decides
+// when to fire. Everything else goes through EventSink there.
+extern wxsharp_event_cb g_event_cb;
 
-// Key event kinds reported through the key callback (kept in sync with KeyKind in C#). The callback returns
-// true to consume the key, false to let normal processing continue.
-enum
+inline unsigned int Fire(long long token, int kind, int id = wxID_ANY, int x = 0, int y = 0,
+                         int width = 0, int height = 0, int keyCode = 0, int modifiers = 0,
+                         int mouseButton = 0, int wheelDelta = 0, bool active = false, bool canVeto = false)
 {
-    WXSHARP_KEY_HOOK = 1, // char hook on a top-level window (global shortcuts, before the focused control)
-    WXSHARP_KEY_DOWN = 2, // key pressed while a control has focus
-    WXSHARP_KEY_UP = 3,   // key released while a control has focus
-};
+    if (!g_event_cb)
+        return 0;
+    wxsharp_event eventData = {};
+    eventData.size = sizeof(eventData);
+    eventData.version = WXSHARP_EVENT_VERSION;
+    eventData.token = token;
+    eventData.kind = kind;
+    eventData.id = id;
+    eventData.x = x;
+    eventData.y = y;
+    eventData.width = width;
+    eventData.height = height;
+    eventData.key_code = keyCode;
+    eventData.modifiers = modifiers;
+    eventData.mouse_button = mouseButton;
+    eventData.wheel_delta = wheelDelta;
+    eventData.active = active ? 1 : 0;
+    eventData.can_veto = canVeto ? 1 : 0;
+    return g_event_cb(&eventData);
+}
+
+// Packs the modifier state of a key or mouse event into the bitfield the managed side expects. RawControl
+// is Ctrl everywhere except macOS, where Control and Command are distinct and Ctrl maps to Command.
+inline int Mods(const wxKeyboardState& e)
+{
+    return (e.ControlDown() ? WXSHARP_MOD_CONTROL : 0)
+         | (e.ShiftDown() ? WXSHARP_MOD_SHIFT : 0)
+         | (e.AltDown() ? WXSHARP_MOD_ALT : 0)
+         | (e.MetaDown() ? WXSHARP_MOD_META : 0)
+         | (e.RawControlDown() ? WXSHARP_MOD_RAW_CONTROL : 0);
+}
+
+// Releases every lazily-created event binding on a window. Defined in events.cpp; called when the window is
+// destroyed, after the managed side has been told, so no sink outlives the window it is connected to.
+void WxSharpReleaseBindings(wxWindow* window);
+
+// The one event hook every window carries. Destruction has to be observed unconditionally: it is what tells
+// the managed Window its handle is gone and what releases the window's other bindings. Everything else is
+// bound on demand through wxsharp_window_bind().
+inline void TrackWindow(wxWindow* window, long long token)
+{
+    window->Bind(wxEVT_DESTROY, [window, token](wxWindowDestroyEvent& e)
+    {
+        // wxWindowDestroyEvent propagates, so a parent sees its children being destroyed too.
+        if (e.GetEventObject() == window)
+        {
+            Fire(token, WXSHARP_EV_DESTROY, e.GetId());
+            WxSharpReleaseBindings(window);
+        }
+        e.Skip();
+    });
+}
+
+// Tree and data-view items cross the ABI as the integer value of their opaque ID.
+inline wxTreeItemId TreeId(long long value)
+{
+    return wxTreeItemId(reinterpret_cast<void*>(static_cast<intptr_t>(value)));
+}
+
+inline long long TreeValue(const wxTreeItemId& value)
+{
+    return static_cast<long long>(reinterpret_cast<intptr_t>(value.GetID()));
+}
+
+inline wxDataViewItem DataViewId(long long value)
+{
+    return wxDataViewItem(reinterpret_cast<void*>(static_cast<intptr_t>(value)));
+}
+
+inline long long DataViewValue(const wxDataViewItem& value)
+{
+    return static_cast<long long>(reinterpret_cast<intptr_t>(value.GetID()));
+}
 
 // Copies a wx string into a caller buffer (up to length-1, null-terminated) and returns its full length, so
 // the caller can size a buffer exactly. Used by every "get text" accessor.
@@ -73,96 +115,9 @@ inline int CopyToBuffer(const wxString& s, char* buffer, int buffer_length)
     return len;
 }
 
-// The managed callback (defined in app.cpp and set through wxsharp_set_event_handler).
-extern wxsharp_event_cb g_event_cb;
-
-inline unsigned int Fire(long long token, int kind, int id = wxID_ANY, int x = 0, int y = 0,
-                         int width = 0, int height = 0, int keyCode = 0, int modifiers = 0,
-                         int mouseButton = 0, int wheelDelta = 0, bool active = false, bool canVeto = false)
-{
-    if (!g_event_cb)
-        return 0;
-    wxsharp_event eventData = {};
-    eventData.size = sizeof(eventData);
-    eventData.version = 1;
-    eventData.token = token;
-    eventData.kind = kind;
-    eventData.id = id;
-    eventData.x = x;
-    eventData.y = y;
-    eventData.width = width;
-    eventData.height = height;
-    eventData.key_code = keyCode;
-    eventData.modifiers = modifiers;
-    eventData.mouse_button = mouseButton;
-    eventData.wheel_delta = wheelDelta;
-    eventData.active = active ? 1 : 0;
-    eventData.can_veto = canVeto ? 1 : 0;
-    return g_event_cb(&eventData);
-}
-
-// Packs the modifier state of a key event into the bitfield the managed side expects (bit0 Ctrl, 1 Shift, 2 Alt).
-inline int KeyMods(const wxKeyboardState& e)
-{
-    return (e.ControlDown() ? 1 : 0) | (e.ShiftDown() ? 2 : 0) | (e.AltDown() ? 4 : 0);
-}
-
-// Reports a key event to the managed key callback; returns true if the managed side consumed it.
-inline bool FireKey(long long token, int kind, const wxKeyEvent& e)
-{
-    const int eventKind = kind == WXSHARP_KEY_HOOK ? WXSHARP_EVT_KEY_HOOK
-                        : kind == WXSHARP_KEY_DOWN ? WXSHARP_EVT_KEY_DOWN : WXSHARP_EVT_KEY_UP;
-    return (Fire(token, eventKind,
-                 e.GetId(), 0, 0, 0, 0, e.GetKeyCode(), KeyMods(e)) & WXSHARP_EVENT_HANDLED) != 0;
-}
-
-// Forwards key presses on a top-level window to the managed key hook; if the managed side does not consume
-// the key it is skipped so normal processing (tab navigation, typing, Esc-to-close, ...) still happens.
-inline void BindKeyHook(wxWindow* top, long long token)
-{
-    top->Bind(wxEVT_CHAR_HOOK, [token](wxKeyEvent& e)
-    {
-        if (!FireKey(token, WXSHARP_KEY_HOOK, e))
-            e.Skip();
-    });
-}
-
 inline wxString Str(const char* s)
 {
     return wxString::FromUTF8(s ? s : "");
-}
-
-// Binds the mouse events every control shares. Skipped so the control's own click/hover handling still runs.
-inline void BindMouse(wxWindow* ctrl, long long token)
-{
-    auto fire = [token](wxMouseEvent& e, int kind, int button)
-    {
-        if (!(Fire(token, kind, e.GetId(), e.GetX(), e.GetY(), 0, 0, 0, KeyMods(e), button,
-                   e.GetWheelRotation()) & WXSHARP_EVENT_HANDLED))
-            e.Skip();
-    };
-    ctrl->Bind(wxEVT_LEFT_DOWN, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_DOWN, 1); });
-    ctrl->Bind(wxEVT_LEFT_UP, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_UP, 1); });
-    ctrl->Bind(wxEVT_RIGHT_DOWN, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_RIGHT, 2); });
-    ctrl->Bind(wxEVT_LEFT_DCLICK, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_DOUBLE, 1); });
-    ctrl->Bind(wxEVT_ENTER_WINDOW, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_ENTER, 0); });
-    ctrl->Bind(wxEVT_LEAVE_WINDOW, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_LEAVE, 0); });
-    ctrl->Bind(wxEVT_MOTION, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_MOUSE_MOVE, 0); });
-    ctrl->Bind(wxEVT_MOUSEWHEEL, [fire](wxMouseEvent& e) { fire(e, WXSHARP_EVT_WHEEL_UP, 0); });
-}
-
-// Binds the events every control shares - focus in/out, key down/up and the mouse events - to the managed
-// callbacks. Called by each widget's create() so focus, keyboard and pointer input are reported uniformly and
-// can drive managed behaviour (e.g. the custom slider's key handling). Unconsumed keys/events are skipped so
-// native processing still runs.
-inline void BindCommon(wxWindow* ctrl, long long token)
-{
-    ctrl->Bind(wxEVT_SET_FOCUS, [token](wxFocusEvent& e) { Fire(token, WXSHARP_EVT_FOCUS_GAINED, e.GetId()); e.Skip(); });
-    ctrl->Bind(wxEVT_KILL_FOCUS, [token](wxFocusEvent& e) { Fire(token, WXSHARP_EVT_FOCUS_LOST, e.GetId()); e.Skip(); });
-    ctrl->Bind(wxEVT_KEY_DOWN, [token](wxKeyEvent& e) { if (!FireKey(token, WXSHARP_KEY_DOWN, e)) e.Skip(); });
-    ctrl->Bind(wxEVT_KEY_UP, [token](wxKeyEvent& e) { if (!FireKey(token, WXSHARP_KEY_UP, e)) e.Skip(); });
-    BindMouse(ctrl, token);
-    ctrl->Bind(wxEVT_DESTROY, [token](wxWindowDestroyEvent& e) { Fire(token, WXSHARP_EVT_DESTROYED, e.GetId()); e.Skip(); });
 }
 
 // ---- Colour ---------------------------------------------------------------------------------------------
@@ -184,6 +139,101 @@ inline unsigned int ArgbFromColour(const wxColour& c)
 // ---- Style translation ----------------------------------------------------------------------------------
 // The managed side passes stable, semantic style bits (defined by the C# style enums); these translate them to
 // the wxWidgets style flags so the actual wx constants live in one place and never leak into managed code.
+// The managed style enums set this bit to mean "whatever wxWidgets uses by default for this class".
+// wxWidgets spells these as constants - wxTR_DEFAULT_STYLE and friends - whose values are fixed when the
+// library is compiled for a platform. wxPython can expose them the same way because it ships a binary per
+// platform; one managed assembly serving several cannot, so the value is resolved here instead. It is
+// seeded, not returned, so Default | SomeOtherFlag composes exactly as it does in C++.
+enum { WXSHARP_STYLE_PLATFORM_DEFAULT = 1 << 30 };
+
+inline long MapFrameStyle(int s)
+{
+    long f = (s & WXSHARP_STYLE_PLATFORM_DEFAULT) ? wxDEFAULT_FRAME_STYLE : 0;
+    if (s & 1)   f |= wxCAPTION;
+    if (s & 2)   f |= wxMINIMIZE_BOX;
+    if (s & 4)   f |= wxMAXIMIZE_BOX;
+    if (s & 8)   f |= wxCLOSE_BOX;
+    if (s & 16)  f |= wxSYSTEM_MENU;
+    if (s & 32)  f |= wxRESIZE_BORDER;
+    if (s & 64)  f |= wxSTAY_ON_TOP;
+    if (s & 128) f |= wxFRAME_TOOL_WINDOW;
+    if (s & 256) f |= wxFRAME_NO_TASKBAR;
+    if (s & 512) f |= wxFRAME_FLOAT_ON_PARENT;
+    return f;
+}
+
+inline long MapDialogStyle(int s)
+{
+    long f = (s & WXSHARP_STYLE_PLATFORM_DEFAULT) ? wxDEFAULT_DIALOG_STYLE : 0;
+    if (s & 1)  f |= wxCAPTION;
+    if (s & 2)  f |= wxCLOSE_BOX;
+    if (s & 4)  f |= wxSYSTEM_MENU;
+    if (s & 8)  f |= wxRESIZE_BORDER;
+    if (s & 16) f |= wxSTAY_ON_TOP;
+    if (s & 32) f |= wxMAXIMIZE_BOX;
+    if (s & 64) f |= wxMINIMIZE_BOX;
+    return f;
+}
+
+inline long MapPanelStyle(int s)
+{
+    return (s & (WXSHARP_STYLE_PLATFORM_DEFAULT | 1)) ? wxTAB_TRAVERSAL : 0;
+}
+
+inline long MapScrolledStyle(int s)
+{
+    long f = (s & WXSHARP_STYLE_PLATFORM_DEFAULT) ? wxScrolledWindowStyle : 0;
+    if (s & 1) f |= wxHSCROLL;
+    if (s & 2) f |= wxVSCROLL;
+    if (s & 4) f |= wxTAB_TRAVERSAL;
+    return f;
+}
+
+inline long MapListCtrlStyle(int s)
+{
+    long f = (s & WXSHARP_STYLE_PLATFORM_DEFAULT) ? wxLC_ICON : 0;
+    if (s & 1)    f |= wxLC_REPORT;
+    if (s & 2)    f |= wxLC_LIST;
+    if (s & 4)    f |= wxLC_ICON;
+    if (s & 8)    f |= wxLC_SMALL_ICON;
+    if (s & 16)   f |= wxLC_SINGLE_SEL;
+    if (s & 32)   f |= wxLC_NO_HEADER;
+    if (s & 64)   f |= wxLC_EDIT_LABELS;
+    if (s & 128)  f |= wxLC_VIRTUAL;
+    if (s & 256)  f |= wxLC_HRULES;
+    if (s & 512)  f |= wxLC_VRULES;
+    if (s & 1024) f |= wxLC_SORT_ASCENDING;
+    return f;
+}
+
+inline long MapTreeCtrlStyle(int s)
+{
+    long f = (s & WXSHARP_STYLE_PLATFORM_DEFAULT) ? wxTR_DEFAULT_STYLE : 0;
+    if (s & 1)   f |= wxTR_HAS_BUTTONS;
+    if (s & 2)   f |= wxTR_HIDE_ROOT;
+    if (s & 4)   f |= wxTR_LINES_AT_ROOT;
+    if (s & 8)   f |= wxTR_ROW_LINES;
+    if (s & 16)  f |= wxTR_EDIT_LABELS;
+    if (s & 32)  f |= wxTR_MULTIPLE;
+    if (s & 64)  f |= wxTR_FULL_ROW_HIGHLIGHT;
+    if (s & 128) f |= wxTR_TWIST_BUTTONS;
+    if (s & 256) f |= wxTR_NO_LINES;
+    return f;
+}
+
+inline long MapFileDialogStyle(int s)
+{
+    long f = (s & 2) ? wxFD_SAVE : wxFD_OPEN;
+    if (s & 4)   f |= wxFD_MULTIPLE;
+    if (s & 8)   f |= wxFD_FILE_MUST_EXIST;
+    if (s & 16)  f |= wxFD_OVERWRITE_PROMPT;
+    if (s & 32)  f |= wxFD_CHANGE_DIR;
+    if (s & 64)  f |= wxFD_PREVIEW;
+    if (s & 128) f |= wxFD_SHOW_HIDDEN;
+    if (s & 256) f |= wxFD_NO_FOLLOW;
+    return f;
+}
+
 inline long MapBorder(int b)
 {
     switch (b)
@@ -234,7 +284,7 @@ inline long MapListBoxStyle(int s)
     if (s & 8)  f |= wxLB_ALWAYS_SB;
     if (s & 16) f |= wxLB_HSCROLL;
     if (s & 32) f |= wxLB_NEEDED_SB;
-    return f ? f : wxLB_SINGLE;
+    return f;
 }
 
 inline long MapAlignment(int a)

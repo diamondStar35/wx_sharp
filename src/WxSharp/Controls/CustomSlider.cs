@@ -3,11 +3,10 @@ using System;
 namespace WxSharp;
 
 /// <summary>An accessible slider built in the managed wrapper by inheriting from <see cref="Slider"/> - the
-/// reference example of a custom control on the WxSharp key/event foundation. Unlike a plain slider it
-/// (1) raises <see cref="Slider.ValueChanged"/> when the value is set in code (a native slider stays silent
-/// then, so a screen reader wouldn't hear it), and (2) handles the arrow, page, Home and End keys itself via
-/// <see cref="Control.OnKeyDown"/>, so movement and feedback are consistent regardless of platform key
-/// handling.</summary>
+/// reference example of a custom control on the WxSharp event foundation. Unlike a plain slider it
+/// (1) raises <see cref="Slider.ValueChanged"/> when the value is set in code, which a native slider stays
+/// silent about, so a screen reader would otherwise hear nothing, and (2) handles the arrow, page, Home and
+/// End keys itself, so movement and feedback are the same regardless of platform key handling.</summary>
 public class CustomSlider : Slider
 {
     /// <summary>How far the arrow keys move the value.</summary>
@@ -20,6 +19,7 @@ public class CustomSlider : Slider
         SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null)
         : base(parent, id, value, minValue, maxValue, style, position, size)
     {
+        KeyDown += OnKeyDown;
     }
 
     /// <summary>Sets the value (clamped to the range) and always raises <see cref="Slider.ValueChanged"/>,
@@ -30,13 +30,11 @@ public class CustomSlider : Slider
         set
         {
             base.Value = Math.Clamp(value, Minimum, Maximum);
-            var args = new CommandEventArgs(this, Id);
-            OnValueChanged(args);
-            _ = PropagateCommand(args);
+            NotifyValueChanged();
         }
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         int target = e.Code switch
         {
@@ -51,11 +49,11 @@ public class CustomSlider : Slider
 
         if (target == int.MinValue)
         {
-            base.OnKeyDown(e); // not a movement key - raise KeyDown and let it fall through
+            e.Skip();      // not a movement key - let the control have it
             return;
         }
 
-        Value = target;   // clamps, sets, and raises ValueChanged
-        e.Handled = true;  // consume so the native slider doesn't move a second time
+        Value = target;    // clamps, sets, and raises ValueChanged. Not skipping consumes the key, so the
+                           // native slider does not also move.
     }
 }

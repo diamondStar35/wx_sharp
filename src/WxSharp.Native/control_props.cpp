@@ -100,6 +100,11 @@ void wxsharp_control_set_tooltip(wxsharp_handle ctrl, const char* text)
     static_cast<wxWindow*>(ctrl)->SetToolTip(Str(text));
 }
 
+int wxsharp_control_get_name(wxsharp_handle ctrl, char* buffer, int buffer_length)
+{
+    return CopyToBuffer(static_cast<wxWindow*>(ctrl)->GetName(), buffer, buffer_length);
+}
+
 void wxsharp_control_set_border(wxsharp_handle ctrl, int border)
 {
     auto* w = static_cast<wxWindow*>(ctrl);

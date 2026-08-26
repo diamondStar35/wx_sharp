@@ -58,21 +58,24 @@ public abstract class Accessible
     public virtual AccessibleStatus GetLocation(int childId, out Rect location) { location = default; return AccessibleStatus.NotImplemented; }
     public virtual AccessibleStatus HitTest(Point screenPoint, out int childId) { childId = 0; return AccessibleStatus.NotImplemented; }
     public virtual AccessibleStatus Navigate(AccessibleNavigationDirection direction, int fromId, out int toId) { toId = 0; return AccessibleStatus.NotImplemented; }
-    public virtual AccessibleStatus SelectChild(int childId, AccessibleSelection selection) => AccessibleStatus.NotImplemented;
+    public virtual AccessibleStatus Select(int childId, AccessibleSelection selection) => AccessibleStatus.NotImplemented;
     public virtual AccessibleStatus DoDefaultAction(int childId) => AccessibleStatus.NotImplemented;
     public virtual AccessibleStatus GetFocus(out int childId) { childId = 0; return AccessibleStatus.NotImplemented; }
     public virtual AccessibleStatus GetSelections(out IReadOnlyList<int> childIds) { childIds = Array.Empty<int>(); return AccessibleStatus.NotImplemented; }
 
-    public void Notify(AccessibleEvent eventType, AccessibleObjectType objectType = AccessibleObjectType.Client,
-        int childId = 0)
+    /// <summary>Tells the platform that something about a window changed, following
+    /// <c>wxAccessible.NotifyEvent</c>. Static, and takes the window, exactly as wxWidgets does.</summary>
+    public static void NotifyEvent(AccessibleEvent eventType, Window window,
+        AccessibleObjectType objectType = AccessibleObjectType.Client, int objectId = 0)
     {
-        var window = _window ?? throw new InvalidOperationException("The accessible object is not attached to a window.");
+        ArgumentNullException.ThrowIfNull(window);
         window.OwnerApp.VerifyAccess();
-        NativeMethods.wxsharp_accessible_notify((int)eventType, window.Handle, (int)objectType, childId);
+        NativeMethods.wxsharp_accessible_notify((int)eventType, window.Handle, (int)objectType, objectId);
     }
 
-    /// <summary>Runs a small native query used to validate the reverse callback bridge.</summary>
-    public bool ValidateBridge()
+    /// <summary>Runs a small native query that exercises the reverse-callback bridge. Test support; not part
+    /// of the wxAccessible contract.</summary>
+    internal bool ValidateBridge()
     {
         var window = _window ?? throw new InvalidOperationException("The accessible object is not attached to a window.");
         window.OwnerApp.VerifyAccess();
@@ -121,7 +124,7 @@ public abstract class Accessible
             case 10: { var status = GetLocation(request->ChildId, out var rect); request->X = rect.X; request->Y = rect.Y; request->Width = rect.Width; request->Height = rect.Height; return status; }
             case 11: { var status = HitTest(new Point(request->X, request->Y), out var child); request->IntValue = child; return status; }
             case 12: { var status = Navigate((AccessibleNavigationDirection)request->Argument, request->ChildId, out var target); request->IntValue = target; return status; }
-            case 13: return SelectChild(request->ChildId, (AccessibleSelection)request->Argument);
+            case 13: return Select(request->ChildId, (AccessibleSelection)request->Argument);
             case 14: return DoDefaultAction(request->ChildId);
             case 15: { var status = GetFocus(out var child); request->IntValue = child; return status; }
             case 16:

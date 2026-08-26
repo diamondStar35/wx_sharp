@@ -5,8 +5,7 @@ wxsharp_handle wxsharp_choice_create(wxsharp_handle parent, int id, int style, l
 {
     auto* p = static_cast<wxWindow*>(parent);
     auto* ctrl = new wxChoice(p, id, wxDefaultPosition, wxDefaultSize, 0, nullptr, MapChoiceStyle(style));
-    ctrl->Bind(wxEVT_CHOICE, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    BindCommon(ctrl, token);
+    TrackWindow(ctrl, token);
     return ctrl;
 }
 

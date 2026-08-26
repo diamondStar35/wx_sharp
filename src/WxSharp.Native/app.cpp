@@ -89,7 +89,7 @@ void wxsharp_set_top_window(wxsharp_handle window)
 void wxsharp_call_after(long long token)
 {
     if (wxTheApp)
-        wxTheApp->CallAfter([token]() { Fire(token, WXSHARP_EVT_CALL_AFTER); });
+        wxTheApp->CallAfter([token]() { Fire(token, WXSHARP_EV_CALL_AFTER); });
 }
 
 bool wxsharp_yield(bool only_if_needed)
@@ -97,9 +97,11 @@ bool wxsharp_yield(bool only_if_needed)
     return wxTheApp && wxTheApp->Yield(only_if_needed);
 }
 
-int wxsharp_message_box(const char* message, const char* caption, int style)
+int wxsharp_message_box(wxsharp_handle parent, const char* message, const char* caption, int style)
 {
-    return wxMessageBox(Str(message), Str(caption), style);
+    // Passing the parent is what makes the box modal to the right window and puts it in the right place in
+    // the window hierarchy, which is also how a screen reader knows what it belongs to.
+    return wxMessageBox(Str(message), Str(caption), style, static_cast<wxWindow*>(parent));
 }
 
 void wxsharp_shutdown()
