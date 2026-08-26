@@ -3,10 +3,11 @@ namespace WxSharp;
 /// <summary>The system clipboard (text).</summary>
 public static class Clipboard
 {
-    public static void SetText(string text) => NativeMethods.wxsharp_clipboard_set_text(text);
+    public static void SetText(string text) { _ = App.RequireCurrent(); NativeMethods.wxsharp_clipboard_set_text(text); }
 
     public static unsafe string GetText()
     {
+        _ = App.RequireCurrent();
         var length = NativeMethods.wxsharp_clipboard_get_text(null, 0);
         if (length <= 0)
             return string.Empty;

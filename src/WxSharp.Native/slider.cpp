@@ -3,14 +3,13 @@
 // built on the key events BindCommon reports. This keeps the native side a thin wrapper over the real control.
 #include "internal.h"
 
-wxsharp_handle wxsharp_slider_create(wxsharp_handle parent, int min_value, int max_value, int value, int style, int id)
+wxsharp_handle wxsharp_slider_create(wxsharp_handle parent, int id, int min_value, int max_value, int value, int style, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    auto* ctrl = new wxSlider(p, wxID_ANY, value, min_value, max_value,
+    auto* ctrl = new wxSlider(p, id, value, min_value, max_value,
                               wxDefaultPosition, wxDefaultSize, MapSliderStyle(style));
-    ctrl->Bind(wxEVT_SLIDER, [id](wxCommandEvent&) { Fire(id, WXSHARP_EVT_SLIDER); });
-    BindCommon(ctrl, id);
-    AddToPanel(p, ctrl, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND);
+    ctrl->Bind(wxEVT_SLIDER, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SLIDER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

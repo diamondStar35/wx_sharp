@@ -1,29 +1,21 @@
-// App lifetime: bringing wxWidgets up inside a host that owns the real loop, pumping/waiting, and teardown.
+// wxWidgets application lifetime. Managed App owns this one-shot application and enters wx's real loop.
 #include "internal.h"
-#include <wx/evtloop.h>
 #ifdef __WXMSW__
 #include <windows.h>
 #endif
 
 wxsharp_event_cb g_event_cb = nullptr;
-wxsharp_key_cb g_key_cb = nullptr;
 
 namespace
 {
     bool g_initialized = false;
-    wxEventLoop* g_loop = nullptr;
 
-    // The host (the .NET client) owns argument parsing and passes its own flags (e.g. --host 127.0.0.1) on the
-    // process command line. wxApp's default OnInit runs wxCmdLineParser over that command line and rejects any
-    // option it doesn't recognise, which would make CallOnInit fail and bring init down. We don't use wx's
-    // command-line handling at all, so override OnInit to skip it and just succeed.
     class WxSharpApp : public wxApp
     {
     public:
         bool OnInit() override { return true; }
     };
 
-    // On Windows, activate the Common-Controls v6 manifest embedded in this DLL.
     void EnableCommonControlsV6()
     {
 #ifdef __WXMSW__
@@ -32,13 +24,11 @@ namespace
                 GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                 reinterpret_cast<LPCWSTR>(&EnableCommonControlsV6), &self) || self == nullptr)
             return;
-
         ACTCTXW ctx = {};
         ctx.cbSize = sizeof(ctx);
         ctx.dwFlags = ACTCTX_FLAG_HMODULE_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID;
         ctx.hModule = self;
         ctx.lpResourceName = MAKEINTRESOURCEW(100);
-
         HANDLE handle = ::CreateActCtxW(&ctx);
         if (handle != INVALID_HANDLE_VALUE)
         {
@@ -64,52 +54,47 @@ bool wxsharp_init()
         wxEntryCleanup();
         return false;
     }
-
-    // The host owns the real loop, so we create an event loop and make it active ourselves; wxsharp_pump drives
-    // it the way wxApp::MainLoop would, so tab traversal, accelerators, idle and repaint behave natively.
-    g_loop = new wxEventLoop();
-    wxEventLoopBase::SetActive(g_loop);
-
+    wxInitAllImageHandlers();
     g_initialized = true;
     return true;
 }
 
-void wxsharp_set_event_handler(wxsharp_event_cb cb)
+void wxsharp_set_event_handler(wxsharp_event_cb cb) { g_event_cb = cb; }
+
+int wxsharp_main_loop()
 {
-    g_event_cb = cb;
+    if (!g_initialized || !wxTheApp || wxTopLevelWindows.empty())
+        return 0;
+    return wxTheApp->MainLoop();
 }
 
-void wxsharp_set_key_handler(wxsharp_key_cb cb)
+void wxsharp_exit_main_loop()
 {
-    g_key_cb = cb;
+    if (wxTheApp && wxTheApp->IsMainLoopRunning())
+        wxTheApp->ExitMainLoop();
 }
 
-void wxsharp_pump()
+void wxsharp_set_exit_on_frame_delete(bool value)
 {
-    if (!g_loop)
-        return;
-    while (g_loop->Pending())
-        g_loop->Dispatch();
     if (wxTheApp)
-        wxTheApp->ProcessPendingEvents();
-    g_loop->ProcessIdle();
+        wxTheApp->SetExitOnFrameDelete(value);
 }
 
-void wxsharp_wait(int timeout_ms)
+void wxsharp_set_top_window(wxsharp_handle window)
 {
-#ifdef __WXMSW__
-    ::MsgWaitForMultipleObjectsEx(
-        0, nullptr,
-        timeout_ms < 0 ? INFINITE : static_cast<DWORD>(timeout_ms),
-        QS_ALLINPUT, MWMO_INPUTAVAILABLE);
-#else
-    if (!g_loop)
-        return;
-    if (timeout_ms < 0)
-        g_loop->Dispatch();
-    else if (timeout_ms > 0)
-        g_loop->DispatchTimeout(static_cast<unsigned long>(timeout_ms));
-#endif
+    if (wxTheApp)
+        wxTheApp->SetTopWindow(static_cast<wxWindow*>(window));
+}
+
+void wxsharp_call_after(long long token)
+{
+    if (wxTheApp)
+        wxTheApp->CallAfter([token]() { Fire(token, WXSHARP_EVT_CALL_AFTER); });
+}
+
+bool wxsharp_yield(bool only_if_needed)
+{
+    return wxTheApp && wxTheApp->Yield(only_if_needed);
 }
 
 int wxsharp_message_box(const char* message, const char* caption, int style)
@@ -121,10 +106,9 @@ void wxsharp_shutdown()
 {
     if (!g_initialized)
         return;
-    wxEventLoopBase::SetActive(nullptr);
-    delete g_loop;
-    g_loop = nullptr;
-    wxTheApp->OnExit();
+    g_event_cb = nullptr;
+    if (wxTheApp)
+        wxTheApp->OnExit();
     wxEntryCleanup();
     g_initialized = false;
 }

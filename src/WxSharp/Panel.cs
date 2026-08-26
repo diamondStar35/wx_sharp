@@ -1,13 +1,11 @@
 namespace WxSharp;
 
-/// <summary>A layout sub-container with its own horizontal or vertical sizer; controls created against it
-/// stack in that direction. Nest panels (a horizontal panel inside a vertical one, …) for richer layouts.</summary>
-public sealed class Panel : Container
+/// <summary>An explicit wxPanel child container.</summary>
+public class Panel : Window
 {
-    public Panel(Container parent, bool horizontal = false)
+    public Panel(Window parent, int id = WindowId.Any, Point? position = null, Size? size = null) : base(parent, id)
     {
-        var handle = NativeMethods.wxsharp_panel_create(parent.Panel, horizontal, Id);
-        AttachContainer(handle, handle); // the panel is its own content area
-        parent.Track(this);
+        Initialize(NativeMethods.wxsharp_panel_create(parent.Handle, id, Token));
+        ApplyInitialGeometry(position, size);
     }
 }

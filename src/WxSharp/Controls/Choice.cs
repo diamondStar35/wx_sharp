@@ -5,10 +5,14 @@ namespace WxSharp;
 /// <summary>A drop-down list of items; <see cref="SelectedIndex"/> is -1 when nothing is selected.</summary>
 public class Choice : Control
 {
-    public event Action? SelectionChanged;
+    public event EventHandler<CommandEventArgs>? SelectionChanged;
 
-    public Choice(Container parent, ChoiceStyle style = ChoiceStyle.Unsorted)
-        => Init(parent, NativeMethods.wxsharp_choice_create(parent.Panel, (int)style, Id));
+    public Choice(Window parent, int id = WindowId.Any, ChoiceStyle style = ChoiceStyle.Unsorted,
+        Point? position = null, Size? size = null) : base(parent, id)
+    {
+        Initialize(NativeMethods.wxsharp_choice_create(parent.Handle, id, (int)style, Token));
+        ApplyInitialGeometry(position, size);
+    }
 
     /// <summary>Appends an item to the end.</summary>
     public void Add(string item) => NativeMethods.wxsharp_choice_append(Handle, item);
@@ -50,9 +54,9 @@ public class Choice : Control
         return Utf8String.Decode(buffer, length);
     }
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        if (evt == EventKind.Select)
-            SelectionChanged?.Invoke();
+        if (e.Kind != EventKind.Select) return base.Dispatch(e);
+        return RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged);
     }
 }

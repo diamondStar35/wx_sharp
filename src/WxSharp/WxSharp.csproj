@@ -28,7 +28,7 @@
     <None Include="..\..\third-party\Windows\licence.txt"
           Pack="true"
           PackagePath="licenses\wxWidgets.txt" />
-    <None Include="$(WindowsNativeAssetsDir)\wxsharp.dll"
+    <None Include="$(WindowsNativeAssetsDir)\wx.dll"
           Condition="'$(WindowsNativeAssetsDir)' != ''"
           Pack="true"
           PackagePath="runtimes\win-x64\native\" />
@@ -47,8 +47,8 @@
           Condition="'$(IsPacking)' == 'true'">
     <Error Condition="'$(WindowsNativeAssetsDir)' == ''"
            Text="WindowsNativeAssetsDir must point to the staged win-x64 native directory when packing WxSharp." />
-    <Error Condition="!Exists('$(WindowsNativeAssetsDir)\wxsharp.dll')"
-           Text="Missing staged native shim: $(WindowsNativeAssetsDir)\wxsharp.dll" />
+    <Error Condition="!Exists('$(WindowsNativeAssetsDir)\wx.dll')"
+           Text="Missing staged native shim: $(WindowsNativeAssetsDir)\wx.dll" />
     <Error Condition="'@(WxBaseRuntime)' == ''"
            Text="Missing staged wxWidgets base DLL." />
     <Error Condition="'@(WxCoreRuntime)' == ''"

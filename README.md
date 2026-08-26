@@ -11,11 +11,13 @@ stable UTF-8 C ABI, while the public API remains idiomatic C#.
 ## Features
 
 - Source-generated P/Invoke without reflection-based marshalling
-- Windows, dialogs, common controls, sizers, clipboard, and file dialogs
-- Keyboard, mouse, focus, resize, and paint events
+- Native windows, dialogs, menus, toolbars, status bars, sizers, timers, and clipboard services
+- Common controls, notebook/splitter/scrolled containers, and list, tree, grid, and data-view controls
+- Strongly typed events plus Native AOT-safe `Bind`/`Unbind` with ID and ID-range filtering
+- A blocking native event loop with UI-thread marshaling through `Wx.CallAfter`
 - Native UTF-8 strings across the managed/native boundary
 - Native AOT compatibility
-- wxPython Phoenix-inspired accessibility metadata and notifications
+- Phoenix-inspired custom accessible children, navigation, hit testing, selection, focus, actions, and notifications
 
 ## Requirements
 
@@ -38,11 +40,12 @@ Run the complete Windows pipeline from PowerShell:
     -MsvcRoot D:\path\to\msvc
 ```
 
-This builds the native and managed libraries, stages runtime dependencies,
-runs native and managed smoke tests, creates a NuGet package, validates its
-contents, and tests it from an independent consumer project. Packages are
-written to `build/packages`. A native deployment containing the test
-executable, `wxsharp.dll`, and the two wxWidgets DLLs is written to
+This reuses the pinned wxWidgets binaries in `third-party/Windows`, builds the
+native wrapper and managed libraries, stages runtime dependencies, runs native
+and managed smoke tests, creates a NuGet package, validates its contents, and
+tests it from an independent consumer project. It does not rebuild wxWidgets.
+Packages are written to `build/packages`. A native deployment containing the test
+executable, `wx.dll`, and the two wxWidgets DLLs is written to
 `build/standalone-test/win-x64`.
 
 After wxWidgets has been built once, use the wrapper-only command during
@@ -53,8 +56,15 @@ native wrapper development:
     -MsvcRoot D:\path\to\msvc
 ```
 
-This recompiles and relinks only `WxSharp.Native`; it reuses the existing two
+This recompiles and relinks only `wx.dll`; it reuses the existing two
 wxWidgets DLLs.
+
+Rebuilding the pinned wxWidgets binaries is an explicit dependency-maintenance
+operation, not part of normal wrapper or packaging builds:
+
+```powershell
+.\scripts\build-wxwidgets-windows.ps1 -MsvcRoot D:\path\to\msvc
+```
 
 To build only the managed projects:
 
@@ -64,44 +74,46 @@ dotnet build WxSharp.slnx -c Release
 
 ## Usage
 
-WxSharp must be initialized and used from the UI thread. The host owns the
-event loop:
+Create one `App` on the UI thread, build an explicit window hierarchy, and
+enter its blocking event loop. wxWidgets handles waiting and message dispatch:
 
 ```csharp
 using WxSharp;
 
-if (!Wx.Init())
-    throw new InvalidOperationException("wxWidgets initialization failed.");
+using var app = new App();
 
-var running = true;
-var window = new Window("Hello from WxSharp");
-var button = new Button(window, "Close");
+var frame = new Frame(title: "Hello from WxSharp");
+var panel = new Panel(frame);
+var message = new StaticText(panel, label: "Hello!");
+var close = new Button(panel, label: "Close");
 
-button.Click += window.Close;
-window.Closed += () => running = false;
+var layout = new BoxSizer(Orientation.Vertical);
+layout.Add(message, flags: SizerFlags.All, border: 8);
+layout.Add(close, flags: SizerFlags.All, border: 8);
+panel.SetSizer(layout);
 
-window.Layout();
-window.Center();
-window.Show();
-
-while (running)
-{
-    Wx.Pump();
-    Wx.Wait(16);
-}
-
-Wx.Shutdown();
+close.Click += (_, _) => frame.Close();
+frame.Show();
+app.MainLoop();
 ```
 
-The Windows package includes `wxsharp.dll` and the wxWidgets `base` and `core`
+Controls are never inserted into hidden panels or implicit layouts. Create a
+`Panel` where one is wanted, add children to a sizer, and assign that sizer
+explicitly. All UI access stays on the `App` thread; `Wx.CallAfter` is the
+thread-safe way to schedule work from another thread.
+
+The Windows package includes `wx.dll` and the wxWidgets `base` and `core`
 DLLs as `win-x64` native runtime assets. Each is built with the MSVC runtime
 linked statically; Windows system DLLs remain operating-system dependencies.
 
 ## Accessibility
 
 Standard controls use wxWidgets' native accessibility implementation. On
-Windows, WxSharp also exposes Phoenix-compatible roles, states, metadata, and
-change notifications through wxWidgets' custom accessibility API.
+Windows, applications can attach an `Accessible` implementation to a window
+and override the Phoenix/wxAccessible contract for virtual children, roles,
+states, names, values, screen locations, hit testing, navigation, selection,
+focus, keyboard shortcuts, and default actions. Accessibility notifications
+are sent with `Accessible.Notify`.
 
 See [wxPython Phoenix parity](docs/phoenix-parity.md) for current behavior and
 known gaps.

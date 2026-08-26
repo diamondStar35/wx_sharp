@@ -17,7 +17,7 @@ try {
         'lib/net8.0/WxSharp.dll',
         'lib/net9.0/WxSharp.dll',
         'lib/net10.0/WxSharp.dll',
-        'runtimes/win-x64/native/wxsharp.dll',
+        'runtimes/win-x64/native/wx.dll',
         'licenses/wxWidgets.txt',
         'README.md'
     )
@@ -32,7 +32,7 @@ try {
     if ($wxBase.Count -ne 1 -or $wxCore.Count -ne 1) {
         throw 'Package must contain exactly one wxWidgets base DLL and one core DLL.'
     }
-    $expectedNative = @('runtimes/win-x64/native/wxsharp.dll', $wxBase[0], $wxCore[0])
+    $expectedNative = @('runtimes/win-x64/native/wx.dll', $wxBase[0], $wxCore[0])
 
     $unexpectedNative = @($entries | Where-Object {
         $_ -like 'runtimes/win-x64/native/*' -and $_ -notin $expectedNative

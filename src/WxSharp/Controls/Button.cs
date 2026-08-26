@@ -5,10 +5,13 @@ namespace WxSharp;
 /// <summary>A push button.</summary>
 public class Button : Control
 {
-    public event Action? Click;
+    public event EventHandler<CommandEventArgs>? Click;
 
-    public Button(Container parent, string label)
-        => Init(parent, NativeMethods.wxsharp_button_create(parent.Panel, label, Id));
+    public Button(Window parent, int id = WindowId.Any, string label = "", Point? position = null, Size? size = null) : base(parent, id)
+    {
+        Initialize(NativeMethods.wxsharp_button_create(parent.Handle, id, label, Token));
+        ApplyInitialGeometry(position, size);
+    }
 
     /// <summary>Makes this the default button, so pressing Enter activates it (e.g. a dialog's OK).</summary>
     public void SetDefault() => NativeMethods.wxsharp_button_set_default(Handle);
@@ -28,9 +31,9 @@ public class Button : Control
         set => NativeMethods.wxsharp_button_set_label(Handle, value);
     }
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        if (evt == EventKind.Click)
-            Click?.Invoke();
+        if (e.Kind != EventKind.Click) return base.Dispatch(e);
+        return RaiseCommand(new CommandEventArgs(this, e.Id), Click);
     }
 }

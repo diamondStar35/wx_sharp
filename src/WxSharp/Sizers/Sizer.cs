@@ -1,29 +1,57 @@
+using System;
+
 namespace WxSharp;
 
-/// <summary>Explicit layout for callers that want more than a container's default vertical stack. A sizer
-/// arranges items in one direction; each item is added with a <paramref name="proportion"/> (0 = fixed size,
-/// &gt;0 = share of the leftover space), optional expand/centre, and a border. Sizers nest, and a container
-/// adopts one through <see cref="Container.SetSizer"/>.</summary>
+public enum Orientation { Horizontal, Vertical }
+
+[Flags]
+public enum SizerFlags
+{
+    None = 0, Expand = 1, AlignCenter = 2,
+    BorderLeft = 4, BorderTop = 8, BorderRight = 16, BorderBottom = 32,
+    All = BorderLeft | BorderTop | BorderRight | BorderBottom,
+}
+
 public abstract class Sizer
 {
-    internal nint Handle { get; }
-
-    private protected Sizer(nint handle) => Handle = handle;
-
-    /// <summary>Adds a control. <paramref name="expand"/> stretches it across the sizer's cross axis;
-    /// <paramref name="center"/> centres it there; <paramref name="border"/> is the margin (in pixels) on all
-    /// sides.</summary>
-    public void Add(Control control, int proportion = 0, bool expand = false, bool center = false, int border = 0)
-        => NativeMethods.wxsharp_sizer_add_control(Handle, control.Handle, proportion, expand, center, border);
-
-    /// <summary>Nests another sizer inside this one (a row of controls within a column, …).</summary>
-    public void Add(Sizer child, int proportion = 0, bool expand = false, int border = 0)
-        => NativeMethods.wxsharp_sizer_add_sizer(Handle, child.Handle, proportion, expand, border);
-
-    /// <summary>Adds a fixed-size gap of <paramref name="size"/> pixels along the sizer's main axis.</summary>
-    public void AddSpacer(int size) => NativeMethods.wxsharp_sizer_add_spacer(Handle, size);
-
-    /// <summary>Adds a stretchable gap that grows to push items apart (e.g. a spacer before a right-aligned
-    /// button row).</summary>
-    public void AddStretchSpacer(int proportion = 1) => NativeMethods.wxsharp_sizer_add_stretch_spacer(Handle, proportion);
+    private readonly App _owner;
+    private readonly nint _handle;
+    internal nint Handle
+    {
+        get
+        {
+            var current = App.RequireCurrent();
+            ObjectDisposedException.ThrowIf(current != _owner, this);
+            return _handle;
+        }
+    }
+    private protected Sizer(nint handle)
+    {
+        _owner = App.RequireCurrent();
+        _handle = handle != 0 ? handle : throw new InvalidOperationException("wxWidgets failed to create the sizer.");
+    }
+    public void Add(Window window, int proportion = 0, SizerFlags flags = SizerFlags.None, int border = 0)
+    {
+        ArgumentNullException.ThrowIfNull(window); ValidateItem(proportion, border);
+        NativeMethods.wxsharp_sizer_add_control(Handle, window.Handle, proportion, (int)flags, border);
+    }
+    public void Add(Sizer child, int proportion = 0, SizerFlags flags = SizerFlags.None, int border = 0)
+    {
+        ArgumentNullException.ThrowIfNull(child); ValidateItem(proportion, border);
+        NativeMethods.wxsharp_sizer_add_sizer(Handle, child.Handle, proportion, (int)flags, border);
+    }
+    public void AddSpacer(int size)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(size); NativeMethods.wxsharp_sizer_add_spacer(Handle, size);
+    }
+    public void AddStretchSpacer(int proportion = 1)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(proportion);
+        NativeMethods.wxsharp_sizer_add_stretch_spacer(Handle, proportion);
+    }
+    private static void ValidateItem(int proportion, int border)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(proportion);
+        ArgumentOutOfRangeException.ThrowIfNegative(border);
+    }
 }

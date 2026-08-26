@@ -11,3 +11,10 @@ public readonly record struct Point(int X, int Y)
 {
     public override string ToString() => $"({X}, {Y})";
 }
+
+/// <summary>A rectangle in screen or client coordinates, as documented by the consuming API.</summary>
+public readonly record struct Rect(int X, int Y, int Width, int Height)
+{
+    public Point Position => new(X, Y);
+    public Size Size => new(Width, Height);
+}

@@ -1,13 +1,12 @@
 // Single-selection list box.
 #include "internal.h"
 
-wxsharp_handle wxsharp_listbox_create(wxsharp_handle parent, int style, int id)
+wxsharp_handle wxsharp_listbox_create(wxsharp_handle parent, int id, int style, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    auto* ctrl = new wxListBox(p, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, MapListBoxStyle(style));
-    ctrl->Bind(wxEVT_LISTBOX, [id](wxCommandEvent&) { Fire(id, WXSHARP_EVT_SELECT); });
-    BindCommon(ctrl, id);
-    AddToPanel(p, ctrl, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND);
+    auto* ctrl = new wxListBox(p, id, wxDefaultPosition, wxDefaultSize, 0, nullptr, MapListBoxStyle(style));
+    ctrl->Bind(wxEVT_LISTBOX, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

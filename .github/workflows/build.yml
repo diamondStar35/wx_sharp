@@ -34,10 +34,13 @@ jobs:
       - run: sh ./scripts/build-native.sh Release
       - run: ctest --test-dir build/native --output-on-failure
       - name: Run UTF-8 and lifecycle smoke test
-        run: xvfb-run -a dotnet run --project tests/WxSharp.Smoke/WxSharp.Smoke.csproj -c Release
+        run: |
+          xvfb-run -a dotnet run --project tests/WxSharp.Smoke/WxSharp.Smoke.csproj -c Release
+          xvfb-run -a dotnet run --project tests/WxSharp.Smoke/WxSharp.Smoke.csproj -c Release --no-build -- --callback-exception
+          xvfb-run -a dotnet run --project tests/WxSharp.Smoke/WxSharp.Smoke.csproj -c Release --no-build -- --init-false
         env:
           LD_LIBRARY_PATH: ${{ github.workspace }}/build/native
-          WXSHARP_NATIVE_LIBRARY: ${{ github.workspace }}/build/native/libwxsharp.so
+          WXSHARP_NATIVE_LIBRARY: ${{ github.workspace }}/build/native/libwx.so
 
   native-macos:
     runs-on: macos-latest
@@ -63,6 +66,14 @@ jobs:
           .\scripts\build-windows.ps1 `
             -Configuration Release `
             -PackageVersion "0.1.0-ci.${{ github.run_number }}"
+      - name: Publish and run Native AOT smoke test
+        shell: pwsh
+        run: |
+          dotnet publish tests/WxSharp.Smoke/WxSharp.Smoke.csproj `
+            -c Release -r win-x64 -p:PublishAot=true `
+            -o build/aot-smoke
+          Copy-Item build/stage/win-x64/native/*.dll build/aot-smoke
+          .\build\aot-smoke\WxSharp.Smoke.exe
       - name: Upload NuGet packages
         uses: actions/upload-artifact@v4
         with:

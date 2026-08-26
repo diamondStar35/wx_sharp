@@ -24,9 +24,9 @@ if (-not $OutputDirectory) {
 }
 
 $nativeOutput = Join-Path $BuildDirectory $Configuration
-$nativeLibrary = Join-Path $nativeOutput 'wxsharp.dll'
+$nativeLibrary = Join-Path $nativeOutput 'wx.dll'
 if (-not (Test-Path -LiteralPath $nativeLibrary -PathType Leaf)) {
-    $nativeLibrary = Join-Path $BuildDirectory 'wxsharp.dll'
+    $nativeLibrary = Join-Path $BuildDirectory 'wx.dll'
 }
 $assets = @($nativeLibrary)
 if ($WxWidgetsRuntimeDirectory) {

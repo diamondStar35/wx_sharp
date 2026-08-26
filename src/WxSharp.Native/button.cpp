@@ -1,13 +1,12 @@
 // Push button.
 #include "internal.h"
 
-wxsharp_handle wxsharp_button_create(wxsharp_handle parent, const char* label, int id)
+wxsharp_handle wxsharp_button_create(wxsharp_handle parent, int id, const char* label, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    auto* ctrl = new wxButton(p, wxID_ANY, Str(label));
-    ctrl->Bind(wxEVT_BUTTON, [id](wxCommandEvent&) { Fire(id, WXSHARP_EVT_CLICK); });
-    BindCommon(ctrl, id);
-    AddToPanel(p, ctrl, wxALL);
+    auto* ctrl = new wxButton(p, id, Str(label));
+    ctrl->Bind(wxEVT_BUTTON, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_CLICK, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

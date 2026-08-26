@@ -12,17 +12,25 @@ endif()
 
 # Prefer a package configuration, then fall back to CMake's FindwxWidgets
 # module for prebuilt archives and system installations.
-find_package(wxWidgets 3.0 CONFIG QUIET COMPONENTS core base)
+set(WXSHARP_WX_COMPONENTS core base)
+if(NOT WIN32)
+  # Date/time pickers and common dialogs are part of the separately linked adv library on Unix ports.
+  list(APPEND WXSHARP_WX_COMPONENTS adv)
+endif()
+find_package(wxWidgets 3.0 CONFIG QUIET COMPONENTS ${WXSHARP_WX_COMPONENTS})
 if(wxWidgets_FOUND)
   if(TARGET wx::core AND TARGET wx::base)
     set(WXSHARP_WX_TARGETS wx::core wx::base)
+    if(NOT WIN32 AND TARGET wx::adv)
+      list(APPEND WXSHARP_WX_TARGETS wx::adv)
+    endif()
   elseif(TARGET wxWidgets::wxWidgets)
     set(WXSHARP_WX_TARGETS wxWidgets::wxWidgets)
   else()
     message(FATAL_ERROR "The wxWidgets package was found but did not export supported CMake targets.")
   endif()
 else()
-  find_package(wxWidgets 3.0 REQUIRED MODULE COMPONENTS core base)
+  find_package(wxWidgets 3.0 REQUIRED MODULE COMPONENTS ${WXSHARP_WX_COMPONENTS})
   if(TARGET wxWidgets::wxWidgets)
     set(WXSHARP_WX_TARGETS wxWidgets::wxWidgets)
   else()
@@ -49,6 +57,8 @@ add_library(wxsharp SHARED
   listbox.cpp
   canvas.cpp
   layout.cpp
+  extras.cpp
+  chrome.cpp
   services.cpp)
 
 if(WIN32)
@@ -63,7 +73,7 @@ set_target_properties(wxsharp PROPERTIES
   CXX_EXTENSIONS OFF
   CXX_VISIBILITY_PRESET hidden
   VISIBILITY_INLINES_HIDDEN YES
-  OUTPUT_NAME wxsharp)
+  OUTPUT_NAME "wx")
 
 if(MSVC)
   if(WXSHARP_STATIC_MSVC_RUNTIME)

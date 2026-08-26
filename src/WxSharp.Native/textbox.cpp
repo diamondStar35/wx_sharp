@@ -1,29 +1,19 @@
 // Single- or multi-line text field. Single-line boxes process Enter so it raises a TextEnter event.
 #include "internal.h"
 
-wxsharp_handle wxsharp_textbox_create(wxsharp_handle parent, const char* value, bool fill, int style, int id)
+wxsharp_handle wxsharp_textbox_create(wxsharp_handle parent, int id, const char* value, int style, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    // Start from the caller's requested style; fill implies a multi-line box that owns the window, otherwise a
-    // single-line box that raises TextEnter on Enter (so multi-line boxes keep Enter for newlines).
     long flags = MapTextBoxStyle(style);
-    if (fill)
-        flags |= wxTE_MULTILINE;
-    else
+    if (!(flags & wxTE_MULTILINE))
         flags |= wxTE_PROCESS_ENTER;
-    // fill: size to the parent's client area and stay out of any sizer, so it covers the window with no
-    // relayout (an inline prompt that owns the frame); otherwise stack normally in the parent's sizer.
-    wxTextCtrl* ctrl = fill
-        ? new wxTextCtrl(p, wxID_ANY, Str(value), wxPoint(0, 0), p->GetClientSize(), flags)
-        : new wxTextCtrl(p, wxID_ANY, Str(value), wxDefaultPosition, wxDefaultSize, flags);
-    ctrl->Bind(wxEVT_TEXT, [id](wxCommandEvent&) { Fire(id, WXSHARP_EVT_TEXT); });
+    auto* ctrl = new wxTextCtrl(p, id, Str(value), wxDefaultPosition, wxDefaultSize, flags);
+    ctrl->Bind(wxEVT_TEXT, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     // wxEVT_TEXT_ENTER only fires (and may only be bound) when the control processes Enter; binding it without
     // wxTE_PROCESS_ENTER trips a wx assert, so gate the bind on the flag.
     if (flags & wxTE_PROCESS_ENTER)
-        ctrl->Bind(wxEVT_TEXT_ENTER, [id](wxCommandEvent& e) { Fire(id, WXSHARP_EVT_TEXT_ENTER); e.Skip(); });
-    BindCommon(ctrl, id);
-    if (!fill)
-        AddToPanel(p, ctrl, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND);
+        ctrl->Bind(wxEVT_TEXT_ENTER, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT_ENTER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
+    BindCommon(ctrl, token);
     return ctrl;
 }
 

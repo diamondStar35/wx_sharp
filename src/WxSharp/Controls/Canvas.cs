@@ -13,31 +13,35 @@ namespace WxSharp;
 public class Canvas : Control
 {
     /// <summary>Raised when the canvas must repaint. Issue draw calls from the handler.</summary>
-    public event Action? Paint;
+    public event EventHandler<PaintEventArgs>? Paint;
 
     /// <summary>Raised when the canvas is resized (a good moment to re-lay-out drawn content).</summary>
-    public event Action? Resized;
+    public event EventHandler<SizeEventArgs>? Resized;
 
-    /// <summary>Creates a canvas. <paramref name="fill"/> true makes it cover the parent window at (0,0)
-    /// (outside any sizer) - a full-window visual layer; resize it via <see cref="Control.Size"/> to follow the
-    /// window. Otherwise it takes the given size and stacks in the parent's layout.</summary>
-    public Canvas(Container parent, int width, int height, bool fill = false)
-        => Init(parent, NativeMethods.wxsharp_canvas_create(parent.Panel, width, height, fill, Id));
+    /// <summary>Creates a canvas at an optional position and size. Add it to a sizer for managed layout.</summary>
+    public Canvas(Window parent, int id = WindowId.Any, Point? position = null, Size? size = null) : base(parent, id)
+    {
+        var initialSize = size ?? new Size(100, 100);
+        Initialize(NativeMethods.wxsharp_canvas_create(parent.Handle, id, initialSize.Width, initialSize.Height, Token));
+        ApplyInitialGeometry(position, null);
+    }
 
     // ---- Draw state (valid during a Paint handler) -------------------------------------------------------
 
     /// <summary>Clears the whole surface to <paramref name="color"/>.</summary>
-    public void Clear(Color color) => NativeMethods.wxsharp_canvas_clear(Handle, color.ToArgb());
+    public void Clear(Colour color) => NativeMethods.wxsharp_canvas_clear(Handle, color.ToArgb());
 
     /// <summary>Sets the fill colour for subsequent shapes. A colour with alpha 0 fills nothing (no fill).</summary>
-    public void SetBrush(Color color) => NativeMethods.wxsharp_canvas_set_brush(Handle, color.ToArgb());
+    public void SetBrush(Colour color) => NativeMethods.wxsharp_canvas_set_brush(Handle, color.ToArgb());
+    public void SetBrush(Brush brush) => SetBrush(brush.Colour);
 
     /// <summary>Sets the outline colour and width for subsequent shapes and lines. A colour with alpha 0 draws
     /// no outline.</summary>
-    public void SetPen(Color color, int width = 1) => NativeMethods.wxsharp_canvas_set_pen(Handle, color.ToArgb(), width);
+    public void SetPen(Colour color, int width = 1) => NativeMethods.wxsharp_canvas_set_pen(Handle, color.ToArgb(), width);
+    public void SetPen(Pen pen) => SetPen(pen.Colour, pen.Width);
 
     /// <summary>Sets the colour for subsequent <see cref="DrawText"/> calls.</summary>
-    public void SetTextColor(Color color) => NativeMethods.wxsharp_canvas_set_text_colour(Handle, color.ToArgb());
+    public void SetTextColour(Colour color) => NativeMethods.wxsharp_canvas_set_text_colour(Handle, color.ToArgb());
 
     /// <summary>Overrides the font for subsequent <see cref="DrawText"/> calls during this paint. For layout
     /// that must match, set the control font with <see cref="Control.SetFont"/> as well - that is the font
@@ -74,12 +78,13 @@ public class Canvas : Control
         return new Size(w, h);
     }
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        switch (evt)
+        switch (e.Kind)
         {
-            case EventKind.Paint: Paint?.Invoke(); break;
-            case EventKind.Resize: Resized?.Invoke(); break;
+            case EventKind.Paint: return Raise(new PaintEventArgs(this, e.Id), Paint);
+            case EventKind.Resize: return Raise(new SizeEventArgs(this, e), Resized);
+            default: return base.Dispatch(e);
         }
     }
 }

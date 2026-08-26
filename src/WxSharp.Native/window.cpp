@@ -1,86 +1,60 @@
-// Top-level window (wxFrame) with a vertical content panel.
+// Top-level frame. Content and layout are explicit.
 #include "internal.h"
 
-wxsharp_handle wxsharp_window_create(const char* title, int width, int height, int id, bool with_panel)
+wxsharp_handle wxsharp_window_create(wxsharp_handle parent, int id, const char* title,
+                                     int x, int y, int width, int height, long long token)
 {
-    auto* frame = new wxFrame(nullptr, wxID_ANY, Str(title), wxDefaultPosition, wxSize(width, height));
-    if (with_panel)
-        SetupContentPanel(frame);
-    else
-        SetupBareContent(frame);
-    frame->Center();
-    BindKeyHook(frame, id);
-
-    // Lifecycle events the app can hook (the events do their normal processing too, via Skip).
-    frame->Bind(wxEVT_SHOW, [id](wxShowEvent& e)
+    auto* frame = new wxFrame(static_cast<wxWindow*>(parent), id, Str(title), wxPoint(x, y), wxSize(width, height));
+    BindCommon(frame, token);
+    BindKeyHook(frame, token);
+    frame->Bind(wxEVT_SHOW, [token](wxShowEvent& e)
     {
-        if (e.IsShown())
-            Fire(id, WXSHARP_EVT_SHOWN);
+        if (e.IsShown()) Fire(token, WXSHARP_EVT_SHOWN, e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0, true);
         e.Skip();
     });
-    frame->Bind(wxEVT_ACTIVATE, [id](wxActivateEvent& e)
+    frame->Bind(wxEVT_ACTIVATE, [token](wxActivateEvent& e)
     {
-        Fire(id, e.GetActive() ? WXSHARP_EVT_ACTIVATE : WXSHARP_EVT_DEACTIVATE);
+        Fire(token, e.GetActive() ? WXSHARP_EVT_ACTIVATE : WXSHARP_EVT_DEACTIVATE,
+             e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0, e.GetActive());
         e.Skip();
     });
-    frame->Bind(wxEVT_SIZE, [id](wxSizeEvent& e)
+    frame->Bind(wxEVT_SIZE, [token](wxSizeEvent& e)
     {
-        Fire(id, WXSHARP_EVT_RESIZE);
+        const wxSize size = e.GetSize();
+        Fire(token, WXSHARP_EVT_RESIZE, e.GetId(), 0, 0, size.x, size.y);
         e.Skip();
     });
-    frame->Bind(wxEVT_MOVE, [id](wxMoveEvent& e)
+    frame->Bind(wxEVT_MOVE, [token](wxMoveEvent& e)
     {
-        Fire(id, WXSHARP_EVT_MOVE);
+        const wxPoint position = e.GetPosition();
+        Fire(token, WXSHARP_EVT_MOVE, e.GetId(), position.x, position.y);
         e.Skip();
     });
-    frame->Bind(wxEVT_MAXIMIZE, [id](wxMaximizeEvent& e)
+    frame->Bind(wxEVT_MAXIMIZE, [token](wxMaximizeEvent& e) { Fire(token, WXSHARP_EVT_MAXIMIZE, e.GetId()); e.Skip(); });
+    frame->Bind(wxEVT_CLOSE_WINDOW, [token](wxCloseEvent& e)
     {
-        Fire(id, WXSHARP_EVT_MAXIMIZE);
-        e.Skip();
+        const unsigned int result = Fire(token, WXSHARP_EVT_CLOSE, e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0,
+                                         false, e.CanVeto());
+        if ((result & WXSHARP_EVENT_CANCEL) && e.CanVeto()) e.Veto(); else e.Skip();
     });
-    frame->Bind(wxEVT_CLOSE_WINDOW, [id](wxCloseEvent& e)
+    frame->Bind(wxEVT_MENU, [token](wxCommandEvent& e)
     {
-        Fire(id, WXSHARP_EVT_CLOSE);
-        if (auto* f = wxDynamicCast(e.GetEventObject(), wxFrame))
-            f->Destroy();
+        if (!(Fire(token, WXSHARP_EVT_MENU, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip();
     });
     return frame;
 }
 
-wxsharp_handle wxsharp_window_panel(wxsharp_handle window)
+void wxsharp_window_show(wxsharp_handle window, bool show) { static_cast<wxFrame*>(window)->Show(show); }
+void wxsharp_window_set_title(wxsharp_handle window, const char* title) { static_cast<wxFrame*>(window)->SetTitle(Str(title)); }
+int wxsharp_window_get_title(wxsharp_handle window, char* buffer, int buffer_length)
 {
-    return ContentPanel(static_cast<wxWindow*>(window));
+    return CopyToBuffer(static_cast<wxFrame*>(window)->GetTitle(), buffer, buffer_length);
 }
-
-void wxsharp_window_show(wxsharp_handle window, bool show)
-{
-    auto* frame = static_cast<wxFrame*>(window);
-    frame->Show(show);
-    if (show)
-    {
-        // Bring it forward and focus the first control, so the user can tab/type without clicking first.
-        frame->Raise();
-        FocusFirst(frame);
-    }
-}
-
-void wxsharp_window_set_title(wxsharp_handle window, const char* title)
-{
-    static_cast<wxFrame*>(window)->SetTitle(Str(title));
-}
-
-void wxsharp_window_layout(wxsharp_handle window) { static_cast<wxFrame*>(window)->Layout(); }
 void wxsharp_window_center(wxsharp_handle window) { static_cast<wxFrame*>(window)->Center(); }
 void wxsharp_window_close(wxsharp_handle window) { static_cast<wxFrame*>(window)->Close(); }
 void wxsharp_window_destroy(wxsharp_handle window) { static_cast<wxFrame*>(window)->Destroy(); }
-
 void wxsharp_window_set_fullscreen(wxsharp_handle window, bool fullscreen)
 {
-    // wxFULLSCREEN_ALL drops the caption, borders, tool/status bars and any menu bar - true borderless.
     static_cast<wxFrame*>(window)->ShowFullScreen(fullscreen, wxFULLSCREEN_ALL);
 }
-
-void* wxsharp_window_native_handle(wxsharp_handle window)
-{
-    return static_cast<wxFrame*>(window)->GetHandle();
-}
+void* wxsharp_window_native_handle(wxsharp_handle window) { return static_cast<wxFrame*>(window)->GetHandle(); }

@@ -16,8 +16,9 @@ public class CustomSlider : Slider
     /// <summary>How far the Page Up/Down keys move the value.</summary>
     public int PageStep { get; set; } = 10;
 
-    public CustomSlider(Container parent, int min, int max, int value, SliderStyle style = SliderStyle.Horizontal)
-        : base(parent, min, max, value, style)
+    public CustomSlider(Window parent, int id = WindowId.Any, int value = 0, int minValue = 0, int maxValue = 100,
+        SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null)
+        : base(parent, id, value, minValue, maxValue, style, position, size)
     {
     }
 
@@ -29,7 +30,9 @@ public class CustomSlider : Slider
         set
         {
             base.Value = Math.Clamp(value, Minimum, Maximum);
-            OnValueChanged();
+            var args = new CommandEventArgs(this, Id);
+            OnValueChanged(args);
+            _ = PropagateCommand(args);
         }
     }
 

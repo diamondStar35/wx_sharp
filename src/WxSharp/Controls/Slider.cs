@@ -9,10 +9,14 @@ namespace WxSharp;
 public class Slider : Control
 {
     /// <summary>Raised when the value changes.</summary>
-    public event Action? ValueChanged;
+    public event EventHandler<CommandEventArgs>? ValueChanged;
 
-    public Slider(Container parent, int min, int max, int value, SliderStyle style = SliderStyle.Horizontal)
-        => Init(parent, NativeMethods.wxsharp_slider_create(parent.Panel, min, max, value, (int)style, Id));
+    public Slider(Window parent, int id = WindowId.Any, int value = 0, int minValue = 0, int maxValue = 100,
+        SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null) : base(parent, id)
+    {
+        Initialize(NativeMethods.wxsharp_slider_create(parent.Handle, id, minValue, maxValue, value, (int)style, Token));
+        ApplyInitialGeometry(position, size);
+    }
 
     public virtual int Value
     {
@@ -28,11 +32,12 @@ public class Slider : Control
 
     /// <summary>Raises <see cref="ValueChanged"/>. A custom slider calls this after a programmatic change so it
     /// notifies like a user change would.</summary>
-    protected virtual void OnValueChanged() => ValueChanged?.Invoke();
+    protected virtual void OnValueChanged(CommandEventArgs e) => ValueChanged?.Invoke(this, e);
 
-    private protected override void OnEvent(EventKind evt)
+    internal override uint Dispatch(in NativeEvent e)
     {
-        if (evt == EventKind.Slider)
-            OnValueChanged();
+        if (e.Kind != EventKind.Slider) return base.Dispatch(e);
+        var args = new CommandEventArgs(this, e.Id); OnValueChanged(args);
+        return PropagateCommand(args);
     }
 }

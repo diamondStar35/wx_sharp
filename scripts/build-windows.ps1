@@ -12,43 +12,40 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $nativeBuildDirectory = Join-Path $repositoryRoot 'build\native-shared-x64'
-$wxSourceDirectory = Join-Path $repositoryRoot 'build\dependencies\source'
-$wxLibraryDirectory = Join-Path $repositoryRoot 'build\dependencies\wx-shared-static-crt-x64\lib\vc_x64_dll'
 $stageDirectory = Join-Path $repositoryRoot 'build\stage\win-x64\native'
 $standaloneDirectory = Join-Path $repositoryRoot 'build\standalone-test\win-x64'
 $packageDirectory = Join-Path $repositoryRoot 'build\packages'
 $packageSmokeDirectory = Join-Path $repositoryRoot 'build\package-smoke'
 $packageSmokePackages = Join-Path $packageSmokeDirectory 'packages'
-$nativeLibrary = Join-Path $stageDirectory 'wxsharp.dll'
+$nativeLibrary = Join-Path $stageDirectory 'wx.dll'
 $packagePath = Join-Path $packageDirectory "WxSharp.$PackageVersion.nupkg"
 $originalPath = $env:PATH
 $originalNativeLibrary = $env:WXSHARP_NATIVE_LIBRARY
+$vendoredWxDlls = @(
+    (Join-Path $repositoryRoot 'third-party\Windows\lib\vc_x64_dll\wxbase333u_vc_x64.dll'),
+    (Join-Path $repositoryRoot 'third-party\Windows\lib\vc_x64_dll\wxmsw333u_core_vc_x64.dll')
+)
+$vendoredWxHashes = @{}
+foreach ($vendoredDll in $vendoredWxDlls) {
+    if (-not (Test-Path -LiteralPath $vendoredDll -PathType Leaf)) { throw "Missing vendored wxWidgets runtime: $vendoredDll" }
+    $vendoredWxHashes[$vendoredDll] = (Get-FileHash -LiteralPath $vendoredDll -Algorithm SHA256).Hash
+}
 
 try {
-    . (Join-Path $PSScriptRoot 'build-wxwidgets-windows.ps1') -MsvcRoot $MsvcRoot
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-    & (Join-Path $PSScriptRoot 'build-native.ps1') `
+    # Normal development and packaging reuse the pinned wxWidgets binaries in third-party\Windows. Rebuilding
+    # wxWidgets is an explicit maintenance operation handled only by build-wxwidgets-windows.ps1.
+    & (Join-Path $PSScriptRoot 'build-wrapper-windows.ps1') `
         -Configuration $Configuration `
-        -Architecture x64 `
-        -Generator 'NMake Makefiles' `
-        -BuildDirectory $nativeBuildDirectory `
-        -WxWidgetsRoot $wxSourceDirectory `
-        -WxWidgetsLibDir $wxLibraryDirectory `
-        -SharedWxWidgets `
-        -StaticMsvcRuntime
+        -MsvcRoot $MsvcRoot
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-    & (Join-Path $PSScriptRoot 'stage-windows.ps1') `
-        -Configuration $Configuration `
-        -Architecture x64 `
-        -BuildDirectory $nativeBuildDirectory `
-        -OutputDirectory $stageDirectory `
-        -WxWidgetsRuntimeDirectory $wxLibraryDirectory
+    foreach ($vendoredDll in $vendoredWxDlls) {
+        $currentHash = (Get-FileHash -LiteralPath $vendoredDll -Algorithm SHA256).Hash
+        if ($currentHash -ne $vendoredWxHashes[$vendoredDll]) {
+            throw "The normal Windows pipeline modified a vendored wxWidgets DLL: $vendoredDll"
+        }
+    }
 
     $env:PATH = "$stageDirectory;$originalPath"
-    & ctest --test-dir $nativeBuildDirectory -C $Configuration --output-on-failure
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     if (Test-Path -LiteralPath $standaloneDirectory) {
         [System.IO.Directory]::Delete($standaloneDirectory, $true)
@@ -73,6 +70,12 @@ try {
 
     $env:WXSHARP_NATIVE_LIBRARY = $nativeLibrary
     & dotnet run --project (Join-Path $repositoryRoot 'tests\WxSharp.Smoke\WxSharp.Smoke.csproj') -c $Configuration
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & dotnet run --project (Join-Path $repositoryRoot 'tests\WxSharp.Smoke\WxSharp.Smoke.csproj') `
+        -c $Configuration --no-build -- --callback-exception
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & dotnet run --project (Join-Path $repositoryRoot 'tests\WxSharp.Smoke\WxSharp.Smoke.csproj') `
+        -c $Configuration --no-build -- --init-false
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
