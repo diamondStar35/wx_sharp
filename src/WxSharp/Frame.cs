@@ -5,21 +5,75 @@ namespace WxSharp;
 /// <summary>A native top-level wxFrame.</summary>
 public class Frame : Window
 {
-    public event EventHandler<CloseEventArgs>? Closing;
-    public event EventHandler<WxEventArgs>? Shown;
-    public event EventHandler<ActivateEventArgs>? Activated;
-    public event EventHandler<ActivateEventArgs>? Deactivated;
-    public event EventHandler<SizeEventArgs>? Resized;
-    public event EventHandler<MoveEventArgs>? Moved;
-    public event EventHandler<WxEventArgs>? Maximized;
-    public event EventHandler<CommandEventArgs>? MenuCommand;
+    public event EventHandler<CloseEventArgs> Closing
+    {
+        add => AddHandler(WxEvents.Closing, value);
+        remove => RemoveHandler(WxEvents.Closing, value);
+    }
+
+    public event EventHandler<ShowEventArgs> Shown
+    {
+        add => AddHandler(WxEvents.Shown, value);
+        remove => RemoveHandler(WxEvents.Shown, value);
+    }
+
+    /// <summary>Raised when the frame becomes, or stops being, the active window. Check
+    /// <see cref="ActivateEventArgs.Active"/> for which.</summary>
+    public event EventHandler<ActivateEventArgs> Activated
+    {
+        add => AddHandler(WxEvents.Activated, value);
+        remove => RemoveHandler(WxEvents.Activated, value);
+    }
+
+    public event EventHandler<WxEventArgs> Maximized
+    {
+        add => AddHandler(WxEvents.Maximized, value);
+        remove => RemoveHandler(WxEvents.Maximized, value);
+    }
+
+    public event EventHandler<ActivateEventArgs> Iconized
+    {
+        add => AddHandler(WxEvents.Iconized, value);
+        remove => RemoveHandler(WxEvents.Iconized, value);
+    }
+
+    /// <summary>A menu item or accelerator was chosen. Filter by command ID with
+    /// <see cref="Window.Bind{T}"/> when one handler should not see every command.</summary>
+    public event EventHandler<CommandEventArgs> MenuCommand
+    {
+        add => AddHandler(WxEvents.MenuCommand, value);
+        remove => RemoveHandler(WxEvents.MenuCommand, value);
+    }
+
+    /// <summary>A menu is about to open. The moment to rebuild anything dynamic in it - a recent-files
+    /// list, say - because it happens before the user sees the menu.</summary>
+    public event EventHandler<MenuEventArgs> MenuOpened
+    {
+        add => AddHandler(WxEvents.MenuOpened, value);
+        remove => RemoveHandler(WxEvents.MenuOpened, value);
+    }
+
+    public event EventHandler<MenuEventArgs> MenuClosed
+    {
+        add => AddHandler(WxEvents.MenuClosed, value);
+        remove => RemoveHandler(WxEvents.MenuClosed, value);
+    }
+
+    /// <summary>An item is highlighted as the user moves through a menu. wxWidgets already puts the item's
+    /// help string in the status bar; handle this to do something else with it.</summary>
+    public event EventHandler<MenuEventArgs> MenuHighlighted
+    {
+        add => AddHandler(WxEvents.MenuHighlighted, value);
+        remove => RemoveHandler(WxEvents.MenuHighlighted, value);
+    }
 
     public Frame(Window? parent = null, int id = WindowId.Any, string title = "",
-        Point? position = null, Size? size = null) : base(parent, id)
+        Point? position = null, Size? size = null, FrameStyle style = FrameStyle.Default) : base(parent, id)
     {
         var p = position ?? new Point(-1, -1);
         var s = size ?? new Size(-1, -1);
-        Initialize(NativeMethods.wxsharp_window_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width, s.Height, Token));
+        Initialize(NativeMethods.wxsharp_window_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width, s.Height,
+            (int)style, Token));
         if (App.Current!.TopWindow is null) App.Current.TopWindow = this;
     }
 
@@ -32,42 +86,23 @@ public class Frame : Window
     public void Center() { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_center(Handle); }
     public void SetFullScreen(bool fullScreen) { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_fullscreen(Handle, fullScreen); }
     public void Close() { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_close(Handle); }
+
+    /// <summary>Installs a menu bar. The frame takes ownership of <paramref name="menuBar"/>.</summary>
     public void SetMenuBar(MenuBar menuBar)
     {
         ArgumentNullException.ThrowIfNull(menuBar); OwnerApp.VerifyAccess();
         NativeMethods.wxsharp_frame_set_menubar(Handle, menuBar.TransferOwnership());
     }
+
     public void SetIcon(Icon icon) => NativeMethods.wxsharp_frame_set_icon(Handle,
         icon?.Handle ?? throw new ArgumentNullException(nameof(icon)));
-    public unsafe void SetAccelerators(params Accelerator[] accelerators)
-    {
-        ArgumentNullException.ThrowIfNull(accelerators);
-        var native = new NativeAccelerator[accelerators.Length];
-        for (var i = 0; i < native.Length; ++i)
-            native[i] = new NativeAccelerator
-            {
-                Modifiers = (int)accelerators[i].Modifiers,
-                KeyCode = accelerators[i].KeyCode,
-                CommandId = accelerators[i].CommandId
-            };
-        fixed (NativeAccelerator* entries = native) NativeMethods.wxsharp_frame_set_accelerators(Handle, entries, native.Length);
-    }
 
-    internal override uint Dispatch(in NativeEvent e)
+    /// <summary>Sends update-UI events to every item in the menu bar. wxWidgets already does this whenever
+    /// a menu is about to open, so this is only for refreshing without waiting. Follows
+    /// <c>wxFrame.DoMenuUpdates</c>.</summary>
+    public void DoMenuUpdates()
     {
-        switch (e.Kind)
-        {
-            case EventKind.Close:
-                var close = new CloseEventArgs(this, e.Id, e.CanVeto != 0); Closing?.Invoke(this, close);
-                return (close.Handled ? 1u : 0u) | (close.Cancel ? 2u : 0u);
-            case EventKind.Shown: return Raise(new WxEventArgs(this, e.Id), Shown);
-            case EventKind.Activate: return Raise(new ActivateEventArgs(this, e), Activated);
-            case EventKind.Deactivate: return Raise(new ActivateEventArgs(this, e), Deactivated);
-            case EventKind.Resize: return Raise(new SizeEventArgs(this, e), Resized);
-            case EventKind.Move: return Raise(new MoveEventArgs(this, e), Moved);
-            case EventKind.Maximize: return Raise(new WxEventArgs(this, e.Id), Maximized);
-            case EventKind.Menu: return RaiseCommand(new CommandEventArgs(this, e.Id), MenuCommand);
-            default: return base.Dispatch(e);
-        }
+        OwnerApp.VerifyAccess();
+        NativeMethods.wxsharp_frame_update_menus(Handle);
     }
 }

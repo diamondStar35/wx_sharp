@@ -30,25 +30,15 @@ namespace
 {
     template<typename T> T* Common(T* control, long long token)
     {
-        BindCommon(control, token);
+        TrackWindow(control, token);
         return control;
     }
 
-    wxTreeItemId TreeId(long long value)
-    {
-        return wxTreeItemId(reinterpret_cast<void*>(static_cast<intptr_t>(value)));
-    }
-
-    long long TreeValue(const wxTreeItemId& value)
-    {
-        return static_cast<long long>(reinterpret_cast<intptr_t>(value.GetID()));
-    }
 }
 
 wxsharp_handle wxsharp_togglebutton_create(wxsharp_handle parent, int id, const char* label, long long token)
 {
     auto* control = Common(new wxToggleButton(static_cast<wxWindow*>(parent), id, Str(label)), token);
-    control->Bind(wxEVT_TOGGLEBUTTON, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TOGGLE, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 bool wxsharp_togglebutton_get(wxsharp_handle ctrl) { return static_cast<wxToggleButton*>(ctrl)->GetValue(); }
@@ -71,7 +61,6 @@ wxsharp_handle wxsharp_spinctrl_create(wxsharp_handle parent, int id, int minVal
 {
     auto* control = Common(new wxSpinCtrl(static_cast<wxWindow*>(parent), id, wxEmptyString,
         wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, minValue, maxValue, value), token);
-    control->Bind(wxEVT_SPINCTRL, [token](wxSpinEvent& e) { if (!(Fire(token, WXSHARP_EVT_SLIDER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 int wxsharp_spinctrl_get(wxsharp_handle ctrl) { return static_cast<wxSpinCtrl*>(ctrl)->GetValue(); }
@@ -82,14 +71,17 @@ wxsharp_handle wxsharp_combobox_create(wxsharp_handle parent, int id, const char
 {
     auto* control = Common(new wxComboBox(static_cast<wxWindow*>(parent), id, Str(value), wxDefaultPosition,
         wxDefaultSize, 0, nullptr, readOnly ? wxCB_READONLY : 0), token);
-    control->Bind(wxEVT_COMBOBOX, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    control->Bind(wxEVT_TEXT, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 int wxsharp_combobox_get_value(wxsharp_handle ctrl, char* buffer, int length) { return CopyToBuffer(static_cast<wxComboBox*>(ctrl)->GetValue(), buffer, length); }
 void wxsharp_combobox_set_value(wxsharp_handle ctrl, const char* value) { static_cast<wxComboBox*>(ctrl)->SetValue(Str(value)); }
 void wxsharp_combobox_append(wxsharp_handle ctrl, const char* value) { static_cast<wxComboBox*>(ctrl)->Append(Str(value)); }
+void wxsharp_combobox_insert(wxsharp_handle ctrl, const char* value, int index) { static_cast<wxComboBox*>(ctrl)->Insert(Str(value), index); }
+void wxsharp_combobox_delete(wxsharp_handle ctrl, int index) { static_cast<wxComboBox*>(ctrl)->Delete(index); }
 void wxsharp_combobox_clear(wxsharp_handle ctrl) { static_cast<wxComboBox*>(ctrl)->Clear(); }
+int wxsharp_combobox_get_string(wxsharp_handle ctrl, int index, char* buffer, int buffer_length) { return CopyToBuffer(static_cast<wxComboBox*>(ctrl)->GetString(index), buffer, buffer_length); }
+void wxsharp_combobox_set_string(wxsharp_handle ctrl, int index, const char* text) { static_cast<wxComboBox*>(ctrl)->SetString(index, Str(text)); }
+int wxsharp_combobox_find_string(wxsharp_handle ctrl, const char* text) { return static_cast<wxComboBox*>(ctrl)->FindString(Str(text)); }
 int wxsharp_combobox_count(wxsharp_handle ctrl) { return static_cast<int>(static_cast<wxComboBox*>(ctrl)->GetCount()); }
 int wxsharp_combobox_get_selection(wxsharp_handle ctrl) { return static_cast<wxComboBox*>(ctrl)->GetSelection(); }
 void wxsharp_combobox_set_selection(wxsharp_handle ctrl, int value) { static_cast<wxComboBox*>(ctrl)->SetSelection(value); }
@@ -97,8 +89,6 @@ void wxsharp_combobox_set_selection(wxsharp_handle ctrl, int value) { static_cas
 wxsharp_handle wxsharp_searchctrl_create(wxsharp_handle parent, int id, const char* value, long long token)
 {
     auto* control = Common(new wxSearchCtrl(static_cast<wxWindow*>(parent), id, Str(value)), token);
-    control->Bind(wxEVT_TEXT, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    control->Bind(wxEVT_SEARCHCTRL_SEARCH_BTN, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT_ENTER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 int wxsharp_searchctrl_get_value(wxsharp_handle ctrl, char* buffer, int length) { return CopyToBuffer(static_cast<wxSearchCtrl*>(ctrl)->GetValue(), buffer, length); }
@@ -109,8 +99,6 @@ void wxsharp_searchctrl_show_search(wxsharp_handle ctrl, bool show) { static_cas
 wxsharp_handle wxsharp_checklistbox_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxCheckListBox(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_CHECKLISTBOX, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TOGGLE, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    control->Bind(wxEVT_LISTBOX, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 void wxsharp_checklistbox_append(wxsharp_handle ctrl, const char* value) { static_cast<wxCheckListBox*>(ctrl)->Append(Str(value)); }
@@ -125,7 +113,6 @@ wxsharp_handle wxsharp_radiobox_create(wxsharp_handle parent, int id, const char
     for (int i = 0; i < count; ++i) items.Add(Str(choices[i]));
     auto* control = Common(new wxRadioBox(static_cast<wxWindow*>(parent), id, Str(label), wxDefaultPosition,
         wxDefaultSize, items, columns > 0 ? columns : 1, wxRA_SPECIFY_COLS), token);
-    control->Bind(wxEVT_RADIOBOX, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 int wxsharp_radiobox_get_selection(wxsharp_handle ctrl) { return static_cast<wxRadioBox*>(ctrl)->GetSelection(); }
@@ -143,7 +130,6 @@ wxsharp_handle wxsharp_spinctrldouble_create(wxsharp_handle parent, int id, doub
 {
     auto* control = Common(new wxSpinCtrlDouble(static_cast<wxWindow*>(parent), id, wxEmptyString,
         wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, minValue, maxValue, value, increment), token);
-    control->Bind(wxEVT_SPINCTRLDOUBLE, [token](wxSpinDoubleEvent& e) { if (!(Fire(token, WXSHARP_EVT_SLIDER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 double wxsharp_spinctrldouble_get(wxsharp_handle ctrl) { return static_cast<wxSpinCtrlDouble*>(ctrl)->GetValue(); }
@@ -152,7 +138,6 @@ wxsharp_handle wxsharp_scrollbar_create(wxsharp_handle parent, int id, bool vert
 {
     auto* control = Common(new wxScrollBar(static_cast<wxWindow*>(parent), id, wxDefaultPosition,
         wxDefaultSize, vertical ? wxSB_VERTICAL : wxSB_HORIZONTAL), token);
-    control->Bind(wxEVT_SCROLL_THUMBTRACK, [token](wxScrollEvent& e) { if (!(Fire(token, WXSHARP_EVT_SLIDER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 void wxsharp_scrollbar_set(wxsharp_handle ctrl, int position, int thumbSize, int range, int pageSize) { static_cast<wxScrollBar*>(ctrl)->SetScrollbar(position, thumbSize, range, pageSize); }
@@ -160,7 +145,6 @@ int wxsharp_scrollbar_get_position(wxsharp_handle ctrl) { return static_cast<wxS
 wxsharp_handle wxsharp_hyperlink_create(wxsharp_handle parent, int id, const char* label, const char* url, long long token)
 {
     auto* control = Common(new wxHyperlinkCtrl(static_cast<wxWindow*>(parent), id, Str(label), Str(url)), token);
-    control->Bind(wxEVT_HYPERLINK, [token](wxHyperlinkEvent& e) { if (!(Fire(token, WXSHARP_EVT_CLICK, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 int wxsharp_hyperlink_get_url(wxsharp_handle ctrl, char* buffer, int length) { return CopyToBuffer(static_cast<wxHyperlinkCtrl*>(ctrl)->GetURL(), buffer, length); }
@@ -168,13 +152,11 @@ void wxsharp_hyperlink_set_url(wxsharp_handle ctrl, const char* url) { static_ca
 wxsharp_handle wxsharp_datepicker_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxDatePickerCtrl(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_DATE_CHANGED, [token](wxDateEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 wxsharp_handle wxsharp_timepicker_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxTimePickerCtrl(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_TIME_CHANGED, [token](wxDateEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 void wxsharp_datetime_get(wxsharp_handle ctrl, int* year, int* month, int* day, int* hour, int* minute, int* second)
@@ -194,7 +176,11 @@ void wxsharp_datetime_set(wxsharp_handle ctrl, int year, int month, int day, int
     else static_cast<wxTimePickerCtrl*>(ctrl)->SetValue(value);
 }
 
-wxsharp_handle wxsharp_scrolled_create(wxsharp_handle parent, int id, long long token) { return Common(new wxScrolledWindow(static_cast<wxWindow*>(parent), id), token); }
+wxsharp_handle wxsharp_scrolled_create(wxsharp_handle parent, int id, int style, long long token)
+{
+    return Common(new wxScrolledWindow(static_cast<wxWindow*>(parent), id, wxDefaultPosition, wxDefaultSize,
+                                       MapScrolledStyle(style)), token);
+}
 void wxsharp_scrolled_set_rate(wxsharp_handle ctrl, int x, int y) { static_cast<wxScrolledWindow*>(ctrl)->SetScrollRate(x, y); }
 void wxsharp_scrolled_scroll(wxsharp_handle ctrl, int x, int y) { static_cast<wxScrolledWindow*>(ctrl)->Scroll(x, y); }
 void wxsharp_scrolled_get_view_start(wxsharp_handle ctrl, int* x, int* y) { static_cast<wxScrolledWindow*>(ctrl)->GetViewStart(x, y); }
@@ -219,7 +205,6 @@ void wxsharp_splitter_set_position(wxsharp_handle ctrl, int position) { static_c
 wxsharp_handle wxsharp_notebook_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxNotebook(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [token](wxBookCtrlEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId(), e.GetOldSelection(), e.GetSelection()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 bool wxsharp_notebook_add_page(wxsharp_handle ctrl, wxsharp_handle page, const char* text, bool select) { return static_cast<wxBookCtrlBase*>(ctrl)->AddPage(static_cast<wxWindow*>(page), Str(text), select); }
@@ -232,15 +217,60 @@ bool wxsharp_notebook_set_page_text(wxsharp_handle ctrl, int page, const char* t
 wxsharp_handle wxsharp_simplebook_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxSimplebook(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_BOOKCTRL_PAGE_CHANGED, [token](wxBookCtrlEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId(), e.GetOldSelection(), e.GetSelection()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 
-wxsharp_handle wxsharp_listctrl_create(wxsharp_handle parent, int id, long long token)
+wxsharp_handle wxsharp_listctrl_create(wxsharp_handle parent, int id, int style, long long token)
 {
-    auto* control = Common(new wxListCtrl(static_cast<wxWindow*>(parent), id, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), token);
-    control->Bind(wxEVT_LIST_ITEM_SELECTED, [token](wxListEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId(), static_cast<int>(e.GetIndex())) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    return control;
+    return Common(new wxListCtrl(static_cast<wxWindow*>(parent), id, wxDefaultPosition, wxDefaultSize,
+                                 MapListCtrlStyle(style)), token);
+}
+
+int wxsharp_listctrl_column_count(wxsharp_handle ctrl) { return static_cast<wxListCtrl*>(ctrl)->GetColumnCount(); }
+bool wxsharp_listctrl_delete_column(wxsharp_handle ctrl, int column) { return static_cast<wxListCtrl*>(ctrl)->DeleteColumn(column); }
+void wxsharp_listctrl_clear_columns(wxsharp_handle ctrl) { static_cast<wxListCtrl*>(ctrl)->DeleteAllColumns(); }
+int wxsharp_listctrl_get_column_width(wxsharp_handle ctrl, int column) { return static_cast<wxListCtrl*>(ctrl)->GetColumnWidth(column); }
+
+// A negative width auto-sizes: -1 to the widest cell, -2 to the header.
+bool wxsharp_listctrl_set_column_width(wxsharp_handle ctrl, int column, int width)
+{
+    const int resolved = width == -1 ? wxLIST_AUTOSIZE : width == -2 ? wxLIST_AUTOSIZE_USEHEADER : width;
+    return static_cast<wxListCtrl*>(ctrl)->SetColumnWidth(column, resolved);
+}
+
+int wxsharp_listctrl_get_column_heading(wxsharp_handle ctrl, int column, char* buffer, int buffer_length)
+{
+    wxListItem item;
+    item.SetMask(wxLIST_MASK_TEXT);
+    if (!static_cast<wxListCtrl*>(ctrl)->GetColumn(column, item))
+        return CopyToBuffer(wxString(), buffer, buffer_length);
+    return CopyToBuffer(item.GetText(), buffer, buffer_length);
+}
+
+bool wxsharp_listctrl_set_column_heading(wxsharp_handle ctrl, int column, const char* heading)
+{
+    auto* list = static_cast<wxListCtrl*>(ctrl);
+    wxListItem item;
+    item.SetMask(wxLIST_MASK_TEXT);
+    if (!list->GetColumn(column, item))
+        return false;
+    item.SetText(Str(heading));
+    return list->SetColumn(column, item);
+}
+
+void wxsharp_listctrl_ensure_visible(wxsharp_handle ctrl, long long item) { static_cast<wxListCtrl*>(ctrl)->EnsureVisible(static_cast<long>(item)); }
+long long wxsharp_listctrl_get_focused(wxsharp_handle ctrl) { return static_cast<wxListCtrl*>(ctrl)->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED); }
+
+// Focus is what a screen reader follows, and it is separate from selection.
+void wxsharp_listctrl_set_focused(wxsharp_handle ctrl, long long item)
+{
+    static_cast<wxListCtrl*>(ctrl)->SetItemState(static_cast<long>(item), wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
+}
+
+int wxsharp_listctrl_selected_count(wxsharp_handle ctrl) { return static_cast<wxListCtrl*>(ctrl)->GetSelectedItemCount(); }
+long long wxsharp_listctrl_next_selected(wxsharp_handle ctrl, long long after)
+{
+    return static_cast<wxListCtrl*>(ctrl)->GetNextItem(static_cast<long>(after), wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 }
 int wxsharp_listctrl_insert_column(wxsharp_handle ctrl, int column, const char* heading, int width) { return static_cast<int>(static_cast<wxListCtrl*>(ctrl)->InsertColumn(column, Str(heading), wxLIST_FORMAT_LEFT, width)); }
 long long wxsharp_listctrl_insert_item(wxsharp_handle ctrl, long long index, const char* text) { return static_cast<wxListCtrl*>(ctrl)->InsertItem(static_cast<long>(index), Str(text)); }
@@ -252,12 +282,27 @@ void wxsharp_listctrl_clear(wxsharp_handle ctrl) { static_cast<wxListCtrl*>(ctrl
 void wxsharp_listctrl_select(wxsharp_handle ctrl, long long item, bool select) { static_cast<wxListCtrl*>(ctrl)->SetItemState(static_cast<long>(item), select ? wxLIST_STATE_SELECTED : 0, wxLIST_STATE_SELECTED); }
 bool wxsharp_listctrl_is_selected(wxsharp_handle ctrl, long long item) { return (static_cast<wxListCtrl*>(ctrl)->GetItemState(static_cast<long>(item), wxLIST_STATE_SELECTED) & wxLIST_STATE_SELECTED) != 0; }
 
-wxsharp_handle wxsharp_treectrl_create(wxsharp_handle parent, int id, long long token)
+wxsharp_handle wxsharp_treectrl_create(wxsharp_handle parent, int id, int style, long long token)
 {
-    auto* control = Common(new wxTreeCtrl(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_TREE_SEL_CHANGED, [token](wxTreeEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    return control;
+    return Common(new wxTreeCtrl(static_cast<wxWindow*>(parent), id, wxDefaultPosition, wxDefaultSize,
+                                 MapTreeCtrlStyle(style)), token);
 }
+
+void wxsharp_tree_unselect(wxsharp_handle ctrl) { static_cast<wxTreeCtrl*>(ctrl)->UnselectAll(); }
+long long wxsharp_tree_get_root(wxsharp_handle ctrl) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetRootItem()); }
+long long wxsharp_tree_get_parent(wxsharp_handle ctrl, long long item) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetItemParent(TreeId(item))); }
+
+long long wxsharp_tree_get_first_child(wxsharp_handle ctrl, long long item)
+{
+    wxTreeItemIdValue cookie;
+    return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetFirstChild(TreeId(item), cookie));
+}
+
+long long wxsharp_tree_get_next_sibling(wxsharp_handle ctrl, long long item) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetNextSibling(TreeId(item))); }
+long long wxsharp_tree_get_prev_sibling(wxsharp_handle ctrl, long long item) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetPrevSibling(TreeId(item))); }
+int wxsharp_tree_child_count(wxsharp_handle ctrl, long long item, bool recursive) { return static_cast<int>(static_cast<wxTreeCtrl*>(ctrl)->GetChildrenCount(TreeId(item), recursive)); }
+void wxsharp_tree_ensure_visible(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->EnsureVisible(TreeId(item)); }
+long long wxsharp_tree_insert(wxsharp_handle ctrl, long long parent, int position, const char* text) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->InsertItem(TreeId(parent), static_cast<size_t>(position), Str(text))); }
 long long wxsharp_tree_add_root(wxsharp_handle ctrl, const char* text) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->AddRoot(Str(text))); }
 long long wxsharp_tree_append(wxsharp_handle ctrl, long long parent, const char* text) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->AppendItem(TreeId(parent), Str(text))); }
 void wxsharp_tree_delete(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->Delete(TreeId(item)); }
@@ -289,10 +334,6 @@ void wxsharp_grid_set_column_label(wxsharp_handle ctrl, int column, const char* 
 wxsharp_handle wxsharp_dataviewlist_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxDataViewListCtrl(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_DATAVIEW_SELECTION_CHANGED, [token](wxDataViewEvent& e)
-    {
-        if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip();
-    });
     return control;
 }
 void wxsharp_dataviewlist_append_text_column(wxsharp_handle ctrl, const char* label, int width, bool editable)
@@ -330,18 +371,9 @@ void wxsharp_dataviewlist_set_selection(wxsharp_handle ctrl, int row)
     auto* view = static_cast<wxDataViewListCtrl*>(ctrl); view->Select(view->RowToItem(static_cast<unsigned int>(row)));
 }
 
-namespace
-{
-    wxDataViewItem DataViewId(long long value) { return wxDataViewItem(reinterpret_cast<void*>(static_cast<intptr_t>(value))); }
-    long long DataViewValue(const wxDataViewItem& value) { return static_cast<long long>(reinterpret_cast<intptr_t>(value.GetID())); }
-}
 wxsharp_handle wxsharp_dataviewtree_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxDataViewTreeCtrl(static_cast<wxWindow*>(parent), id), token);
-    control->Bind(wxEVT_DATAVIEW_SELECTION_CHANGED, [token](wxDataViewEvent& e)
-    {
-        if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip();
-    });
     return control;
 }
 long long wxsharp_dataviewtree_append_container(wxsharp_handle ctrl, long long parent, const char* text) { return DataViewValue(static_cast<wxDataViewTreeCtrl*>(ctrl)->AppendContainer(DataViewId(parent), Str(text))); }
@@ -359,7 +391,7 @@ namespace
     {
     public:
         WxSharpTimer(int id, long long token) : wxTimer(nullptr, id), m_token(token) {}
-        void Notify() override { Fire(m_token, WXSHARP_EVT_TIMER, GetId()); }
+        void Notify() override { Fire(m_token, WXSHARP_EV_TIMER, GetId()); }
     private:
         long long m_token;
     };
@@ -395,7 +427,6 @@ void wxsharp_staticbitmap_set(wxsharp_handle ctrl, wxsharp_handle bitmap) { stat
 wxsharp_handle wxsharp_bitmapbutton_create(wxsharp_handle parent, int id, wxsharp_handle bitmap, long long token)
 {
     auto* control = Common(new wxBitmapButton(static_cast<wxWindow*>(parent), id, *static_cast<wxBitmap*>(bitmap)), token);
-    control->Bind(wxEVT_BUTTON, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_CLICK, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
     return control;
 }
 wxsharp_handle wxsharp_icon_load(const char* path)

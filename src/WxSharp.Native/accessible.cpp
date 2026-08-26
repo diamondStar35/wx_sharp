@@ -16,57 +16,45 @@ namespace
         long long token = 0;
 
         wxString name, description, help, value, keyboardShortcut, defaultAction;
-        wxAccRole role = wxROLE_NONE;
-        long state = 0;
-        bool hasRole = false;
-        bool hasState = false;
 
         wxAccStatus GetName(int childId, wxString* out) override
         {
             if (token && QueryString(2, childId, out) != wxACC_NOT_IMPLEMENTED) return lastStatus;
-            if (childId == 0 && !name.IsEmpty()) { *out = name; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED; // fall back to wx's default (the window name)
         }
         wxAccStatus GetRole(int childId, wxAccRole* out) override
         {
             if (token) { wxsharp_accessible_request q = Request(8, childId); lastStatus = Query(q); if (lastStatus != wxACC_NOT_IMPLEMENTED) { *out = static_cast<wxAccRole>(q.int_value); return lastStatus; } }
-            if (childId == 0 && hasRole) { *out = role; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
         wxAccStatus GetDescription(int childId, wxString* out) override
         {
             if (token && QueryString(3, childId, out) != wxACC_NOT_IMPLEMENTED) return lastStatus;
-            if (childId == 0 && !description.IsEmpty()) { *out = description; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
         wxAccStatus GetHelpText(int childId, wxString* out) override
         {
             if (token && QueryString(4, childId, out) != wxACC_NOT_IMPLEMENTED) return lastStatus;
-            if (childId == 0 && !help.IsEmpty()) { *out = help; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
         wxAccStatus GetValue(int childId, wxString* out) override
         {
             if (token && QueryString(5, childId, out) != wxACC_NOT_IMPLEMENTED) return lastStatus;
-            if (childId == 0 && !value.IsEmpty()) { *out = value; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
         wxAccStatus GetKeyboardShortcut(int childId, wxString* out) override
         {
             if (token && QueryString(6, childId, out) != wxACC_NOT_IMPLEMENTED) return lastStatus;
-            if (childId == 0 && !keyboardShortcut.IsEmpty()) { *out = keyboardShortcut; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
         wxAccStatus GetDefaultAction(int childId, wxString* out) override
         {
             if (token && QueryString(7, childId, out) != wxACC_NOT_IMPLEMENTED) return lastStatus;
-            if (childId == 0 && !defaultAction.IsEmpty()) { *out = defaultAction; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
         wxAccStatus GetState(int childId, long* out) override
         {
             if (token) { wxsharp_accessible_request q = Request(9, childId); lastStatus = Query(q); if (lastStatus != wxACC_NOT_IMPLEMENTED) { *out = static_cast<long>(q.uint_value); return lastStatus; } }
-            if (childId == 0 && hasState) { *out = state; return wxACC_OK; }
             return wxACC_NOT_IMPLEMENTED;
         }
 
@@ -197,90 +185,29 @@ bool wxsharp_custom_accessibility_available()
 #endif
 }
 
-// The window name is what wx's default accessible reports; set it too so the name works even when the full
-// accessibility framework is compiled out.
+// wxWindow::SetName, and nothing more. wxWidgets attaches no wxAccessible to a control by default, and
+// that is what lets the platform's own provider report a check box's or button's label - so creating one
+// here would quietly change how every named control is announced. An accessible that already exists is
+// kept in step; one is never created.
 void wxsharp_control_set_name(wxsharp_handle ctrl, const char* name)
 {
-    static_cast<wxWindow*>(ctrl)->SetName(Str(name));
+    auto* window = static_cast<wxWindow*>(ctrl);
+    window->SetName(Str(name));
 #if wxUSE_ACCESSIBILITY
-    Ensure(ctrl)->name = Str(name);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_NAMECHANGE);
+    if (auto* existing = dynamic_cast<WxSharpAccessible*>(window->GetAccessible()))
+    {
+        existing->name = Str(name);
+        Notify(window, wxACC_EVENT_OBJECT_NAMECHANGE);
+    }
 #endif
 }
 
-void wxsharp_control_set_role(wxsharp_handle ctrl, int role)
-{
-#if wxUSE_ACCESSIBILITY
-    auto* acc = Ensure(ctrl);
-    acc->hasRole = role != 0;
-    acc->role = MapRole(role);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_STATECHANGE);
-#else
-    (void)ctrl; (void)role;
-#endif
-}
 
-void wxsharp_control_set_description(wxsharp_handle ctrl, const char* text)
-{
-#if wxUSE_ACCESSIBILITY
-    Ensure(ctrl)->description = Str(text);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_DESCRIPTIONCHANGE);
-#else
-    (void)ctrl; (void)text;
-#endif
-}
 
-void wxsharp_control_set_help(wxsharp_handle ctrl, const char* text)
-{
-#if wxUSE_ACCESSIBILITY
-    Ensure(ctrl)->help = Str(text);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_HELPCHANGE);
-#else
-    (void)ctrl; (void)text;
-#endif
-}
 
-void wxsharp_control_set_accessible_value(wxsharp_handle ctrl, const char* text)
-{
-#if wxUSE_ACCESSIBILITY
-    Ensure(ctrl)->value = Str(text);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_VALUECHANGE);
-#else
-    (void)ctrl; (void)text;
-#endif
-}
 
-void wxsharp_control_set_accessible_keyboard_shortcut(wxsharp_handle ctrl, const char* text)
-{
-#if wxUSE_ACCESSIBILITY
-    Ensure(ctrl)->keyboardShortcut = Str(text);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_ACCELERATORCHANGE);
-#else
-    (void)ctrl; (void)text;
-#endif
-}
 
-void wxsharp_control_set_accessible_default_action(wxsharp_handle ctrl, const char* text)
-{
-#if wxUSE_ACCESSIBILITY
-    Ensure(ctrl)->defaultAction = Str(text);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_DEFACTIONCHANGE);
-#else
-    (void)ctrl; (void)text;
-#endif
-}
 
-void wxsharp_control_set_accessible_state(wxsharp_handle ctrl, unsigned int state)
-{
-#if wxUSE_ACCESSIBILITY
-    auto* acc = Ensure(ctrl);
-    acc->hasState = true;
-    acc->state = static_cast<long>(state);
-    Notify(static_cast<wxWindow*>(ctrl), wxACC_EVENT_OBJECT_STATECHANGE);
-#else
-    (void)ctrl; (void)state;
-#endif
-}
 
 void wxsharp_control_set_accessible(wxsharp_handle ctrl, long long token)
 {

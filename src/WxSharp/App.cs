@@ -146,14 +146,16 @@ public class App : IDisposable
         NativeMethods.wxsharp_exit_main_loop();
     }
 
+    // The single entry point from native code. Events reach exactly the window they were raised on;
+    // wxWidgets, not this method, walks the parent chain for command events that go unhandled.
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
     private static unsafe uint Dispatch(NativeEvent* native)
     {
         var app = Current;
-        if (app is null || native is null || native->Version != 1) return 0;
+        if (app is null || native is null || native->Version != NativeEvent.ExpectedVersion) return 0;
         try
         {
-            if (native->Kind == EventKind.CallAfter)
+            if (native->Kind == EventId.CallAfter)
             {
                 Action? action = null;
                 lock (DeferredActions)
@@ -162,23 +164,16 @@ public class App : IDisposable
                 return 0;
             }
             if (!Windows.TryGetValue(native->Token, out var window)) return 0;
-            var boundResult = window.DispatchBindings(in *native);
-            var result = native->Kind == EventKind.Destroyed || boundResult == 0
-                ? boundResult | window.Dispatch(in *native)
-                : boundResult;
-            if (result == 0 && IsCommandEvent(native->Kind))
-                for (var parent = window.Parent; parent is not null && result == 0; parent = parent.Parent)
-                    result = parent.DispatchBindings(in *native, window);
+            var result = window.Dispatch(in *native);
+            // Destruction is reported whether or not anything subscribed: it is what retires the managed
+            // wrapper, and it must happen after any handler has had its last look at the window.
+            if (native->Kind == EventId.Destroy) window.InvalidateFromNative();
             return result;
         }
         catch (Exception ex) { app.RecordCallbackException(ex); return 1; }
     }
 
     private void RunOnExit() { if (!_onExitCalled) { _onExitCalled = true; _ = OnExit(); } }
-
-    private static bool IsCommandEvent(EventKind kind) => kind is EventKind.Click or EventKind.Text or
-        EventKind.Toggle or EventKind.Select or EventKind.Slider or EventKind.TextEnter or EventKind.Menu or
-        EventKind.Timer;
 
     private void Shutdown()
     {

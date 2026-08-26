@@ -6,8 +6,7 @@ wxsharp_handle wxsharp_radio_create(wxsharp_handle parent, int id, const char* l
     auto* p = static_cast<wxWindow*>(parent);
     auto* ctrl = new wxRadioButton(p, id, Str(label), wxDefaultPosition, wxDefaultSize,
                                    group_start ? wxRB_GROUP : 0);
-    ctrl->Bind(wxEVT_RADIOBUTTON, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_SELECT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    BindCommon(ctrl, token);
+    TrackWindow(ctrl, token);
     return ctrl;
 }
 

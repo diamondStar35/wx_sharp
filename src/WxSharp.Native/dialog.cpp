@@ -2,18 +2,28 @@
 #include "internal.h"
 
 wxsharp_handle wxsharp_dialog_create(wxsharp_handle parent, int id, const char* title,
-                                     int x, int y, int width, int height, long long token)
+                                     int x, int y, int width, int height, int style, long long token)
 {
-    auto* dlg = new wxDialog(static_cast<wxWindow*>(parent), id, Str(title), wxPoint(x, y), wxSize(width, height));
-    BindCommon(dlg, token);
-    BindKeyHook(dlg, token);
-    dlg->Bind(wxEVT_CLOSE_WINDOW, [token](wxCloseEvent& e)
-    {
-        const unsigned int result = Fire(token, WXSHARP_EVT_CLOSE, e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0,
-                                         false, e.CanVeto());
-        if ((result & WXSHARP_EVENT_CANCEL) && e.CanVeto()) e.Veto(); else e.Skip();
-    });
+    auto* dlg = new wxDialog(static_cast<wxWindow*>(parent), id, Str(title), wxPoint(x, y),
+                             wxSize(width, height), MapDialogStyle(style));
+    TrackWindow(dlg, token);
     return dlg;
+}
+
+// The platform's own button row: wx decides the order, the spacing, and which button is default, which is
+// also what determines the order a screen reader reads them in.
+wxsharp_handle wxsharp_dialog_create_button_sizer(wxsharp_handle dialog, int flags)
+{
+    long buttons = 0;
+    if (flags & 1)   buttons |= wxOK;
+    if (flags & 2)   buttons |= wxCANCEL;
+    if (flags & 4)   buttons |= wxYES;
+    if (flags & 8)   buttons |= wxNO;
+    if (flags & 16)  buttons |= wxAPPLY;
+    if (flags & 32)  buttons |= wxCLOSE;
+    if (flags & 64)  buttons |= wxHELP;
+    if (flags & 128) buttons |= wxNO_DEFAULT;
+    return static_cast<wxDialog*>(dialog)->CreateButtonSizer(buttons);
 }
 
 void wxsharp_dialog_set_escape_id(wxsharp_handle dialog, int id) { static_cast<wxDialog*>(dialog)->SetEscapeId(id); }

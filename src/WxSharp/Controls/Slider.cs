@@ -9,7 +9,18 @@ namespace WxSharp;
 public class Slider : Control
 {
     /// <summary>Raised when the value changes.</summary>
-    public event EventHandler<CommandEventArgs>? ValueChanged;
+    public event EventHandler<CommandEventArgs> ValueChanged
+    {
+        add => AddHandler(WxEvents.SliderChanged, value);
+        remove => RemoveHandler(WxEvents.SliderChanged, value);
+    }
+
+    /// <summary>Dragging finished. Seek on this rather than on every ValueChanged when the work is expensive - a media seek, for instance - so scrubbing stays responsive.</summary>
+    public event EventHandler<ScrollEventArgs> ThumbReleased
+    {
+        add => AddHandler(WxEvents.ScrollThumbReleased, value);
+        remove => RemoveHandler(WxEvents.ScrollThumbReleased, value);
+    }
 
     public Slider(Window parent, int id = WindowId.Any, int value = 0, int minValue = 0, int maxValue = 100,
         SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null) : base(parent, id)
@@ -30,14 +41,20 @@ public class Slider : Control
     /// <summary>Changes the range; the current value is clamped into it by the control.</summary>
     public void SetRange(int min, int max) => NativeMethods.wxsharp_slider_set_range(Handle, min, max);
 
-    /// <summary>Raises <see cref="ValueChanged"/>. A custom slider calls this after a programmatic change so it
-    /// notifies like a user change would.</summary>
-    protected virtual void OnValueChanged(CommandEventArgs e) => ValueChanged?.Invoke(this, e);
-
-    internal override uint Dispatch(in NativeEvent e)
+    /// <summary>Raises <see cref="ValueChanged"/> for the current value as though the user had moved the
+    /// slider. A native slider says nothing when its value is set in code, so a subclass that wants a
+    /// programmatic change announced calls this.</summary>
+    protected void NotifyValueChanged()
     {
-        if (e.Kind != EventKind.Slider) return base.Dispatch(e);
-        var args = new CommandEventArgs(this, e.Id); OnValueChanged(args);
-        return PropagateCommand(args);
+        var current = Value;
+        var synthesised = new NativeEvent
+        {
+            Version = NativeEvent.ExpectedVersion,
+            Kind = EventId.Slider,
+            Id = Id,
+            IntValue = current,
+            Selection = current,
+        };
+        _ = RaiseLocal(in synthesised);
     }
 }

@@ -6,10 +6,23 @@ namespace WxSharp;
 public static class WindowId { public const int Any = -1; }
 
 /// <summary>Common base for every native wx window, container, and control.</summary>
+///
+/// <remarks>
+/// There is one event path. The typed <c>event</c> members on this class and on every control are shorthand
+/// for <see cref="Bind{TEventArgs}"/>, and both end up in the same per-event subscriber list. An event type
+/// is hooked natively the first time something subscribes to it on this window and unhooked when the last
+/// subscriber goes away, so an event nothing is listening for never crosses the boundary.
+///
+/// Handling and propagation are wxWidgets'. An event is handled - and so stops - unless a handler calls
+/// <see cref="WxEventArgs.Skip"/>; a skipped command event then travels up the real parent chain, so binding
+/// <see cref="WxEvents.ButtonClicked"/> on a frame catches its buttons, exactly as in Phoenix. The wrapper
+/// does not re-dispatch events to parents itself, and treats every event the same way.
+/// </remarks>
 public abstract class Window : IDisposable
 {
     private readonly List<Window> _children = new();
-    private readonly List<BindingEntry> _bindings = new();
+    private readonly Dictionary<int, List<Subscription>> _subscriptions = new();
+    private readonly Dictionary<int, EventArgsFactory> _factories = new();
     private long _nextBindingToken;
     private nint _handle;
     private bool _destroyed;
@@ -19,62 +32,301 @@ public abstract class Window : IDisposable
     public int Id { get; private set; }
     public Window? Parent { get; }
 
-    public event EventHandler<WxEventArgs>? Destroyed;
-    public event EventHandler<WxEventArgs>? GotFocus;
-    public event EventHandler<WxEventArgs>? LostFocus;
-    public event EventHandler<KeyEventArgs>? KeyDown;
-    public event EventHandler<KeyEventArgs>? KeyUp;
-    public event EventHandler<MouseEventArgs>? MouseDown;
-    public event EventHandler<MouseEventArgs>? MouseUp;
-    public event EventHandler<MouseEventArgs>? RightClick;
-    public event EventHandler<MouseEventArgs>? DoubleClick;
-    public event EventHandler<MouseEventArgs>? MouseEnter;
-    public event EventHandler<MouseEventArgs>? MouseLeave;
-    public event EventHandler<MouseEventArgs>? MouseMove;
-    public event EventHandler<MouseEventArgs>? MouseWheel;
-    public event EventHandler<CommandEventArgs>? Command;
     internal event Action? Invalidated;
 
-    public Accessible? Accessible
+    // ---- Events shared by every window ---------------------------------------------------------------
+
+    /// <summary>Raised when the native window has been destroyed. The wrapper object is unusable afterwards.</summary>
+    public event EventHandler<WxEventArgs> Destroyed
     {
-        get => _accessible;
-        set
-        {
-            Verify();
-            if (!Wx.SupportsCustomAccessibility && value is not null)
-                throw new PlatformNotSupportedException("Custom wxAccessible objects are unavailable on this platform.");
-            _accessible?.Detach(this);
-            _accessible = value;
-            value?.Attach(this);
-            NativeMethods.wxsharp_control_set_accessible(_handle, value?.Token ?? 0);
-        }
+        add => AddHandler(WxEvents.Destroyed, value);
+        remove => RemoveHandler(WxEvents.Destroyed, value);
     }
 
+    public event EventHandler<WxEventArgs> GotFocus
+    {
+        add => AddHandler(WxEvents.GotFocus, value);
+        remove => RemoveHandler(WxEvents.GotFocus, value);
+    }
+
+    public event EventHandler<WxEventArgs> LostFocus
+    {
+        add => AddHandler(WxEvents.LostFocus, value);
+        remove => RemoveHandler(WxEvents.LostFocus, value);
+    }
+
+    /// <summary>A key pressed while this control has focus. For an application-wide shortcut that must beat
+    /// the focused control, use <see cref="CharHook"/> on the top-level window instead.</summary>
+    public event EventHandler<KeyEventArgs> KeyDown
+    {
+        add => AddHandler(WxEvents.KeyDown, value);
+        remove => RemoveHandler(WxEvents.KeyDown, value);
+    }
+
+    public event EventHandler<KeyEventArgs> KeyUp
+    {
+        add => AddHandler(WxEvents.KeyUp, value);
+        remove => RemoveHandler(WxEvents.KeyUp, value);
+    }
+
+    /// <summary>Every key reaching this top-level window, before the focused control sees it. The key is
+    /// consumed unless the handler calls <see cref="WxEventArgs.Skip"/>.</summary>
+    public event EventHandler<KeyEventArgs> CharHook
+    {
+        add => AddHandler(WxEvents.CharHook, value);
+        remove => RemoveHandler(WxEvents.CharHook, value);
+    }
+
+    /// <summary>The character a key produces, after the platform has translated it.</summary>
+    public event EventHandler<KeyEventArgs> Char
+    {
+        add => AddHandler(WxEvents.Char, value);
+        remove => RemoveHandler(WxEvents.Char, value);
+    }
+
+    public event EventHandler<MouseEventArgs> MouseDown
+    {
+        add => AddHandler(WxEvents.MouseDown, value);
+        remove => RemoveHandler(WxEvents.MouseDown, value);
+    }
+
+    public event EventHandler<MouseEventArgs> MouseUp
+    {
+        add => AddHandler(WxEvents.MouseUp, value);
+        remove => RemoveHandler(WxEvents.MouseUp, value);
+    }
+
+    public event EventHandler<MouseEventArgs> RightClick
+    {
+        add => AddHandler(WxEvents.RightDown, value);
+        remove => RemoveHandler(WxEvents.RightDown, value);
+    }
+
+    public event EventHandler<MouseEventArgs> DoubleClick
+    {
+        add => AddHandler(WxEvents.DoubleClicked, value);
+        remove => RemoveHandler(WxEvents.DoubleClicked, value);
+    }
+
+    public event EventHandler<MouseEventArgs> MouseEnter
+    {
+        add => AddHandler(WxEvents.MouseEntered, value);
+        remove => RemoveHandler(WxEvents.MouseEntered, value);
+    }
+
+    public event EventHandler<MouseEventArgs> MouseLeave
+    {
+        add => AddHandler(WxEvents.MouseLeft, value);
+        remove => RemoveHandler(WxEvents.MouseLeft, value);
+    }
+
+    public event EventHandler<MouseEventArgs> MouseMove
+    {
+        add => AddHandler(WxEvents.MouseMoved, value);
+        remove => RemoveHandler(WxEvents.MouseMoved, value);
+    }
+
+    public event EventHandler<MouseEventArgs> MouseWheel
+    {
+        add => AddHandler(WxEvents.MouseWheel, value);
+        remove => RemoveHandler(WxEvents.MouseWheel, value);
+    }
+
+    /// <summary>A context menu was requested here, by right-click or by the keyboard's menu key. Show one
+    /// with <see cref="PopupMenu"/>.</summary>
+    public event EventHandler<ContextMenuEventArgs> ContextMenu
+    {
+        add => AddHandler(WxEvents.ContextMenu, value);
+        remove => RemoveHandler(WxEvents.ContextMenu, value);
+    }
+
+    public event EventHandler<SizeEventArgs> Resized
+    {
+        add => AddHandler(WxEvents.SizeChanged, value);
+        remove => RemoveHandler(WxEvents.SizeChanged, value);
+    }
+
+    public event EventHandler<MoveEventArgs> Moved
+    {
+        add => AddHandler(WxEvents.Moved, value);
+        remove => RemoveHandler(WxEvents.Moved, value);
+    }
+
+    /// <summary>Asked what state a command should be in, on idle and whenever a menu is about to open.
+    /// Bind it with a command ID to answer for one command:
+    /// <code>
+    /// frame.Bind(WxEvents.UpdateUI, (_, e) =&gt; e.Enable(playlist.Count &gt; 0), playId);
+    /// </code></summary>
+    public event EventHandler<UpdateUIEventArgs> UpdateUI
+    {
+        add => AddHandler(WxEvents.UpdateUI, value);
+        remove => RemoveHandler(WxEvents.UpdateUI, value);
+    }
+
+    /// <summary>The mouse capture was taken away. Handling this is mandatory for any window that calls
+    /// <see cref="CaptureMouse"/>; wxWidgets asserts otherwise.</summary>
+    public event EventHandler<WxEventArgs> MouseCaptureLost
+    {
+        add => AddHandler(WxEvents.MouseCaptureLost, value);
+        remove => RemoveHandler(WxEvents.MouseCaptureLost, value);
+    }
+
+    /// <summary>Files were dragged onto this window. The window must be accepting them - see
+    /// <see cref="DragAcceptFiles"/>.</summary>
+    public event EventHandler<DropFilesEventArgs> FilesDropped
+    {
+        add => AddHandler(WxEvents.DropFiles, value);
+        remove => RemoveHandler(WxEvents.DropFiles, value);
+    }
+
+    /// <summary>A registered system-wide hot key was pressed. See <see cref="RegisterHotKey"/>.</summary>
+    public event EventHandler<KeyEventArgs> HotKeyPressed
+    {
+        add => AddHandler(WxEvents.HotKey, value);
+        remove => RemoveHandler(WxEvents.HotKey, value);
+    }
+
+    // ---- Binding -------------------------------------------------------------------------------------
+
+    /// <summary>Subscribes to <paramref name="eventType"/> on this window, optionally filtered to one command
+    /// ID or an inclusive ID range. Dispose the returned binding to unsubscribe.</summary>
     public EventBinding Bind<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs> handler,
         int id = WindowId.Any, int lastId = WindowId.Any) where TEventArgs : WxEventArgs
     {
-        ArgumentNullException.ThrowIfNull(eventType); ArgumentNullException.ThrowIfNull(handler); Verify();
+        ArgumentNullException.ThrowIfNull(eventType);
+        ArgumentNullException.ThrowIfNull(handler);
+        Verify();
         if (lastId != WindowId.Any && id == WindowId.Any)
             throw new ArgumentException("An ID range requires a starting ID.", nameof(id));
         if (lastId != WindowId.Any && lastId < id)
             throw new ArgumentOutOfRangeException(nameof(lastId));
+
         var token = ++_nextBindingToken;
-        _bindings.Add(new BindingEntry(token, eventType.Kind, id, lastId, handler,
-            args => handler(args.Source, (TEventArgs)args)));
-        return new EventBinding(this, token);
+        Subscribe(eventType.EventId, eventType.Factory,
+            new Subscription(token, id, lastId, handler, args => handler(args.Source, (TEventArgs)args)));
+        return new EventBinding(this, eventType.EventId, token);
     }
 
+    /// <summary>Removes a subscription added by <see cref="Bind{TEventArgs}"/> with the same event type,
+    /// handler and ID filter. Returns false when no such subscription exists.</summary>
     public bool Unbind<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs>? handler = null,
         int id = WindowId.Any, int lastId = WindowId.Any) where TEventArgs : WxEventArgs
     {
-        ArgumentNullException.ThrowIfNull(eventType); Verify();
-        // Delegate identity is deliberately not inferred from a recreated bound-method delegate. Use the
-        // returned EventBinding for exact removal; this overload removes matching type/range registrations.
-        var index = _bindings.FindIndex(entry => entry.Kind == eventType.Kind && entry.Id == id &&
-            entry.LastId == lastId && (handler is null || entry.Original.Equals(handler)));
+        ArgumentNullException.ThrowIfNull(eventType);
+        Verify();
+        if (!_subscriptions.TryGetValue(eventType.EventId, out var list)) return false;
+        var index = list.FindIndex(entry => entry.Id == id && entry.LastId == lastId &&
+            (handler is null || entry.Original.Equals(handler)));
         if (index < 0) return false;
-        _bindings.RemoveAt(index); return true;
+        list.RemoveAt(index);
+        ReleaseIfUnused(eventType.EventId, list);
+        return true;
     }
+
+    /// <summary>Backs a typed <c>event</c> accessor. Subscriptions added this way are removed by handler
+    /// identity, which is what <c>-=</c> gives us.</summary>
+    private protected void AddHandler<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs> handler)
+        where TEventArgs : WxEventArgs
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        Verify();
+        Subscribe(eventType.EventId, eventType.Factory,
+            new Subscription(++_nextBindingToken, WindowId.Any, WindowId.Any, handler,
+                args => handler(args.Source, (TEventArgs)args)));
+    }
+
+    private protected void RemoveHandler<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs> handler)
+        where TEventArgs : WxEventArgs
+    {
+        if (_destroyed || handler is null) return;
+        if (!_subscriptions.TryGetValue(eventType.EventId, out var list)) return;
+        var index = list.FindIndex(entry => entry.Original.Equals(handler));
+        if (index < 0) return;
+        list.RemoveAt(index);
+        ReleaseIfUnused(eventType.EventId, list);
+    }
+
+    private void Subscribe(int eventId, EventArgsFactory factory, Subscription subscription)
+    {
+        if (!_subscriptions.TryGetValue(eventId, out var list))
+        {
+            list = new List<Subscription>();
+            _subscriptions[eventId] = list;
+            _factories[eventId] = factory;
+            // The first subscriber is what hooks the event natively. A few events are reported whether or
+            // not anyone asked, so they need no hook.
+            if (!EventId.IsAlwaysReported(eventId) &&
+                !NativeMethods.wxsharp_window_bind(_handle, eventId, Token))
+            {
+                _subscriptions.Remove(eventId);
+                _factories.Remove(eventId);
+                throw new NotSupportedException(
+                    $"This window cannot report event {eventId}. Text-entry events, for example, require a " +
+                    "control created with TextCtrlStyle.ProcessEnter.");
+            }
+        }
+        list.Add(subscription);
+    }
+
+    private void ReleaseIfUnused(int eventId, List<Subscription> list)
+    {
+        if (list.Count != 0) return;
+        _subscriptions.Remove(eventId);
+        _factories.Remove(eventId);
+        if (!EventId.IsAlwaysReported(eventId) && !_destroyed && _handle != 0)
+            _ = NativeMethods.wxsharp_window_unbind(_handle, eventId);
+    }
+
+    internal void RemoveBinding(int eventId, long token)
+    {
+        if (_destroyed) return;
+        OwnerApp.VerifyAccess();
+        if (!_subscriptions.TryGetValue(eventId, out var list)) return;
+        list.RemoveAll(entry => entry.Token == token);
+        ReleaseIfUnused(eventId, list);
+    }
+
+    /// <summary>Delivers one native event to this window's subscribers. Returns the ABI result flags:
+    /// bit 0 asks wxWidgets to skip the event, bit 1 vetoes it.</summary>
+    internal uint Dispatch(in NativeEvent e)
+    {
+        // Nothing listening is the same as every handler skipping.
+        if (!_subscriptions.TryGetValue(e.Kind, out var list) || list.Count == 0) return SkipResult;
+
+        var args = _factories[e.Kind](this, in e);
+        var skipped = true;
+        // Copied so a handler may unsubscribe, or subscribe, while the event is being delivered.
+        foreach (var subscription in list.ToArray())
+        {
+            if (!subscription.Matches(e.Id)) continue;
+            // Each handler decides for itself, exactly as separate wxWidgets bindings would: the next one
+            // runs only if this one skipped.
+            args.ResetSkipped();
+            subscription.Invoke(args);
+            skipped = args.Skipped;
+            if (!skipped) break;
+        }
+        return Result(args, skipped);
+    }
+
+    private const uint SkipResult = 1;
+    private const uint VetoResult = 2;
+
+    /// <summary>Delivers a synthesised event to this window's own subscribers without involving wxWidgets.
+    /// For controls that must announce a change the native control stays silent about - a programmatic value
+    /// change a screen reader still needs to hear, for instance.</summary>
+    private protected uint RaiseLocal(in NativeEvent e) => Dispatch(in e);
+
+    private static uint Result(WxEventArgs args, bool skipped)
+    {
+        var result = skipped ? SkipResult : 0u;
+        if (args is NotifyEventArgs { IsAllowed: false } ||
+            args is CloseEventArgs { Vetoed: true, CanVeto: true })
+            result |= VetoResult;
+        return result;
+    }
+
+    // ---- Construction and lifetime -------------------------------------------------------------------
 
     protected Window(Window? parent, int id)
     {
@@ -92,17 +344,55 @@ public abstract class Window : IDisposable
     }
 
     internal nint Handle { get { EnsureAlive(); return _handle; } }
+
     protected void Initialize(nint handle)
     {
         if (handle == 0) { App.Unregister(Token); throw new InvalidOperationException("wxWidgets failed to create the window."); }
         _handle = handle;
         Id = NativeMethods.wxsharp_control_get_id(handle);
     }
+
     protected void ApplyInitialGeometry(Point? position, Size? size)
     {
         if (position is Point p) Position = p;
         if (size is Size s) Size = s;
     }
+
+    /// <summary>The custom accessible object attached to this window, following
+    /// <c>wxWindow.GetAccessible</c> / <c>SetAccessible</c>. The window takes ownership of what is assigned.
+    /// Throws <see cref="NotImplementedException"/> where wxWidgets was built without accessibility, which is
+    /// what wxPython does there.</summary>
+    public Accessible? Accessible
+    {
+        get { Verify(); RequireAccessibility(); return _accessible; }
+        set
+        {
+            Verify();
+            RequireAccessibility();
+            _accessible?.Detach(this);
+            _accessible = value;
+            value?.Attach(this);
+            NativeMethods.wxsharp_control_set_accessible(_handle, value?.Token ?? 0);
+        }
+    }
+
+    /// <summary>Returns the accessible object, asking <see cref="CreateAccessible"/> for one if none has
+    /// been set. Follows <c>wxWindow.GetOrCreateAccessible</c>; may return null, in which case the platform's
+    /// own accessible is used.</summary>
+    public Accessible? GetOrCreateAccessible()
+    {
+        Verify();
+        RequireAccessibility();
+        if (_accessible is null && CreateAccessible() is Accessible created)
+            Accessible = created;
+        return _accessible;
+    }
+
+    /// <summary>Override to supply an accessible object for this window. Returns null by default, as
+    /// <c>wxWindow.CreateAccessible</c> does, leaving the platform's own accessible in place.</summary>
+    protected virtual Accessible? CreateAccessible() => null;
+
+    // ---- State and geometry --------------------------------------------------------------------------
 
     public bool Enabled
     {
@@ -165,14 +455,110 @@ public abstract class Window : IDisposable
             (int)font.Style, font.Underline, font.Face ?? string.Empty);
     }
 
-    public string AccessibleName { set { Verify(); NativeMethods.wxsharp_control_set_name(_handle, value); } }
-    public AccessibleRole AccessibleRole { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_role(_handle, (int)value); } }
-    public string AccessibleDescription { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_description(_handle, value); } }
-    public string AccessibleHelp { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_help(_handle, value); } }
-    public string AccessibleValue { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_accessible_value(_handle, value); } }
-    public string AccessibleKeyboardShortcut { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_accessible_keyboard_shortcut(_handle, value); } }
-    public string AccessibleDefaultAction { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_accessible_default_action(_handle, value); } }
-    public AccessibleState AccessibleState { set { EnsureAccessibility(); Verify(); NativeMethods.wxsharp_control_set_accessible_state(_handle, (uint)value); } }
+    // ---- Update UI ---------------------------------------------------------------------------------
+
+    /// <summary>Sends update-UI events to this window now, rather than waiting for the next idle cycle.
+    /// Follows <c>wxWindow.UpdateWindowUI</c>.</summary>
+    public void UpdateWindowUI(bool recurse = false)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_update_ui(_handle, recurse);
+    }
+
+    // ---- Dropped files and mouse capture -----------------------------------------------------------------
+
+    /// <summary>Whether files dragged onto this window raise <see cref="FilesDropped"/>. Off until asked
+    /// for. Follows <c>wxWindow.DragAcceptFiles</c>.</summary>
+    public void DragAcceptFiles(bool accept = true)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_accept_dropped_files(_handle, accept);
+    }
+
+    /// <summary>Routes all mouse input to this window until <see cref="ReleaseMouse"/>. Anything that
+    /// captures must also handle <see cref="MouseCaptureLost"/>: the capture can be taken away at any time,
+    /// and wxWidgets asserts if nothing is listening.</summary>
+    public void CaptureMouse() { Verify(); NativeMethods.wxsharp_window_capture_mouse(_handle); }
+
+    /// <summary>Gives back a capture taken by <see cref="CaptureMouse"/>.</summary>
+    public void ReleaseMouse() { Verify(); NativeMethods.wxsharp_window_release_mouse(_handle); }
+
+    /// <summary>Whether this window currently holds the mouse capture.</summary>
+    public bool HasCapture { get { Verify(); return NativeMethods.wxsharp_window_has_capture(_handle); } }
+
+    // ---- System-wide hot keys ----------------------------------------------------------------------------
+
+    /// <summary>Claims a key combination system-wide, so it reaches this window through
+    /// <see cref="HotKeyPressed"/> even when the application is not focused. Returns false when another
+    /// application already owns the combination, which is normal and worth reporting to the user rather than
+    /// treating as an error.</summary>
+    public bool RegisterHotKey(int hotKeyId, AcceleratorModifiers modifiers, int keyCode)
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_register_hotkey(_handle, hotKeyId, (int)modifiers, keyCode);
+    }
+
+    /// <summary>Releases a combination claimed by <see cref="RegisterHotKey"/>.</summary>
+    public bool UnregisterHotKey(int hotKeyId)
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_unregister_hotkey(_handle, hotKeyId);
+    }
+
+    // ---- Menus and accelerators ----------------------------------------------------------------------
+
+    /// <summary>Shows <paramref name="menu"/> at <paramref name="position"/> in client coordinates and returns once
+    /// it is dismissed. Passing null uses the pointer's position, which is also right for a menu opened from
+    /// the keyboard. Commands the menu produces arrive as <see cref="WxEvents.MenuCommand"/>.</summary>
+    public bool PopupMenu(Menu menu, Point? position = null)
+    {
+        ArgumentNullException.ThrowIfNull(menu);
+        Verify();
+        var point = position ?? new Point(-1, -1);
+        return NativeMethods.wxsharp_window_popup_menu(_handle, menu.Handle, point.X, point.Y);
+    }
+
+    /// <summary>Installs an accelerator table on this window, replacing any previous one. Passing no entries
+    /// clears it. Accelerators work on dialogs as well as frames.</summary>
+    public unsafe void SetAcceleratorTable(params AcceleratorEntry[] accelerators)
+    {
+        ArgumentNullException.ThrowIfNull(accelerators);
+        Verify();
+        if (accelerators.Length == 0)
+        {
+            NativeMethods.wxsharp_window_set_accelerators(_handle, null, 0);
+            return;
+        }
+        var native = new NativeAccelerator[accelerators.Length];
+        for (var i = 0; i < native.Length; ++i)
+            native[i] = new NativeAccelerator
+            {
+                Modifiers = (int)accelerators[i].Modifiers,
+                KeyCode = accelerators[i].KeyCode,
+                CommandId = accelerators[i].CommandId,
+            };
+        fixed (NativeAccelerator* entries = native)
+            NativeMethods.wxsharp_window_set_accelerators(_handle, entries, native.Length);
+    }
+
+    // ---- Accessibility -------------------------------------------------------------------------------
+
+    /// <summary>The window's name, following <c>wxWindow.Name</c>. On platforms with an accessibility
+    /// bridge this is what the window reports as its accessible name, so it is worth setting on a control
+    /// whose own label does not describe it.</summary>
+    public unsafe string Name
+    {
+        get
+        {
+            Verify();
+            var length = NativeMethods.wxsharp_control_get_name(_handle, null, 0);
+            if (length <= 0) return string.Empty;
+            var buffer = new byte[length + 1];
+            fixed (byte* p = buffer) _ = NativeMethods.wxsharp_control_get_name(_handle, p, buffer.Length);
+            return Utf8String.Decode(buffer, length);
+        }
+        set { Verify(); NativeMethods.wxsharp_control_set_name(_handle, value ?? string.Empty); }
+    }
 
     public void SetSizer(Sizer sizer)
     {
@@ -182,117 +568,37 @@ public abstract class Window : IDisposable
     public virtual void Destroy()
     {
         if (_destroyed) return;
-        Verify(); NativeMethods.wxsharp_control_destroy(_handle); Invalidate(true);
+        Verify(); NativeMethods.wxsharp_control_destroy(_handle); Invalidate();
     }
     public void Dispose() { Destroy(); GC.SuppressFinalize(this); }
 
-    internal virtual uint Dispatch(in NativeEvent e)
-    {
-        switch (e.Kind)
-        {
-            case EventKind.Destroyed: Invalidate(true); return 0;
-            case EventKind.FocusGained: return Raise(new WxEventArgs(this, e.Id), GotFocus);
-            case EventKind.FocusLost: return Raise(new WxEventArgs(this, e.Id), LostFocus);
-            case EventKind.KeyHook or EventKind.KeyDown:
-                var down = new KeyEventArgs(this, e); OnKeyDown(down); return down.Handled ? 1u : 0u;
-            case EventKind.KeyUp:
-                var up = new KeyEventArgs(this, e); OnKeyUp(up); return up.Handled ? 1u : 0u;
-            case EventKind.MouseDown: return RaiseMouse(e, MouseDown);
-            case EventKind.MouseUp: return RaiseMouse(e, MouseUp);
-            case EventKind.MouseRight: return RaiseMouse(e, RightClick);
-            case EventKind.MouseDouble: return RaiseMouse(e, DoubleClick);
-            case EventKind.MouseEnter: return RaiseMouse(e, MouseEnter);
-            case EventKind.MouseLeave: return RaiseMouse(e, MouseLeave);
-            case EventKind.MouseMove: return RaiseMouse(e, MouseMove);
-            case EventKind.MouseWheel: return RaiseMouse(e, MouseWheel);
-            default: return 0;
-        }
-    }
-
-    internal uint DispatchBindings(in NativeEvent e, Window? source = null)
-    {
-        if (_bindings.Count == 0) return 0;
-        var args = (source ?? this).CreateEventArgs(in e);
-        foreach (var binding in _bindings.ToArray())
-        {
-            if (binding.Kind != e.Kind || !binding.Matches(e.Id)) continue;
-            binding.Handler(args);
-            if (args.Handled) return EventResult(args);
-        }
-        return EventResult(args);
-    }
-
-    internal void RemoveBinding(long token)
-    {
-        if (_destroyed) return;
-        Verify(); _bindings.RemoveAll(entry => entry.Token == token);
-    }
-
-    private WxEventArgs CreateEventArgs(in NativeEvent e) => e.Kind switch
-    {
-        EventKind.Close => new CloseEventArgs(this, e.Id, e.CanVeto != 0),
-        EventKind.KeyHook or EventKind.KeyDown or EventKind.KeyUp => new KeyEventArgs(this, e),
-        EventKind.MouseDown or EventKind.MouseUp or EventKind.MouseRight or EventKind.MouseDouble or
-            EventKind.MouseEnter or EventKind.MouseLeave or EventKind.MouseMove or EventKind.MouseWheel => new MouseEventArgs(this, e),
-        EventKind.Resize => new SizeEventArgs(this, e),
-        EventKind.Move => new MoveEventArgs(this, e),
-        EventKind.Activate or EventKind.Deactivate => new ActivateEventArgs(this, e),
-        EventKind.Paint => new PaintEventArgs(this, e.Id),
-        EventKind.Click or EventKind.Text or EventKind.Toggle or EventKind.Select or EventKind.Slider or EventKind.Menu or EventKind.Timer or
-            EventKind.TextEnter => new CommandEventArgs(this, e.Id),
-        _ => new WxEventArgs(this, e.Id),
-    };
-
-    private static uint EventResult(WxEventArgs args)
-    {
-        var result = args.Handled ? 1u : 0u;
-        if (args is CloseEventArgs { Cancel: true, CanCancel: true }) result |= 2u;
-        return result;
-    }
-
-    protected virtual void OnKeyDown(KeyEventArgs e) => KeyDown?.Invoke(this, e);
-    protected virtual void OnKeyUp(KeyEventArgs e) => KeyUp?.Invoke(this, e);
-    internal void InvalidateFromAppShutdown() => Invalidate(false);
+    internal void InvalidateFromAppShutdown() => Invalidate();
+    internal void InvalidateFromNative() => Invalidate();
     internal void EnsureAlive() => ObjectDisposedException.ThrowIf(_destroyed || _handle == 0, this);
-    private void Verify() { OwnerApp.VerifyAccess(); EnsureAlive(); }
-    private uint RaiseMouse(in NativeEvent e, EventHandler<MouseEventArgs>? handler)
-    {
-        var args = new MouseEventArgs(this, e); handler?.Invoke(this, args); return args.Handled ? 1u : 0u;
-    }
-    protected static uint Raise<T>(T args, EventHandler<T>? handler) where T : WxEventArgs
-    {
-        handler?.Invoke(args.Source, args); return args.Handled ? 1u : 0u;
-    }
-    protected uint RaiseCommand(CommandEventArgs args, EventHandler<CommandEventArgs>? handler)
-    {
-        handler?.Invoke(this, args);
-        return PropagateCommand(args);
-    }
-    protected uint PropagateCommand(CommandEventArgs args)
-    {
-        for (var parent = Parent; !args.Handled && parent is not null; parent = parent.Parent)
-            parent.Command?.Invoke(args.Source, args);
-        return args.Handled ? 1u : 0u;
-    }
-    private void Invalidate(bool raiseEvent)
+    private protected void Verify() { OwnerApp.VerifyAccess(); EnsureAlive(); }
+
+    private void Invalidate()
     {
         if (_destroyed) return;
-        foreach (var child in _children.ToArray()) child.Invalidate(raiseEvent);
+        foreach (var child in _children.ToArray()) child.Invalidate();
         _children.Clear(); Parent?._children.Remove(this); App.Unregister(Token);
-        _bindings.Clear();
+        // The native side releases its own event sinks when the window is destroyed; this only drops the
+        // managed subscriber lists.
+        _subscriptions.Clear(); _factories.Clear();
         _accessible?.Detach(this); _accessible = null;
         Invalidated?.Invoke(); Invalidated = null;
         OwnerApp.NotifyWindowInvalidated(this);
         _destroyed = true; _handle = 0;
-        if (raiseEvent) Destroyed?.Invoke(this, new WxEventArgs(this, Id));
-    }
-    private static void EnsureAccessibility()
-    {
-        if (!Wx.SupportsCustomAccessibility) throw new PlatformNotSupportedException("Custom wxAccessible objects are unavailable on this platform.");
     }
 
-    private sealed record BindingEntry(long Token, EventKind Kind, int Id, int LastId, Delegate Original,
-        Action<WxEventArgs> Handler)
+    // wxPython raises NotImplementedError from the accessibility hooks where wxUSE_ACCESSIBILITY is off.
+    private static void RequireAccessibility()
+    {
+        if (!Wx.SupportsCustomAccessibility)
+            throw new NotImplementedException("wxWidgets was built without accessibility support on this platform.");
+    }
+
+    private sealed record Subscription(long Token, int Id, int LastId, Delegate Original, Action<WxEventArgs> Invoke)
     {
         internal bool Matches(int eventId) => Id == WindowId.Any || eventId == Id ||
             (LastId != WindowId.Any && eventId >= Id && eventId <= LastId);

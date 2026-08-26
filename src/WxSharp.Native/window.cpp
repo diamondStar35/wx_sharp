@@ -2,45 +2,11 @@
 #include "internal.h"
 
 wxsharp_handle wxsharp_window_create(wxsharp_handle parent, int id, const char* title,
-                                     int x, int y, int width, int height, long long token)
+                                     int x, int y, int width, int height, int style, long long token)
 {
-    auto* frame = new wxFrame(static_cast<wxWindow*>(parent), id, Str(title), wxPoint(x, y), wxSize(width, height));
-    BindCommon(frame, token);
-    BindKeyHook(frame, token);
-    frame->Bind(wxEVT_SHOW, [token](wxShowEvent& e)
-    {
-        if (e.IsShown()) Fire(token, WXSHARP_EVT_SHOWN, e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0, true);
-        e.Skip();
-    });
-    frame->Bind(wxEVT_ACTIVATE, [token](wxActivateEvent& e)
-    {
-        Fire(token, e.GetActive() ? WXSHARP_EVT_ACTIVATE : WXSHARP_EVT_DEACTIVATE,
-             e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0, e.GetActive());
-        e.Skip();
-    });
-    frame->Bind(wxEVT_SIZE, [token](wxSizeEvent& e)
-    {
-        const wxSize size = e.GetSize();
-        Fire(token, WXSHARP_EVT_RESIZE, e.GetId(), 0, 0, size.x, size.y);
-        e.Skip();
-    });
-    frame->Bind(wxEVT_MOVE, [token](wxMoveEvent& e)
-    {
-        const wxPoint position = e.GetPosition();
-        Fire(token, WXSHARP_EVT_MOVE, e.GetId(), position.x, position.y);
-        e.Skip();
-    });
-    frame->Bind(wxEVT_MAXIMIZE, [token](wxMaximizeEvent& e) { Fire(token, WXSHARP_EVT_MAXIMIZE, e.GetId()); e.Skip(); });
-    frame->Bind(wxEVT_CLOSE_WINDOW, [token](wxCloseEvent& e)
-    {
-        const unsigned int result = Fire(token, WXSHARP_EVT_CLOSE, e.GetId(), 0, 0, 0, 0, 0, 0, 0, 0,
-                                         false, e.CanVeto());
-        if ((result & WXSHARP_EVENT_CANCEL) && e.CanVeto()) e.Veto(); else e.Skip();
-    });
-    frame->Bind(wxEVT_MENU, [token](wxCommandEvent& e)
-    {
-        if (!(Fire(token, WXSHARP_EVT_MENU, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip();
-    });
+    auto* frame = new wxFrame(static_cast<wxWindow*>(parent), id, Str(title), wxPoint(x, y),
+                              wxSize(width, height), MapFrameStyle(style));
+    TrackWindow(frame, token);
     return frame;
 }
 

@@ -6,12 +6,14 @@ namespace WxSharp;
 
 public class ToggleButton : Control
 {
-    public event EventHandler<CommandEventArgs>? Toggled;
+    public event EventHandler<CommandEventArgs> Toggled
+    {
+        add => AddHandler(WxEvents.ToggleButtonToggled, value);
+        remove => RemoveHandler(WxEvents.ToggleButtonToggled, value);
+    }
     public ToggleButton(Window parent, string label = "", int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_togglebutton_create(parent.Handle, id, label, Token));
     public bool Value { get => NativeMethods.wxsharp_togglebutton_get(Handle); set => NativeMethods.wxsharp_togglebutton_set(Handle, value); }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Toggle
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), Toggled) : base.Dispatch(e);
 }
 
 public class Gauge : Control
@@ -29,7 +31,25 @@ public class Gauge : Control
 
 public class SpinCtrl : Control
 {
-    public event EventHandler<CommandEventArgs>? ValueChanged;
+    public event EventHandler<SpinEventArgs> ValueChanged
+    {
+        add => AddHandler(WxEvents.SpinChanged, value);
+        remove => RemoveHandler(WxEvents.SpinChanged, value);
+    }
+    /// <summary>The up arrow was pressed, separately from the value it produced. Veto to refuse the step.</summary>
+    public event EventHandler<SpinEventArgs> SpinUp
+    {
+        add => AddHandler(WxEvents.SpinUp, value);
+        remove => RemoveHandler(WxEvents.SpinUp, value);
+    }
+
+    /// <summary>The down arrow was pressed.</summary>
+    public event EventHandler<SpinEventArgs> SpinDown
+    {
+        add => AddHandler(WxEvents.SpinDown, value);
+        remove => RemoveHandler(WxEvents.SpinDown, value);
+    }
+
     public SpinCtrl(Window parent, int value = 0, int minimum = 0, int maximum = 100, int id = WindowId.Any) : base(parent, id)
     {
         if (minimum > maximum) throw new ArgumentException("Minimum cannot exceed maximum.");
@@ -41,14 +61,20 @@ public class SpinCtrl : Control
         if (minimum > maximum) throw new ArgumentException("Minimum cannot exceed maximum.");
         NativeMethods.wxsharp_spinctrl_set_range(Handle, minimum, maximum);
     }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Slider
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), ValueChanged) : base.Dispatch(e);
 }
 
 public class ComboBox : Control
 {
-    public event EventHandler<CommandEventArgs>? SelectionChanged;
-    public event EventHandler<CommandEventArgs>? TextChanged;
+    public event EventHandler<CommandEventArgs> SelectionChanged
+    {
+        add => AddHandler(WxEvents.ComboBoxSelected, value);
+        remove => RemoveHandler(WxEvents.ComboBoxSelected, value);
+    }
+    public event EventHandler<CommandEventArgs> TextChanged
+    {
+        add => AddHandler(WxEvents.TextChanged, value);
+        remove => RemoveHandler(WxEvents.TextChanged, value);
+    }
     public ComboBox(Window parent, string value = "", bool readOnly = false, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_combobox_create(parent.Handle, id, value, readOnly, Token));
     public unsafe string Value
@@ -57,15 +83,21 @@ public class ComboBox : Control
         set => NativeMethods.wxsharp_combobox_set_value(Handle, value);
     }
     public void Add(string value) => NativeMethods.wxsharp_combobox_append(Handle, value);
+    public void Insert(string value, int index) => NativeMethods.wxsharp_combobox_insert(Handle, value, index);
+    public void RemoveAt(int index) => NativeMethods.wxsharp_combobox_delete(Handle, index);
     public void Clear() => NativeMethods.wxsharp_combobox_clear(Handle);
     public int Count => NativeMethods.wxsharp_combobox_count(Handle);
-    public int SelectedIndex { get => NativeMethods.wxsharp_combobox_get_selection(Handle); set => NativeMethods.wxsharp_combobox_set_selection(Handle, value); }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind switch
+
+    /// <summary>Gets or replaces the text of the item at <paramref name="index"/>.</summary>
+    public unsafe string this[int index]
     {
-        EventKind.Select => RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged),
-        EventKind.Text => RaiseCommand(new CommandEventArgs(this, e.Id), TextChanged),
-        _ => base.Dispatch(e),
-    };
+        get => ReadString((buffer, length) => NativeMethods.wxsharp_combobox_get_string(Handle, index, buffer, length));
+        set => NativeMethods.wxsharp_combobox_set_string(Handle, index, value);
+    }
+
+    /// <summary>The index of the first item equal to <paramref name="text"/> (case-insensitive), or -1.</summary>
+    public int IndexOf(string text) => NativeMethods.wxsharp_combobox_find_string(Handle, text);
+    public int SelectedIndex { get => NativeMethods.wxsharp_combobox_get_selection(Handle); set => NativeMethods.wxsharp_combobox_set_selection(Handle, value); }
     private unsafe delegate int StringReader(byte* buffer, int length);
     private static unsafe string ReadString(StringReader reader)
     {
@@ -77,8 +109,16 @@ public class ComboBox : Control
 
 public class SearchCtrl : Control
 {
-    public event EventHandler<CommandEventArgs>? TextChanged;
-    public event EventHandler<CommandEventArgs>? Search;
+    public event EventHandler<CommandEventArgs> TextChanged
+    {
+        add => AddHandler(WxEvents.TextChanged, value);
+        remove => RemoveHandler(WxEvents.TextChanged, value);
+    }
+    public event EventHandler<CommandEventArgs> Search
+    {
+        add => AddHandler(WxEvents.Search, value);
+        remove => RemoveHandler(WxEvents.Search, value);
+    }
     public SearchCtrl(Window parent, string value = "", int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_searchctrl_create(parent.Handle, id, value, Token));
     public unsafe string Value
@@ -93,35 +133,35 @@ public class SearchCtrl : Control
     }
     public bool ShowCancelButton { set => NativeMethods.wxsharp_searchctrl_show_cancel(Handle, value); }
     public bool ShowSearchButton { set => NativeMethods.wxsharp_searchctrl_show_search(Handle, value); }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind switch
-    {
-        EventKind.Text => RaiseCommand(new CommandEventArgs(this, e.Id), TextChanged),
-        EventKind.TextEnter => RaiseCommand(new CommandEventArgs(this, e.Id), Search),
-        _ => base.Dispatch(e),
-    };
 }
 
 public class CheckListBox : Control
 {
-    public event EventHandler<CommandEventArgs>? ItemChecked;
-    public event EventHandler<CommandEventArgs>? SelectionChanged;
+    public event EventHandler<CommandEventArgs> ItemChecked
+    {
+        add => AddHandler(WxEvents.CheckListBoxToggled, value);
+        remove => RemoveHandler(WxEvents.CheckListBoxToggled, value);
+    }
+    public event EventHandler<CommandEventArgs> SelectionChanged
+    {
+        add => AddHandler(WxEvents.ListBoxSelected, value);
+        remove => RemoveHandler(WxEvents.ListBoxSelected, value);
+    }
     public CheckListBox(Window parent, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_checklistbox_create(parent.Handle, id, Token));
     public void Add(string value) => NativeMethods.wxsharp_checklistbox_append(Handle, value);
     public int Count => NativeMethods.wxsharp_checklistbox_count(Handle);
     public bool IsChecked(int index) => NativeMethods.wxsharp_checklistbox_is_checked(Handle, index);
     public void SetChecked(int index, bool value = true) => NativeMethods.wxsharp_checklistbox_check(Handle, index, value);
-    internal override uint Dispatch(in NativeEvent e) => e.Kind switch
-    {
-        EventKind.Toggle => RaiseCommand(new CommandEventArgs(this, e.Id), ItemChecked),
-        EventKind.Select => RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged),
-        _ => base.Dispatch(e),
-    };
 }
 
 public class RadioBox : Control
 {
-    public event EventHandler<CommandEventArgs>? SelectionChanged;
+    public event EventHandler<CommandEventArgs> SelectionChanged
+    {
+        add => AddHandler(WxEvents.RadioBoxSelected, value);
+        remove => RemoveHandler(WxEvents.RadioBoxSelected, value);
+    }
     public unsafe RadioBox(Window parent, string label, IReadOnlyList<string> choices, int columns = 1,
         int id = WindowId.Any) : base(parent, id)
     {
@@ -137,8 +177,6 @@ public class RadioBox : Control
         finally { foreach (var value in strings) if (value != 0) Marshal.FreeCoTaskMem(value); }
     }
     public int SelectedIndex { get => NativeMethods.wxsharp_radiobox_get_selection(Handle); set => NativeMethods.wxsharp_radiobox_set_selection(Handle, value); }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Select
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged) : base.Dispatch(e);
 }
 
 public class StaticBox : Control
@@ -164,30 +202,81 @@ public class ActivityIndicator : Control
 
 public class SpinCtrlDouble : Control
 {
-    public event EventHandler<CommandEventArgs>? ValueChanged;
+    public event EventHandler<SpinEventArgs> ValueChanged
+    {
+        add => AddHandler(WxEvents.SpinDoubleChanged, value);
+        remove => RemoveHandler(WxEvents.SpinDoubleChanged, value);
+    }
     public SpinCtrlDouble(Window parent, double value = 0, double minimum = 0, double maximum = 100,
         double increment = 1, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_spinctrldouble_create(parent.Handle, id, minimum, maximum, value, increment, Token));
     public double Value { get => NativeMethods.wxsharp_spinctrldouble_get(Handle); set => NativeMethods.wxsharp_spinctrldouble_set(Handle, value); }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Slider
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), ValueChanged) : base.Dispatch(e);
 }
 
 public class ScrollBar : Control
 {
-    public event EventHandler<CommandEventArgs>? ValueChanged;
+    public event EventHandler<ScrollEventArgs> ValueChanged
+    {
+        add => AddHandler(WxEvents.ScrollThumbTrack, value);
+        remove => RemoveHandler(WxEvents.ScrollThumbTrack, value);
+    }
+    /// <summary>Dragging finished. The moment to act on an expensive change, rather than on every ValueChanged.</summary>
+    public event EventHandler<ScrollEventArgs> ThumbReleased
+    {
+        add => AddHandler(WxEvents.ScrollThumbReleased, value);
+        remove => RemoveHandler(WxEvents.ScrollThumbReleased, value);
+    }
+
+    public event EventHandler<ScrollEventArgs> LineUp
+    {
+        add => AddHandler(WxEvents.ScrollLineUp, value);
+        remove => RemoveHandler(WxEvents.ScrollLineUp, value);
+    }
+
+    public event EventHandler<ScrollEventArgs> LineDown
+    {
+        add => AddHandler(WxEvents.ScrollLineDown, value);
+        remove => RemoveHandler(WxEvents.ScrollLineDown, value);
+    }
+
+    public event EventHandler<ScrollEventArgs> PageUp
+    {
+        add => AddHandler(WxEvents.ScrollPageUp, value);
+        remove => RemoveHandler(WxEvents.ScrollPageUp, value);
+    }
+
+    public event EventHandler<ScrollEventArgs> PageDown
+    {
+        add => AddHandler(WxEvents.ScrollPageDown, value);
+        remove => RemoveHandler(WxEvents.ScrollPageDown, value);
+    }
+
+    public event EventHandler<ScrollEventArgs> ScrolledToTop
+    {
+        add => AddHandler(WxEvents.ScrollToTop, value);
+        remove => RemoveHandler(WxEvents.ScrollToTop, value);
+    }
+
+    public event EventHandler<ScrollEventArgs> ScrolledToBottom
+    {
+        add => AddHandler(WxEvents.ScrollToBottom, value);
+        remove => RemoveHandler(WxEvents.ScrollToBottom, value);
+    }
+
     public ScrollBar(Window parent, Orientation orientation = Orientation.Vertical, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_scrollbar_create(parent.Handle, id, orientation == Orientation.Vertical, Token));
     public int ThumbPosition => NativeMethods.wxsharp_scrollbar_get_position(Handle);
     public void SetScrollInfo(int position, int thumbSize, int range, int pageSize)
         => NativeMethods.wxsharp_scrollbar_set(Handle, position, thumbSize, range, pageSize);
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Slider
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), ValueChanged) : base.Dispatch(e);
 }
 
 public class HyperlinkCtrl : Control
 {
-    public event EventHandler<CommandEventArgs>? Click;
+    public event EventHandler<HyperlinkEventArgs> Click
+    {
+        add => AddHandler(WxEvents.HyperlinkClicked, value);
+        remove => RemoveHandler(WxEvents.HyperlinkClicked, value);
+    }
     public HyperlinkCtrl(Window parent, string label, string url, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_hyperlink_create(parent.Handle, id, label, url, Token));
     public unsafe string Url
@@ -200,8 +289,6 @@ public class HyperlinkCtrl : Control
         }
         set => NativeMethods.wxsharp_hyperlink_set_url(Handle, value);
     }
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Click
-        ? RaiseCommand(new CommandEventArgs(this, e.Id), Click) : base.Dispatch(e);
 }
 
 public abstract class DateTimePickerBase : Control
@@ -216,14 +303,20 @@ public abstract class DateTimePickerBase : Control
 
 public class DatePickerCtrl : DateTimePickerBase
 {
-    public event EventHandler<CommandEventArgs>? ValueChanged;
+    public event EventHandler<DateEventArgs> ValueChanged
+    {
+        add => AddHandler(WxEvents.DateChanged, value);
+        remove => RemoveHandler(WxEvents.DateChanged, value);
+    }
     public DatePickerCtrl(Window parent, int id = WindowId.Any) : base(parent, id) => Initialize(NativeMethods.wxsharp_datepicker_create(parent.Handle, id, Token));
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Select ? RaiseCommand(new CommandEventArgs(this, e.Id), ValueChanged) : base.Dispatch(e);
 }
 
 public class TimePickerCtrl : DateTimePickerBase
 {
-    public event EventHandler<CommandEventArgs>? ValueChanged;
+    public event EventHandler<DateEventArgs> ValueChanged
+    {
+        add => AddHandler(WxEvents.TimeChanged, value);
+        remove => RemoveHandler(WxEvents.TimeChanged, value);
+    }
     public TimePickerCtrl(Window parent, int id = WindowId.Any) : base(parent, id) => Initialize(NativeMethods.wxsharp_timepicker_create(parent.Handle, id, Token));
-    internal override uint Dispatch(in NativeEvent e) => e.Kind == EventKind.Select ? RaiseCommand(new CommandEventArgs(this, e.Id), ValueChanged) : base.Dispatch(e);
 }

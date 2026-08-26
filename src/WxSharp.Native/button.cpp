@@ -5,8 +5,7 @@ wxsharp_handle wxsharp_button_create(wxsharp_handle parent, int id, const char* 
 {
     auto* p = static_cast<wxWindow*>(parent);
     auto* ctrl = new wxButton(p, id, Str(label));
-    ctrl->Bind(wxEVT_BUTTON, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_CLICK, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    BindCommon(ctrl, token);
+    TrackWindow(ctrl, token);
     return ctrl;
 }
 

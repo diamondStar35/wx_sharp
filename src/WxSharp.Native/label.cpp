@@ -5,7 +5,7 @@ wxsharp_handle wxsharp_label_create(wxsharp_handle parent, int id, const char* t
 {
     auto* p = static_cast<wxWindow*>(parent);
     auto* ctrl = new wxStaticText(p, id, Str(text), wxDefaultPosition, wxDefaultSize, MapAlignment(style));
-    BindCommon(ctrl, token);
+    TrackWindow(ctrl, token);
     return ctrl;
 }
 

@@ -7,7 +7,19 @@ namespace WxSharp;
 /// <see cref="SelectedIndex"/> is -1 when nothing is selected.</summary>
 public class ListBox : Control
 {
-    public event EventHandler<CommandEventArgs>? SelectionChanged;
+    public event EventHandler<CommandEventArgs> SelectionChanged
+    {
+        add => AddHandler(WxEvents.ListBoxSelected, value);
+        remove => RemoveHandler(WxEvents.ListBoxSelected, value);
+    }
+
+    /// <summary>An item was activated by double-click or by Enter - the "open this one" gesture, as distinct
+    /// from merely moving the selection onto it.</summary>
+    public event EventHandler<CommandEventArgs> ItemActivated
+    {
+        add => AddHandler(WxEvents.ListBoxDoubleClicked, value);
+        remove => RemoveHandler(WxEvents.ListBoxDoubleClicked, value);
+    }
 
     public ListBox(Window parent, int id = WindowId.Any, ListBoxStyle style = ListBoxStyle.Single,
         Point? position = null, Size? size = null) : base(parent, id)
@@ -77,11 +89,5 @@ public class ListBox : Control
         fixed (byte* p = buffer)
             _ = NativeMethods.wxsharp_listbox_get_string(Handle, index, p, length + 1);
         return Utf8String.Decode(buffer, length);
-    }
-
-    internal override uint Dispatch(in NativeEvent e)
-    {
-        if (e.Kind != EventKind.Select) return base.Dispatch(e);
-        return RaiseCommand(new CommandEventArgs(this, e.Id), SelectionChanged);
     }
 }

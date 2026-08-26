@@ -4,16 +4,12 @@
 wxsharp_handle wxsharp_textbox_create(wxsharp_handle parent, int id, const char* value, int style, long long token)
 {
     auto* p = static_cast<wxWindow*>(parent);
-    long flags = MapTextBoxStyle(style);
-    if (!(flags & wxTE_MULTILINE))
-        flags |= wxTE_PROCESS_ENTER;
-    auto* ctrl = new wxTextCtrl(p, id, Str(value), wxDefaultPosition, wxDefaultSize, flags);
-    ctrl->Bind(wxEVT_TEXT, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    // wxEVT_TEXT_ENTER only fires (and may only be bound) when the control processes Enter; binding it without
-    // wxTE_PROCESS_ENTER trips a wx assert, so gate the bind on the flag.
-    if (flags & wxTE_PROCESS_ENTER)
-        ctrl->Bind(wxEVT_TEXT_ENTER, [token](wxCommandEvent& e) { if (!(Fire(token, WXSHARP_EVT_TEXT_ENTER, e.GetId()) & WXSHARP_EVENT_HANDLED)) e.Skip(); });
-    BindCommon(ctrl, token);
+    // The style is passed through exactly as given. wxWidgets does not add wxTE_PROCESS_ENTER by itself,
+    // and adding it would stop Enter reaching a dialog's default button; ask for TextCtrlStyle.ProcessEnter
+    // when the control should handle Enter instead.
+    auto* ctrl = new wxTextCtrl(p, id, Str(value), wxDefaultPosition, wxDefaultSize,
+                                MapTextBoxStyle(style));
+    TrackWindow(ctrl, token);
     return ctrl;
 }
 
@@ -55,4 +51,26 @@ void wxsharp_textbox_set_selection(wxsharp_handle ctrl, int from, int to)
 int wxsharp_textbox_get_selected_text(wxsharp_handle ctrl, char* buffer, int buffer_length)
 {
     return CopyToBuffer(static_cast<wxTextCtrl*>(ctrl)->GetStringSelection(), buffer, buffer_length);
+}
+
+int wxsharp_textbox_line_count(wxsharp_handle ctrl) { return static_cast<wxTextCtrl*>(ctrl)->GetNumberOfLines(); }
+
+int wxsharp_textbox_line_length(wxsharp_handle ctrl, int line)
+{
+    auto* text = static_cast<wxTextCtrl*>(ctrl);
+    return line >= 0 && line < text->GetNumberOfLines() ? text->GetLineLength(line) : -1;
+}
+
+int wxsharp_textbox_get_line_text(wxsharp_handle ctrl, int line, char* buffer, int buffer_length)
+{
+    auto* text = static_cast<wxTextCtrl*>(ctrl);
+    if (line < 0 || line >= text->GetNumberOfLines())
+        return CopyToBuffer(wxString(), buffer, buffer_length);
+    return CopyToBuffer(text->GetLineText(line), buffer, buffer_length);
+}
+
+// Scrolls without moving the caret - for following appended output without stealing the insertion point.
+void wxsharp_textbox_show_position(wxsharp_handle ctrl, int position)
+{
+    static_cast<wxTextCtrl*>(ctrl)->ShowPosition(position);
 }
