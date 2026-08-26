@@ -21,6 +21,9 @@ internal static unsafe partial class NativeMethods
     internal static partial void wxsharp_set_accessible_handler(delegate* unmanaged[Cdecl]<NativeAccessibleRequest*, int> cb);
 
     [LibraryImport(Library)]
+    internal static partial void wxsharp_set_virtual_list_handler(delegate* unmanaged[Cdecl]<NativeVirtualListRequest*, byte> cb);
+
+    [LibraryImport(Library)]
     internal static partial int wxsharp_main_loop();
 
     [LibraryImport(Library)]
@@ -701,6 +704,17 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_unbind(nint window, int eventId);
     [LibraryImport(Library)] internal static partial void wxsharp_window_unbind_all(nint window);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_event_propagates(int eventId);
+
+    // ---- Virtual list controls ----
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_set_item_count(nint ctrl, long count);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_refresh_item(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_refresh_items(nint ctrl, long from, long to);
+
+    // ---- Check box third state ----
+    [LibraryImport(Library)] internal static partial int wxsharp_checkbox_get_3state(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_checkbox_set_3state(nint ctrl, int state);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_checkbox_is_3state(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_checkbox_is_3rd_state_allowed_for_user(nint ctrl);
 
     // ---- Update UI, dropped files, hot keys ----
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_updateui_enable([MarshalAs(UnmanagedType.U1)] bool enable);

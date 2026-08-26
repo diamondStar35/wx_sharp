@@ -18,9 +18,26 @@ public class CheckBox : Control
         ApplyInitialGeometry(position, size);
     }
 
+    /// <summary>The check state as a boolean. On a three-state box the indeterminate state reads as false;
+    /// use <see cref="State"/> there instead.</summary>
     public bool Checked
     {
         get => NativeMethods.wxsharp_checkbox_get(Handle);
         set => NativeMethods.wxsharp_checkbox_set(Handle, value);
     }
+
+    /// <summary>The full state, including the indeterminate one. Setting
+    /// <see cref="CheckBoxState.Undetermined"/> on a box that was not created with
+    /// <see cref="CheckBoxStyle.ThreeState"/> does nothing.</summary>
+    public CheckBoxState State
+    {
+        get => (CheckBoxState)NativeMethods.wxsharp_checkbox_get_3state(Handle);
+        set => NativeMethods.wxsharp_checkbox_set_3state(Handle, (int)value);
+    }
+
+    /// <summary>Whether this box was created with <see cref="CheckBoxStyle.ThreeState"/>.</summary>
+    public bool IsThreeState => NativeMethods.wxsharp_checkbox_is_3state(Handle);
+
+    /// <summary>Whether the user can reach the indeterminate state, as opposed to only code.</summary>
+    public bool IsThirdStateAllowedForUser => NativeMethods.wxsharp_checkbox_is_3rd_state_allowed_for_user(Handle);
 }

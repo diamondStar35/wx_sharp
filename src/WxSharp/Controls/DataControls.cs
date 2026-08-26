@@ -203,6 +203,30 @@ public class ListCtrl : Control
 
     /// <summary>Scrolls so a row is visible.</summary>
     public void EnsureVisible(long item) => NativeMethods.wxsharp_listctrl_ensure_visible(Handle, item);
+
+    // ---- Virtual mode --------------------------------------------------------------------------------
+
+    /// <summary>Tells a virtual list how many rows it has. The control then asks
+    /// <see cref="OnGetItemText"/> for each row as it draws it, so a list of any size costs only what is
+    /// on screen. Requires <see cref="ListCtrlStyle.Virtual"/>.</summary>
+    public void SetItemCount(long count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        NativeMethods.wxsharp_listctrl_set_item_count(Handle, count);
+    }
+
+    /// <summary>Supplies the text of one cell of a virtual list. Override it when the control was created
+    /// with <see cref="ListCtrlStyle.Virtual"/>; it is called only for the rows actually being drawn, so it
+    /// must be quick and free of side effects. Follows <c>wxListCtrl.OnGetItemText</c>.</summary>
+    protected virtual string OnGetItemText(long item, int column) => string.Empty;
+
+    internal string GetVirtualItemText(long item, int column) => OnGetItemText(item, column) ?? string.Empty;
+
+    /// <summary>Redraws one row, after the data behind a virtual list changed.</summary>
+    public void RefreshItem(long item) => NativeMethods.wxsharp_listctrl_refresh_item(Handle, item);
+
+    /// <summary>Redraws an inclusive range of rows.</summary>
+    public void RefreshItems(long from, long to) => NativeMethods.wxsharp_listctrl_refresh_items(Handle, from, to);
 }
 
 public readonly record struct TreeItemId(long Value)
