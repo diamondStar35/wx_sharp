@@ -221,10 +221,26 @@ public enum TextCtrlStyle
 }
 
 /// <summary>Whether a <see cref="CheckBox"/> supports the third, indeterminate state.</summary>
+[Flags]
 public enum CheckBoxStyle
 {
     TwoState = 0,
-    ThreeState = 1,
+
+    /// <summary>Allow the indeterminate state, read and written through <see cref="CheckBox.State"/>.</summary>
+    ThreeState = 1 << 0,
+
+    /// <summary>Let the user cycle into the indeterminate state as well. Without this the third state can
+    /// only be set in code, which is the usual arrangement.</summary>
+    AllowThirdStateForUser = 1 << 1,
+}
+
+/// <summary>The state of a three-state <see cref="CheckBox"/>, following <c>wxCheckBoxState</c>.</summary>
+public enum CheckBoxState
+{
+    Unchecked = 0,
+    Checked = 1,
+    /// <summary>Neither checked nor unchecked - "mixed", as a screen reader announces it.</summary>
+    Undetermined = 2,
 }
 
 /// <summary>Creation styles for a <see cref="Slider"/>.</summary>

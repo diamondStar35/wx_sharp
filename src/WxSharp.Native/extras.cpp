@@ -220,10 +220,72 @@ wxsharp_handle wxsharp_simplebook_create(wxsharp_handle parent, int id, long lon
     return control;
 }
 
+namespace
+{
+    wxsharp_virtual_list_cb g_virtual_list_cb = nullptr;
+
+    // Only wxLC_VIRTUAL makes wxWidgets ask these questions; for an ordinary list the override never runs.
+    class WxSharpListCtrl : public wxListCtrl
+    {
+    public:
+        WxSharpListCtrl(wxWindow* parent, int id, long style, long long token)
+            : wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize, style), m_token(token) {}
+
+    protected:
+        wxString OnGetItemText(long item, long column) const override
+        {
+            if (!g_virtual_list_cb)
+                return wxString();
+
+            // Ask once with a stack buffer, and again only if the text did not fit.
+            char stack[512];
+            wxsharp_virtual_list_request request = {};
+            request.size = sizeof(request);
+            request.version = 1;
+            request.token = m_token;
+            request.item = item;
+            request.column = static_cast<int>(column);
+            request.buffer = stack;
+            request.buffer_length = static_cast<int>(sizeof(stack));
+            if (!g_virtual_list_cb(&request))
+                return wxString();
+            if (request.required_length < static_cast<int>(sizeof(stack)))
+                return wxString::FromUTF8(stack);
+
+            std::vector<char> heap(static_cast<size_t>(request.required_length) + 1);
+            request.buffer = heap.data();
+            request.buffer_length = static_cast<int>(heap.size());
+            if (!g_virtual_list_cb(&request))
+                return wxString();
+            return wxString::FromUTF8(heap.data());
+        }
+
+    private:
+        long long m_token;
+    };
+}
+
+void wxsharp_set_virtual_list_handler(wxsharp_virtual_list_cb cb) { g_virtual_list_cb = cb; }
+
 wxsharp_handle wxsharp_listctrl_create(wxsharp_handle parent, int id, int style, long long token)
 {
-    return Common(new wxListCtrl(static_cast<wxWindow*>(parent), id, wxDefaultPosition, wxDefaultSize,
-                                 MapListCtrlStyle(style)), token);
+    return Common(new WxSharpListCtrl(static_cast<wxWindow*>(parent), id, MapListCtrlStyle(style), token),
+                  token);
+}
+
+void wxsharp_listctrl_set_item_count(wxsharp_handle ctrl, long long count)
+{
+    static_cast<wxListCtrl*>(ctrl)->SetItemCount(static_cast<long>(count));
+}
+
+void wxsharp_listctrl_refresh_item(wxsharp_handle ctrl, long long item)
+{
+    static_cast<wxListCtrl*>(ctrl)->RefreshItem(static_cast<long>(item));
+}
+
+void wxsharp_listctrl_refresh_items(wxsharp_handle ctrl, long long from, long long to)
+{
+    static_cast<wxListCtrl*>(ctrl)->RefreshItems(static_cast<long>(from), static_cast<long>(to));
 }
 
 int wxsharp_listctrl_column_count(wxsharp_handle ctrl) { return static_cast<wxListCtrl*>(ctrl)->GetColumnCount(); }

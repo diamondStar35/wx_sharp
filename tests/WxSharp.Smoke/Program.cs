@@ -247,6 +247,40 @@ using (var app = new SmokeApp())
     tree.EnsureVisible(child);
     tree.Unselect();
 
+    // ---- A virtual list asks for the rows it is drawing rather than storing them, so the count can be
+    // far larger than anything held in memory.
+    var virtualList = new CountingListCtrl(panel);
+    virtualList.InsertColumn(0, "Row", 120);
+    virtualList.SetItemCount(1_000_000);
+    virtualList.RefreshItems(0, 9);
+    if (virtualList.Count != 1_000_000)
+        throw new InvalidOperationException($"A virtual list reported {virtualList.Count} rows.");
+    if (virtualList.GetItem(7) != "row 7")
+        throw new InvalidOperationException(
+            $"The virtual list did not ask for its text: got '{virtualList.GetItem(7)}'.");
+    if (virtualList.Asked == 0)
+        throw new InvalidOperationException("OnGetItemText was never called.");
+    virtualList.Destroy();
+
+    // ---- A three-state check box can actually report its third state.
+    var triState = new CheckBox(panel, label: "Tri", style: CheckBoxStyle.ThreeState);
+    if (!triState.IsThreeState || triState.State != CheckBoxState.Unchecked)
+        throw new InvalidOperationException("A three-state check box did not start unchecked.");
+    triState.State = CheckBoxState.Undetermined;
+    if (triState.State != CheckBoxState.Undetermined)
+        throw new InvalidOperationException("The indeterminate state did not round-trip.");
+    triState.State = CheckBoxState.Checked;
+    if (triState.State != CheckBoxState.Checked || !triState.Checked)
+        throw new InvalidOperationException("The checked state did not round-trip.");
+
+    // A two-state box refuses the third state rather than asserting inside wxWidgets.
+    var twoState = new CheckBox(panel, label: "Two");
+    twoState.State = CheckBoxState.Undetermined;
+    if (twoState.IsThreeState || twoState.State == CheckBoxState.Undetermined)
+        throw new InvalidOperationException("A two-state check box accepted the indeterminate state.");
+    triState.Destroy();
+    twoState.Destroy();
+
     // ---- wxComboBox: the item operations it was missing.
     combo.Insert("inserted", 0);
     if (combo.Count != 2 || combo[0] != "inserted" || combo.IndexOf("second") != 1)
@@ -325,6 +359,17 @@ static void VerifyLifecycle(SmokeApp app)
 }
 
 sealed class ExpectedCallbackException : Exception { }
+
+sealed class CountingListCtrl(Window parent) : ListCtrl(parent, style: ListCtrlStyle.Report | ListCtrlStyle.Virtual)
+{
+    public int Asked { get; private set; }
+
+    protected override string OnGetItemText(long item, int column)
+    {
+        Asked++;
+        return $"row {item}";
+    }
+}
 
 class SmokeApp : App
 {

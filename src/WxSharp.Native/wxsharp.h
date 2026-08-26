@@ -280,12 +280,29 @@ extern "C" {
         int required_length;
     } wxsharp_accessible_request;
     typedef int (*wxsharp_accessible_cb)(wxsharp_accessible_request* request);
+
+    // A virtual list control asking for the text of one cell, the way wxListCtrl::OnGetItemText does.
+    // The handler writes UTF-8 into buffer and reports the full length in required_length, so a caller
+    // that was given too small a buffer can be asked again.
+    typedef struct wxsharp_virtual_list_request
+    {
+        unsigned int size;
+        unsigned int version;
+        long long token;
+        long long item;
+        int column;
+        char* buffer;
+        int buffer_length;
+        int required_length;
+    } wxsharp_virtual_list_request;
+    typedef bool (*wxsharp_virtual_list_cb)(wxsharp_virtual_list_request* request);
     typedef struct wxsharp_accelerator { int modifiers; int key_code; int command_id; } wxsharp_accelerator;
 
     // ---- App lifetime ---------------------------------------------------------------------------------
     WXSHARP_API bool wxsharp_init();
     WXSHARP_API void wxsharp_set_event_handler(wxsharp_event_cb cb);
     WXSHARP_API void wxsharp_set_accessible_handler(wxsharp_accessible_cb cb);
+    WXSHARP_API void wxsharp_set_virtual_list_handler(wxsharp_virtual_list_cb cb);
     WXSHARP_API int  wxsharp_main_loop();
     WXSHARP_API void wxsharp_exit_main_loop();
     WXSHARP_API void wxsharp_set_exit_on_frame_delete(bool value);
@@ -506,6 +523,11 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_checkbox_create(wxsharp_handle parent, int id, const char* label, int style, long long token);
     WXSHARP_API bool wxsharp_checkbox_get(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_checkbox_set(wxsharp_handle ctrl, bool value);
+    // 0 unchecked, 1 checked, 2 undetermined - wxCheckBoxState.
+    WXSHARP_API int  wxsharp_checkbox_get_3state(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_checkbox_set_3state(wxsharp_handle ctrl, int state);
+    WXSHARP_API bool wxsharp_checkbox_is_3state(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_checkbox_is_3rd_state_allowed_for_user(wxsharp_handle ctrl);
 
     // ---- Radio button --------------------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_radio_create(wxsharp_handle parent, int id, const char* label, bool group_start, long long token);
@@ -685,6 +707,10 @@ extern "C" {
     WXSHARP_API int  wxsharp_listctrl_selected_count(wxsharp_handle ctrl);
     // Walks the selection: pass -1 to start, then the previous result. Returns -1 when there are no more.
     WXSHARP_API long long wxsharp_listctrl_next_selected(wxsharp_handle ctrl, long long after);
+    // Virtual mode: tell the control how many rows there are and it will ask for each one as it draws.
+    WXSHARP_API void wxsharp_listctrl_set_item_count(wxsharp_handle ctrl, long long count);
+    WXSHARP_API void wxsharp_listctrl_refresh_item(wxsharp_handle ctrl, long long item);
+    WXSHARP_API void wxsharp_listctrl_refresh_items(wxsharp_handle ctrl, long long from, long long to);
     WXSHARP_API wxsharp_handle wxsharp_treectrl_create(wxsharp_handle parent, int id, int style, long long token);
     WXSHARP_API long long wxsharp_tree_add_root(wxsharp_handle ctrl, const char* text);
     WXSHARP_API long long wxsharp_tree_append(wxsharp_handle ctrl, long long parent, const char* text);

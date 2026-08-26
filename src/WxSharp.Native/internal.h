@@ -299,7 +299,9 @@ inline long MapAlignment(int a)
 
 inline long MapCheckBoxStyle(int s)
 {
-    return (s & 1) ? wxCHK_3STATE : wxCHK_2STATE;
+    long f = (s & 1) ? wxCHK_3STATE : wxCHK_2STATE;
+    if (s & 2) f |= wxCHK_ALLOW_3RD_STATE_FOR_USER;
+    return f;
 }
 
 inline long MapChoiceStyle(int s)

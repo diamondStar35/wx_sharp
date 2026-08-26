@@ -205,6 +205,19 @@ internal struct NativeEvent
 [StructLayout(LayoutKind.Sequential)]
 internal struct NativeAccelerator { internal int Modifiers, KeyCode, CommandId; }
 
+/// <summary>A virtual list control asking for the text of one cell.</summary>
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct NativeVirtualListRequest
+{
+    internal uint Size, Version;
+    internal long Token;
+    internal long Item;
+    internal int Column;
+    internal byte* Buffer;
+    internal int BufferLength;
+    internal int RequiredLength;
+}
+
 /// <summary>Builds the arguments for one event kind. Held by <see cref="EventType{TEventArgs}"/> so the
 /// managed side needs no reflection or type switch to construct them.</summary>
 internal delegate WxEventArgs EventArgsFactory(Window source, in NativeEvent e);

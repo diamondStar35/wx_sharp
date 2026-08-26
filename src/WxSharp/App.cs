@@ -29,6 +29,7 @@ public class App : IDisposable
         if (!NativeMethods.wxsharp_init()) throw new InvalidOperationException("wxWidgets initialization failed.");
         unsafe { NativeMethods.wxsharp_set_event_handler(&Dispatch); }
         unsafe { NativeMethods.wxsharp_set_accessible_handler(&Accessible.Dispatch); }
+        unsafe { NativeMethods.wxsharp_set_virtual_list_handler(&DispatchVirtualList); }
         Current = this;
         NativeMethods.wxsharp_set_exit_on_frame_delete(true);
     }
@@ -171,6 +172,31 @@ public class App : IDisposable
             return result;
         }
         catch (Exception ex) { app.RecordCallbackException(ex); return 1; }
+    }
+
+    // A virtual list control asking for a cell it is about to draw. Answered synchronously on the UI
+    // thread, so the handler must stay cheap - which is what wxListCtrl.OnGetItemText requires too.
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static unsafe byte DispatchVirtualList(NativeVirtualListRequest* request)
+    {
+        var app = Current;
+        if (app is null || request is null || request->Version != 1) return 0;
+        try
+        {
+            if (!Windows.TryGetValue(request->Token, out var window) || window is not ListCtrl list)
+                return 0;
+            var text = list.GetVirtualItemText(request->Item, request->Column);
+            var required = System.Text.Encoding.UTF8.GetByteCount(text);
+            request->RequiredLength = required;
+            if (request->Buffer is not null && request->BufferLength > required)
+            {
+                var destination = new Span<byte>(request->Buffer, request->BufferLength);
+                System.Text.Encoding.UTF8.GetBytes(text, destination);
+                destination[required] = 0;
+            }
+            return 1;
+        }
+        catch (Exception ex) { app.RecordCallbackException(ex); return 0; }
     }
 
     private void RunOnExit() { if (!_onExitCalled) { _onExitCalled = true; _ = OnExit(); } }
