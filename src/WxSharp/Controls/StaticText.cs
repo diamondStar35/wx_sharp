@@ -10,16 +10,6 @@ public class StaticText : Control
         ApplyInitialGeometry(position, size);
     }
 
-    public unsafe string Label
-    {
-        get
-        {
-            var length = NativeMethods.wxsharp_label_get_text(Handle, null, 0);
-            if (length <= 0) return string.Empty;
-            var buffer = new byte[length + 1];
-            fixed (byte* p = buffer) _ = NativeMethods.wxsharp_label_get_text(Handle, p, length + 1);
-            return Utf8String.Decode(buffer, length);
-        }
-        set => NativeMethods.wxsharp_label_set_text(Handle, value);
-    }
+    // The text is Window.Label: wxWindow::SetLabel is virtual and wxStaticText overrides it, so the
+    // inherited property already reaches the right implementation.
 }
