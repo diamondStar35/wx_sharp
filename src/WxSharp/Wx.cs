@@ -3,7 +3,7 @@ using System;
 namespace WxSharp;
 
 /// <summary>Global wxWidgets services. Application lifetime is owned by <see cref="App"/>.</summary>
-public static class Wx
+public static partial class Wx
 {
     public static bool SupportsCustomAccessibility => NativeMethods.wxsharp_custom_accessibility_available();
     /// <summary>Shows a native message box and returns the button pressed. Pass the window it belongs to as

@@ -48,6 +48,7 @@ add_library(wxsharp SHARED
   control_props.cpp
   frame.cpp
   locale.cpp
+  utils.cpp
   window_props.cpp
   textentry.cpp
   clipboard.cpp

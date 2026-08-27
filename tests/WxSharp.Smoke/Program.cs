@@ -454,6 +454,96 @@ using (var app = new SmokeApp())
     if (!frame.RestoreToGeometry(geometry))
         throw new InvalidOperationException("RestoreToGeometry rejected what SaveGeometry produced.");
 
+    // ---- The wxWidgets free functions.
+    // Launching is not exercised for real: opening the user's browser mid-test would be rude, and a bad URL
+    // is refused before anything is launched.
+    try
+    {
+        Wx.LaunchDefaultBrowser("   ");
+        throw new InvalidOperationException("A blank URL was accepted.");
+    }
+    catch (ArgumentException) { }
+    try
+    {
+        Wx.LaunchDefaultApplication("");
+        throw new InvalidOperationException("A blank path was accepted.");
+    }
+    catch (ArgumentException) { }
+
+    Wx.Bell();
+    _ = Wx.GetKeyState((int)Key.Shift);
+    var pointer = Wx.GetMouseState();
+    if (pointer.Position != Wx.GetMousePosition())
+        throw new InvalidOperationException("The mouse state and position disagreed about where the pointer is.");
+
+    // Machine and user facts. These vary per machine, so the assertions are about shape, not value.
+    if (Wx.OsDescription.Length == 0)
+        throw new InvalidOperationException("The OS described itself as nothing.");
+    var (osId, osMajor, _, _) = Wx.GetOsVersion();
+    if (osId == OperatingSystemId.Unknown || osMajor <= 0)
+        throw new InvalidOperationException($"The OS reported as {osId} version {osMajor}.");
+    if (!Wx.CheckOsVersion(1))
+        throw new InvalidOperationException("The OS claimed to be older than version 1.");
+    if (Wx.LibraryVersion.Length == 0)
+        throw new InvalidOperationException("wxWidgets did not report its version.");
+    if (Wx.ProcessId != (uint)Environment.ProcessId)
+        throw new InvalidOperationException("wxWidgets and .NET disagreed about the process ID.");
+    if (Wx.HostName.Length == 0 || Wx.UserId.Length == 0 || Wx.HomeDirectory.Length == 0)
+        throw new InvalidOperationException("The machine would not say who or where it is.");
+    _ = Wx.UserName;
+    _ = Wx.EmailAddress;
+    _ = Wx.FullHostName;
+    _ = Wx.IsPlatform64Bit;
+    _ = Wx.CpuArchitectureName;
+    _ = Wx.NativeCpuArchitectureName;
+    _ = Wx.FreeMemory;
+    if (Wx.IsPlatformLittleEndian != BitConverter.IsLittleEndian)
+        throw new InvalidOperationException("wxWidgets and .NET disagreed about endianness.");
+    if (Wx.GetDiskSpace(AppContext.BaseDirectory, out var totalSpace, out _) && totalSpace <= 0)
+        throw new InvalidOperationException("A volume reported a total size of zero.");
+
+    // Environment variables: unset and set-to-empty are different answers.
+    const string envName = "WXSHARP_SMOKE_VARIABLE";
+    if (Wx.GetEnv(envName) is not null)
+        throw new InvalidOperationException("A variable that was never set reported a value.");
+    if (!Wx.SetEnv(envName, expected))
+        throw new InvalidOperationException("Setting an environment variable failed.");
+    if (Wx.GetEnv(envName) != expected)
+        throw new InvalidOperationException($"The variable read back as '{Wx.GetEnv(envName)}'.");
+    // Windows deletes a variable rather than storing an empty one, so setting it to "" is an unset there.
+    // GetEnv still tells null from empty - that is what the two answers are for - but on this platform
+    // nothing can produce the empty one.
+    _ = Wx.SetEnv(envName, "");
+    if (OperatingSystem.IsWindows() && Wx.GetEnv(envName) is not null)
+        throw new InvalidOperationException("Windows kept a variable that was set to nothing.");
+    if (!Wx.UnsetEnv(envName) || Wx.GetEnv(envName) is not null)
+        throw new InvalidOperationException("Unsetting an environment variable did not take.");
+
+    // Menu labels, stripped for anywhere they are shown outside a menu.
+    if (Wx.StripMenuCodes("E&xit\tCtrl+Q") != "Exit")
+        throw new InvalidOperationException(
+            $"StripMenuCodes produced '{Wx.StripMenuCodes("E&xit\tCtrl+Q")}'.");
+
+    // Finding a window by name gets back the very wrapper that owns it, not a second one around the same
+    // native object. The name has to be a distinctive one: controls of the same kind share a default name,
+    // and wxWidgets returns the first match.
+    multiline.Name = "smoke-multiline";
+    if (!ReferenceEquals(Wx.FindWindowByName("smoke-multiline"), multiline))
+        throw new InvalidOperationException("Finding a window by name did not return its own wrapper.");
+    if (Wx.FindWindowByName("no window is called this") is not null)
+        throw new InvalidOperationException("A name nothing uses matched a window.");
+    _ = Wx.GetActiveWindow();
+    _ = Wx.FindWindowAtPoint(Wx.GetMousePosition());
+
+    // Disabling everything for a long operation, and letting it go again.
+    using (Wx.DisableWindows(frame))
+    {
+        if (!frame.Enabled)
+            throw new InvalidOperationException("The window left out of the disabler was disabled anyway.");
+    }
+    if (!frame.Enabled)
+        throw new InvalidOperationException("The disabler did not re-enable the frame.");
+
     // ---- Languages: what a settings dialog builds its picker from.
     if (Locale.SystemLanguage == WxSharp.Language.Unknown)
         throw new InvalidOperationException("The system reported no preferred language.");

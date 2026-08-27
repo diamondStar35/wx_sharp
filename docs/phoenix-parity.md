@@ -63,6 +63,10 @@ This document distinguishes behavioral compatibility from API completeness.
 | `Locale` versus `Translations` | Both load the same gettext `.mo` catalogues. `Locale` additionally sets the C runtime locale, so dates, numbers and currency follow the language too; `Translations` only translates. wxWidgets marks `wxLocale` as superseded but still ships it, and so does this. |
 | Frame geometry | `wxTopLevelWindow::SaveGeometry` takes a `GeometryStore` the caller implements. The wrapper supplies one that serialises to an opaque string, so placement can go straight into whatever settings file an application already has. The contents are wxWidgets' own field names and vary by platform. |
 | Frame-owned bars | `Frame.StatusBar` and `Frame.ToolBar` hand back the same wrapper each time rather than a fresh one around the same native object. A bar wxWidgets made without the wrapper knowing is adopted on first read. |
+| Free functions | The namespace-scope `wx*` functions are static members of `Wx`, which is where wxPython puts them too. `wxLaunchDefaultBrowser` and `wxLaunchDefaultApplication` ask the desktop what is registered rather than naming a program, so the user's own default is honoured. |
+| `Wx.GetEnv` | Returns null for an unset variable and an empty string for one set to nothing. On Windows only the first is reachable: the platform deletes a variable given an empty value rather than storing it. |
+| `Wx.FindWindowByName` | Returns the wrapper that owns the window, or null when wxWidgets created it without one. Controls of the same kind share a default name and wxWidgets returns the first match, so a search is only meaningful against a name the caller set. |
+| `Wx.Sleep` | Wrapped, and documented as the wrong tool: it blocks the calling thread outright, freezing the interface and anything assistive technology is reading from it. |
 
 ## Current coverage boundary
 
@@ -112,6 +116,13 @@ recorded here rather than quietly skipped:
 - `wxAcceleratorTable` as an object — accelerators are set from an array, and
   the installed table cannot be read back.
 - `wxImageList` — blocks icons in list, tree, notebook and toolbar controls.
+
+`Wx` carries the wxWidgets free functions: launching a URL or a file with the
+user's own default program, running a command, the system bell, key and mouse
+state, who and where the machine is, the OS and CPU description, environment
+variables, window lookup, `wxWindowDisabler` as a scope, and `StripMenuCodes`
+for showing a menu label anywhere outside a menu. Process and system
+termination - `wxKill` and `wxShutdown` - are not wrapped.
 
 `Frame` is complete against `wxFrame` and `wxTopLevelWindow`: window state, the title-bar buttons, full
 screen, user attention, icon bundles, the frame-owned menu, status and tool bars, and geometry persistence.

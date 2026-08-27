@@ -1269,6 +1269,47 @@ extern "C" {
     WXSHARP_API int wxsharp_frame_save_geometry(wxsharp_handle frame, char* buffer, int buffer_length);
     WXSHARP_API bool wxsharp_frame_restore_to_geometry(wxsharp_handle frame, const char* text);
 
+    // ---- The wxWidgets free functions ----
+    WXSHARP_API bool wxsharp_launch_default_browser(const char* url, int flags);
+    WXSHARP_API bool wxsharp_launch_default_application(const char* path, int flags);
+    WXSHARP_API long long wxsharp_execute(const char* command, int flags);
+    WXSHARP_API long long wxsharp_shell(const char* command);
+    WXSHARP_API void wxsharp_bell(void);
+    WXSHARP_API bool wxsharp_get_key_state(int key);
+    WXSHARP_API void wxsharp_get_mouse_position(int* x, int* y);
+    WXSHARP_API void wxsharp_get_mouse_state(int* x, int* y, int* buttons, int* modifiers);
+    WXSHARP_API int wxsharp_get_user_id(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_user_name(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_host_name(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_full_host_name(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_email_address(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_home_dir(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_os_description(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_os_version(int* major, int* minor, int* micro);
+    WXSHARP_API bool wxsharp_check_os_version(int major, int minor, int micro);
+    WXSHARP_API bool wxsharp_is_platform_64bit(void);
+    WXSHARP_API bool wxsharp_is_platform_little_endian(void);
+    WXSHARP_API int wxsharp_get_cpu_architecture_name(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_native_cpu_architecture_name(char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_library_version(char* buffer, int buffer_length);
+    WXSHARP_API unsigned int wxsharp_get_process_id(void);
+    WXSHARP_API long long wxsharp_get_free_memory(void);
+    WXSHARP_API bool wxsharp_get_disk_space(const char* path, long long* total, long long* free_space);
+    WXSHARP_API int wxsharp_get_env(const char* name, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_set_env(const char* name, const char* value);
+    WXSHARP_API bool wxsharp_unset_env(const char* name);
+    WXSHARP_API void wxsharp_sleep(int seconds);
+    WXSHARP_API void wxsharp_milli_sleep(unsigned long milliseconds);
+    WXSHARP_API void wxsharp_micro_sleep(unsigned long microseconds);
+    WXSHARP_API wxsharp_handle wxsharp_find_window_by_name(const char* name, wxsharp_handle parent);
+    WXSHARP_API wxsharp_handle wxsharp_find_window_by_label(const char* label, wxsharp_handle parent);
+    WXSHARP_API wxsharp_handle wxsharp_find_window_at_point(int x, int y);
+    WXSHARP_API wxsharp_handle wxsharp_get_active_window(void);
+    WXSHARP_API void wxsharp_enable_top_level_windows(bool enable);
+    WXSHARP_API wxsharp_handle wxsharp_window_disabler_begin(wxsharp_handle skip);
+    WXSHARP_API void wxsharp_window_disabler_end(wxsharp_handle scope);
+    WXSHARP_API int wxsharp_strip_menu_codes(const char* text, char* buffer, int buffer_length);
+
     // ---- Language and translation ----
     // One entry from the wxWidgets language database, flattened so it can cross the ABI by value.
     typedef struct wxsharp_language_info

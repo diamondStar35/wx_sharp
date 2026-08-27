@@ -359,6 +359,47 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial double wxsharp_colour_luminance(uint argb);
     [LibraryImport(Library)] internal static partial byte wxsharp_colour_alpha_blend(byte foreground, byte background, double alpha);
 
+    // ---- The wxWidgets free functions ----
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_launch_default_browser(string url, int flags);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_launch_default_application(string path, int flags);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial long wxsharp_execute(string command, int flags);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial long wxsharp_shell(string command);
+    [LibraryImport(Library)] internal static partial void wxsharp_bell();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_get_key_state(int key);
+    [LibraryImport(Library)] internal static partial void wxsharp_get_mouse_position(out int x, out int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_get_mouse_state(out int x, out int y, out int buttons, out int modifiers);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_user_id(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_user_name(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_host_name(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_full_host_name(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_email_address(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_home_dir(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_os_description(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_os_version(out int major, out int minor, out int micro);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_check_os_version(int major, int minor, int micro);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_is_platform_64bit();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_is_platform_little_endian();
+    [LibraryImport(Library)] internal static partial int wxsharp_get_cpu_architecture_name(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_native_cpu_architecture_name(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_get_library_version(byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial uint wxsharp_get_process_id();
+    [LibraryImport(Library)] internal static partial long wxsharp_get_free_memory();
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_get_disk_space(string path, out long total, out long freeSpace);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int wxsharp_get_env(string name, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_set_env(string name, string value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_unset_env(string name);
+    [LibraryImport(Library)] internal static partial void wxsharp_sleep(int seconds);
+    [LibraryImport(Library)] internal static partial void wxsharp_milli_sleep(ulong milliseconds);
+    [LibraryImport(Library)] internal static partial void wxsharp_micro_sleep(ulong microseconds);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_find_window_by_name(string name, nint parent);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_find_window_by_label(string label, nint parent);
+    [LibraryImport(Library)] internal static partial nint wxsharp_find_window_at_point(int x, int y);
+    [LibraryImport(Library)] internal static partial nint wxsharp_get_active_window();
+    [LibraryImport(Library)] internal static partial void wxsharp_enable_top_level_windows([MarshalAs(UnmanagedType.U1)] bool enable);
+    [LibraryImport(Library)] internal static partial nint wxsharp_window_disabler_begin(nint skip);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_disabler_end(nint scope);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int wxsharp_strip_menu_codes(string text, byte* buffer, int bufferLength);
+
     // ---- The rest of wxFrame / wxTopLevelWindow ----
     [LibraryImport(Library)] internal static partial void wxsharp_frame_iconize(nint frame, [MarshalAs(UnmanagedType.U1)] bool iconize);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_frame_is_iconized(nint frame);
