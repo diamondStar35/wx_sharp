@@ -17,7 +17,7 @@ if (args.Contains("--callback-exception"))
     var frame = new Frame(title: "Callback exception");
     frame.Closing += (_, _) => throw new ExpectedCallbackException();
     frame.Show();
-    Wx.CallAfter(frame.Close);
+    Wx.CallAfter(() => frame.Close());
     try
     {
         app.MainLoop();
@@ -247,6 +247,150 @@ using (var app = new SmokeApp())
     tree.EnsureVisible(child);
     tree.Unselect();
 
+    // ---- The rest of wxWindow: coordinate spaces, freezing, DPI and text metrics.
+    frame.Freeze();
+    if (!frame.IsFrozen) throw new InvalidOperationException("Freeze did not take.");
+    frame.Thaw();
+    if (frame.IsFrozen) throw new InvalidOperationException("Thaw did not take.");
+
+    var clientRect = panel.ClientRect;
+    if (clientRect.Width <= 0 || panel.Rect.Width <= 0 || panel.ScreenRect.Width <= 0)
+        throw new InvalidOperationException("A window reported an empty rectangle.");
+
+    // Client and screen coordinates round-trip through each other.
+    var probePoint = new Point(7, 11);
+    if (panel.ScreenToClient(panel.ClientToScreen(probePoint)) != probePoint)
+        throw new InvalidOperationException("Client and screen coordinates did not round-trip.");
+
+    var extent = label.GetTextExtent("Hello");
+    if (extent.Size.Width <= 0 || label.CharHeight <= 0 || label.CharWidth <= 0)
+        throw new InvalidOperationException("Text metrics came back empty.");
+
+    // A size in device-independent pixels survives the round trip through this display's scaling.
+    if (frame.Dpi.Width <= 0) throw new InvalidOperationException("The window reported no DPI.");
+    if (frame.ToDip(frame.FromDip(new Size(100, 40))) != new Size(100, 40))
+        throw new InvalidOperationException("DIP conversion did not round-trip.");
+
+    // HelpText goes to a wxHelpProvider, and wxWidgets installs none by default, so it round-trips as
+    // empty here. Setting it must still be harmless.
+    frame.HelpText = expected;
+    panel.MinClientSize = new Size(120, 60);
+    if (panel.MinClientSize.Width != 120)
+        throw new InvalidOperationException("Minimum client size did not round-trip.");
+    panel.Variant = WindowVariant.Small;
+    if (panel.Variant != WindowVariant.Small)
+        throw new InvalidOperationException("Window variant did not round-trip.");
+    if (frame.WindowStyleFlags == 0)
+        throw new InvalidOperationException("A frame created with a default style reported no style flags.");
+    panel.Raise();
+    panel.Lower();
+
+    // ---- Sizers can be changed after they are built, not only appended to.
+    var mutable = new Panel(panel);
+    var mutableSizer = new BoxSizer(Orientation.Vertical);
+    var topLabel = new StaticText(mutable, label: "first");
+    var middleLabel = new StaticText(mutable, label: "second");
+    var bottomLabel = new StaticText(mutable, label: "third");
+    var replacement = new StaticText(mutable, label: "replacement");
+
+    var secondItem = mutableSizer.Add(middleLabel, proportion: 1, flags: SizerFlags.Expand | SizerFlags.All, border: 4);
+    mutableSizer.Prepend(topLabel);
+    mutableSizer.Add(bottomLabel);
+    mutableSizer.InsertSpacer(1, 12);
+    mutable.SetSizer(mutableSizer);
+
+    if (mutableSizer.ItemCount != 4 || mutableSizer.IsEmpty)
+        throw new InvalidOperationException($"The sizer holds {mutableSizer.ItemCount} items, expected 4.");
+    if (!mutableSizer.GetItem(1)!.IsSpacer || !mutableSizer.GetItem(0)!.IsWindow)
+        throw new InvalidOperationException("Insert put the spacer in the wrong place.");
+
+    // The item reports back what it was added with, and can be changed afterwards.
+    if (secondItem.Proportion != 1 || secondItem.Border != 4 || !secondItem.Flags.HasFlag(SizerFlags.Expand))
+        throw new InvalidOperationException(
+            $"A sizer item did not report what it was added with: proportion {secondItem.Proportion}, " +
+            $"border {secondItem.Border}, flags {secondItem.Flags}.");
+    secondItem.Proportion = 2;
+    secondItem.Border = 8;
+    if (secondItem.Proportion != 2 || secondItem.Border != 8)
+        throw new InvalidOperationException("A sizer item did not accept a change.");
+    if (mutableSizer.GetItem(middleLabel) is null)
+        throw new InvalidOperationException("Looking an item up by window failed.");
+    // A sizer item's ID is its own, not the window's, and starts unset.
+    secondItem.Id = 4242;
+    if (mutableSizer.GetItemById(4242) is null || mutableSizer.GetItemById(middleLabel.Id) is not null)
+        throw new InvalidOperationException("GetItemById did not search the item's own ID.");
+
+    // Hiding takes an item out of the layout; the sizer still holds it.
+    if (!mutableSizer.Hide(bottomLabel) || mutableSizer.IsShown(bottomLabel))
+        throw new InvalidOperationException("Hiding a sizer item failed.");
+    if (!mutableSizer.AreAnyItemsShown())
+        throw new InvalidOperationException("Hiding one item should not hide the rest.");
+    mutableSizer.Show(bottomLabel);
+
+    if (!mutableSizer.Replace(middleLabel, replacement))
+        throw new InvalidOperationException("Replacing a window in a sizer failed.");
+    if (mutableSizer.GetItem(replacement) is null || mutableSizer.GetItem(middleLabel) is not null)
+        throw new InvalidOperationException("Replace did not swap the windows.");
+
+    if (!mutableSizer.Detach(topLabel) || mutableSizer.ItemCount != 3)
+        throw new InvalidOperationException("Detaching left the wrong number of items.");
+    mutableSizer.Layout();
+
+    var fitted = mutableSizer.ComputeFittingClientSize(mutable);
+    if (fitted.Width <= 0 || fitted.Height <= 0)
+        throw new InvalidOperationException($"The sizer computed an empty fitting size: {fitted}.");
+    if (mutable.GetSizer() != mutableSizer)
+        throw new InvalidOperationException("A window did not report the sizer it was given.");
+    if (replacement.GetContainingSizer() is null)
+        throw new InvalidOperationException("A window in a sizer did not report a containing sizer.");
+
+    mutableSizer.Clear();
+    if (!mutableSizer.IsEmpty) throw new InvalidOperationException("Clear left items behind.");
+
+    // ---- A flex grid grows only the rows and columns it was told to.
+    var flexPanel = new Panel(panel);
+    var flex = new FlexGridSizer(2, 2, verticalGap: 4, horizontalGap: 6);
+    for (var i = 0; i < 4; ++i) flex.Add(new StaticText(flexPanel, label: $"cell {i}"));
+    flex.AddGrowableRow(1);
+    flex.AddGrowableColumn(0);
+    if (!flex.IsRowGrowable(1) || flex.IsRowGrowable(0) || !flex.IsColumnGrowable(0))
+        throw new InvalidOperationException("Growable rows and columns did not round-trip.");
+    flex.RemoveGrowableRow(1);
+    if (flex.IsRowGrowable(1)) throw new InvalidOperationException("Removing a growable row failed.");
+    if (flex.VerticalGap != 4 || flex.HorizontalGap != 6 || flex.Columns != 2)
+        throw new InvalidOperationException("Grid gaps or dimensions did not round-trip.");
+    flex.NonFlexibleGrowMode = FlexGrowMode.All;
+    flex.FlexibleDirection = FlexDirection.Vertical;
+    if (flex.NonFlexibleGrowMode != FlexGrowMode.All || flex.FlexibleDirection != FlexDirection.Vertical)
+        throw new InvalidOperationException("Flex grow mode or direction did not round-trip.");
+    flexPanel.SetSizerAndFit(flex);
+    if (flex.GetColumnWidths().Length != 2)
+        throw new InvalidOperationException("A laid-out flex grid did not report its column widths.");
+
+    // ---- A grid-bag sizer places items by cell, and refuses to overlap them.
+    var bagPanel = new Panel(panel);
+    var bag = new GridBagSizer();
+    var wide = new StaticText(bagPanel, label: "spans two");
+    bag.AddAt(wide, 0, 0, rowSpan: 1, columnSpan: 2);
+    var corner = new StaticText(bagPanel, label: "corner");
+    bag.AddAt(corner, 1, 1);
+    if (bag.GetItemPosition(corner) != (1, 1) || bag.GetItemSpan(wide) != (1, 2))
+        throw new InvalidOperationException("Grid-bag position or span did not round-trip.");
+    if (!bag.CheckForIntersection(0, 1))
+        throw new InvalidOperationException("A cell covered by a span should report an intersection.");
+    if (bag.CheckForIntersection(2, 0))
+        throw new InvalidOperationException("A free cell should report no intersection.");
+    // Asking first is the point: wxWidgets asserts rather than quietly refusing if the cell is taken.
+    if (!bag.SetItemPosition(corner, 2, 0) || bag.GetItemPosition(corner) != (2, 0))
+        throw new InvalidOperationException("Moving an item to a free cell failed.");
+    if (bag.FindItemAtPosition(2, 0) is null || bag.FindItemAtPosition(5, 5) is not null)
+        throw new InvalidOperationException("Finding an item by cell failed.");
+    bagPanel.SetSizer(bag);
+
+    mutable.Destroy();
+    flexPanel.Destroy();
+    bagPanel.Destroy();
+
     // ---- A virtual list asks for the rows it is drawing rather than storing them, so the count can be
     // far larger than anything held in memory.
     var virtualList = new CountingListCtrl(panel);
@@ -328,7 +472,7 @@ using (var app = new SmokeApp())
         closeAttempts++;
         // wxWidgets' model, which the wrapper follows: an event is handled unless the handler skips it, so
         // returning without Skip() here would consume the close and the frame would never go away.
-        if (closeAttempts == 1) { e.Veto(); Wx.CallAfter(frame.Close); }
+        if (closeAttempts == 1) { e.Veto(); Wx.CallAfter(() => frame.Close()); }
         else e.Skip();
     };
 
