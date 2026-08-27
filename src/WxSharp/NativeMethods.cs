@@ -265,31 +265,175 @@ internal static unsafe partial class NativeMethods
     internal static partial void wxsharp_accessible_notify(int eventType, nint window, int objectType, int childId);
     [LibraryImport(Library)] internal static partial uint wxsharp_accessible_probe(nint window);
 
+
+    // ---- wxWindow, the rest ----
+    [LibraryImport(Library)] internal static partial void wxsharp_window_freeze(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_thaw(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_is_frozen(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_clear_background(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_rect(nint window, out int x, out int y, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_client_rect(nint window, out int x, out int y, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_screen_rect(nint window, out int x, out int y, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_screen_position(nint window, out int x, out int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_client_to_screen(nint window, ref int x, ref int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_screen_to_client(nint window, ref int x, ref int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_virtual_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_virtual_size(nint window, int width, int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_best_virtual_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_min_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_max_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_min_client_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_min_client_size(nint window, int width, int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_max_client_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_max_client_size(nint window, int width, int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_border_size(nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_client_size(nint window, int width, int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_fit_inside(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_convert_dialog_to_pixels(nint window, ref int x, ref int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_convert_pixels_to_dialog(nint window, ref int x, ref int y);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_window_get_text_extent(nint window, string text, out int width, out int height, out int descent, out int externalLeading);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_char_height(nint window);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_char_width(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_get_dpi(nint window, out int x, out int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_from_dip(nint window, ref int width, ref int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_to_dip(nint window, ref int width, ref int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_raise(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_lower(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_is_shown_on_screen(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_close_any(nint window, [MarshalAs(UnmanagedType.U1)] bool force);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_center_any(nint window, [MarshalAs(UnmanagedType.U1)] bool onParent);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_navigate(nint window, [MarshalAs(UnmanagedType.U1)] bool forward, [MarshalAs(UnmanagedType.U1)] bool windowChange);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_navigate_in(nint window, [MarshalAs(UnmanagedType.U1)] bool forward, [MarshalAs(UnmanagedType.U1)] bool windowChange);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_scrollbar(nint window, [MarshalAs(UnmanagedType.U1)] bool vertical, int position, int thumbSize, int range, [MarshalAs(UnmanagedType.U1)] bool refresh);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_scroll_pos(nint window, [MarshalAs(UnmanagedType.U1)] bool vertical, int position, [MarshalAs(UnmanagedType.U1)] bool refresh);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_scroll_pos(nint window, [MarshalAs(UnmanagedType.U1)] bool vertical);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_scroll_range(nint window, [MarshalAs(UnmanagedType.U1)] bool vertical);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_scroll_thumb(nint window, [MarshalAs(UnmanagedType.U1)] bool vertical);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_has_scrollbar(nint window, [MarshalAs(UnmanagedType.U1)] bool vertical);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_scroll_lines(nint window, int lines);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_scroll_pages(nint window, int pages);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_scroll_window(nint window, int dx, int dy);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_style_flags(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_style_flags(nint window, int style);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_has_style_flag(nint window, int flag);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_label(nint window, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_window_set_label(nint window, string label);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_help_text(nint window, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_window_set_help_text(nint window, string text);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_is_double_buffered(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_double_buffered(nint window, [MarshalAs(UnmanagedType.U1)] bool on);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_background_style(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_set_background_style(nint window, int style);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_variant(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_variant(nint window, int variant);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_can_set_transparent(nint window);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_set_transparent(nint window, int alpha);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_warp_pointer(nint window, int x, int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_hit_test(nint window, int x, int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_popup_menu_selection(nint window, nint menu, int x, int y);
+
+
+    // ---- wxTextCtrl: what is specific to it rather than shared through wxTextEntry ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_is_modified(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_mark_dirty(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_discard_edits(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_set_modified(nint ctrl, [MarshalAs(UnmanagedType.U1)] bool modified);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_is_multiline(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_position_to_xy(nint ctrl, int position, out int x, out int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_xy_to_position(nint ctrl, int x, int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_hit_test(nint ctrl, int x, int y, out int position);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_load_file(nint ctrl, string path);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_save_file(nint ctrl, string path);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_set_style(nint ctrl, int start, int end, NativeTextAttr* style);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_get_style(nint ctrl, int position, NativeTextAttr* style);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_set_default_style(nint ctrl, NativeTextAttr* style);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_get_default_style(nint ctrl, NativeTextAttr* style);
+
+    // ---- Colour names ----
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_colour_parse(string text, out uint argb);
+    [LibraryImport(Library)] internal static partial int wxsharp_colour_name(uint argb, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_change_lightness(uint argb, int alpha);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_make_disabled(uint argb, byte brightness);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_make_grey(uint argb);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_make_mono(uint argb, [MarshalAs(UnmanagedType.U1)] bool on);
+    [LibraryImport(Library)] internal static partial double wxsharp_colour_luminance(uint argb);
+    [LibraryImport(Library)] internal static partial byte wxsharp_colour_alpha_blend(byte foreground, byte background, double alpha);
+
+    // ---- wxTextEntry ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_supported(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_value(nint ctrl, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_set_value(nint ctrl, string value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_change_value(nint ctrl, string value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_write_text(nint ctrl, string text);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_append_text(nint ctrl, string text);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_range(nint ctrl, int from, int to, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_replace(nint ctrl, int from, int to, string value);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_remove(nint ctrl, int from, int to);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_clear(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_is_empty(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_copy(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_cut(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_paste(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_copy(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_cut(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_paste(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_undo(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_redo(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_undo(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_redo(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_insertion_point(nint ctrl, int position);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_insertion_point_end(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_insertion_point(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_last_position(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_selection(nint ctrl, int from, int to);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_get_selection(nint ctrl, out int from, out int to);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_select_all(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_select_none(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_has_selection(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_selected_text(nint ctrl, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_remove_selection(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_is_editable(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_editable(nint ctrl, [MarshalAs(UnmanagedType.U1)] bool editable);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_max_length(nint ctrl, int length);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_force_upper(nint ctrl);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_set_hint(nint ctrl, string hint);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_hint(nint ctrl, byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_set_margins(nint ctrl, int left, int top);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_get_margins(nint ctrl, out int left, out int top);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_auto_complete(nint ctrl, byte** choices, int count);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_auto_complete_files(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_auto_complete_directories(nint ctrl);
+
+    // ---- Clipboard ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_open();
+    [LibraryImport(Library)] internal static partial void wxsharp_clipboard_close();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_is_opened();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_flush();
+    [LibraryImport(Library)] internal static partial void wxsharp_clipboard_clear();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_is_supported(int format);
+    [LibraryImport(Library)] internal static partial void wxsharp_clipboard_use_primary_selection([MarshalAs(UnmanagedType.U1)] bool primary);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_clipboard_set_text(string text);
+    [LibraryImport(Library)] internal static partial int wxsharp_clipboard_get_text(byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_set_files(byte** paths, int count);
+    [LibraryImport(Library)] internal static partial int wxsharp_clipboard_read_files();
+    [LibraryImport(Library)] internal static partial int wxsharp_clipboard_get_file(int index, byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_set_bitmap(nint bitmap);
+    [LibraryImport(Library)] internal static partial nint wxsharp_clipboard_get_bitmap();
+
+    // ---- System settings ----
+    [LibraryImport(Library)] internal static partial uint wxsharp_system_colour(int which);
+    [LibraryImport(Library)] internal static partial int wxsharp_system_metric(int which, nint window);
+    [LibraryImport(Library)] internal static partial int wxsharp_system_screen_type();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_system_has_feature(int which);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_system_appearance_is_dark();
+    [LibraryImport(Library)] internal static partial int wxsharp_system_appearance_name(byte* buffer, int bufferLength);
+
     // ---- Sizers ----
-    [LibraryImport(Library)]
-    internal static partial nint wxsharp_boxsizer_create([MarshalAs(UnmanagedType.U1)] bool horizontal);
-    [LibraryImport(Library)] internal static partial nint wxsharp_gridsizer_create(int rows, int columns, int verticalGap, int horizontalGap);
-    [LibraryImport(Library)] internal static partial nint wxsharp_flexgridsizer_create(int rows, int columns, int verticalGap, int horizontalGap);
-    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_add_growable_row(nint sizer, int row, int proportion);
-    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_add_growable_column(nint sizer, int column, int proportion);
-    [LibraryImport(Library)] internal static partial nint wxsharp_staticboxsizer_create(nint box, [MarshalAs(UnmanagedType.U1)] bool horizontal);
-    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_create(int verticalGap, int horizontalGap);
-    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_add_control(nint sizer, nint ctrl, int row, int column, int rowSpan, int columnSpan, int flags, int border);
 
-    [LibraryImport(Library)]
-    internal static partial void wxsharp_sizer_add_control(nint sizer, nint ctrl, int proportion, int flags, int border);
 
-    [LibraryImport(Library)]
-    internal static partial void wxsharp_sizer_add_sizer(nint sizer, nint child, int proportion, int flags, int border);
 
-    [LibraryImport(Library)]
-    internal static partial void wxsharp_sizer_add_spacer(nint sizer, int size);
 
-    [LibraryImport(Library)]
-    internal static partial void wxsharp_sizer_add_stretch_spacer(nint sizer, int proportion);
 
-    [LibraryImport(Library)]
-    internal static partial void wxsharp_window_set_sizer(nint window, nint sizer);
 
     // ---- Label ----
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
@@ -699,6 +843,141 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial int wxsharp_textbox_get_line_text(nint ctrl, int line, byte* buffer, int bufferLength);
     [LibraryImport(Library)] internal static partial void wxsharp_textbox_show_position(nint ctrl, int position);
 
+
+    // ---- Sizers ----
+    [LibraryImport(Library)] internal static partial nint wxsharp_boxsizer_create([MarshalAs(UnmanagedType.U1)] bool horizontal);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridsizer_create(int rows, int columns, int verticalGap, int horizontalGap);
+    [LibraryImport(Library)] internal static partial nint wxsharp_flexgridsizer_create(int rows, int columns, int verticalGap, int horizontalGap);
+    [LibraryImport(Library)] internal static partial nint wxsharp_staticboxsizer_create(nint box, [MarshalAs(UnmanagedType.U1)] bool horizontal);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_create(int verticalGap, int horizontalGap);
+
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_add_control(nint sizer, nint ctrl, int proportion, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_add_sizer(nint sizer, nint child, int proportion, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_add_spacer(nint sizer, int size);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_add_stretch_spacer(nint sizer, int proportion);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_insert_control(nint sizer, int index, nint ctrl, int proportion, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_insert_sizer(nint sizer, int index, nint child, int proportion, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_insert_spacer(nint sizer, int index, int size);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_insert_stretch_spacer(nint sizer, int index, int proportion);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_prepend_control(nint sizer, nint ctrl, int proportion, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_prepend_sizer(nint sizer, nint child, int proportion, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_prepend_spacer(nint sizer, int size);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_prepend_stretch_spacer(nint sizer, int proportion);
+
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_detach_control(nint sizer, nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_detach_sizer(nint sizer, nint child);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_detach_at(nint sizer, int index);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_remove_sizer(nint sizer, nint child);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_remove_at(nint sizer, int index);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_clear(nint sizer, [MarshalAs(UnmanagedType.U1)] bool deleteWindows);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_delete_windows(nint sizer);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_replace_control(nint sizer, nint oldCtrl, nint newCtrl, [MarshalAs(UnmanagedType.U1)] bool recursive);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_replace_sizer(nint sizer, nint oldSizer, nint newSizer, [MarshalAs(UnmanagedType.U1)] bool recursive);
+
+    [LibraryImport(Library)] internal static partial int wxsharp_sizer_item_count(nint sizer);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_is_empty(nint sizer);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_item_at(nint sizer, int index);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_item_for_control(nint sizer, nint ctrl, [MarshalAs(UnmanagedType.U1)] bool recursive);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_item_for_sizer(nint sizer, nint child, [MarshalAs(UnmanagedType.U1)] bool recursive);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_item_by_id(nint sizer, int id, [MarshalAs(UnmanagedType.U1)] bool recursive);
+
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_show_control(nint sizer, nint ctrl, [MarshalAs(UnmanagedType.U1)] bool show, [MarshalAs(UnmanagedType.U1)] bool recursive);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_show_sizer(nint sizer, nint child, [MarshalAs(UnmanagedType.U1)] bool show, [MarshalAs(UnmanagedType.U1)] bool recursive);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_show_at(nint sizer, int index, [MarshalAs(UnmanagedType.U1)] bool show);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_show_items(nint sizer, [MarshalAs(UnmanagedType.U1)] bool show);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_any_items_shown(nint sizer);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_is_shown_control(nint sizer, nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_is_shown_sizer(nint sizer, nint child);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_is_shown_at(nint sizer, int index);
+
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_layout(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_fit(nint sizer, nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_fit_inside(nint sizer, nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_set_size_hints(nint sizer, nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_compute_fitting_client_size(nint sizer, nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_compute_fitting_window_size(nint sizer, nint window, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_get_min_size(nint sizer, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_set_min_size(nint sizer, int width, int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_get_size(nint sizer, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_get_position(nint sizer, out int x, out int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizer_set_dimension(nint sizer, int x, int y, int width, int height);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_set_item_min_size_control(nint sizer, nint ctrl, int width, int height);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_set_item_min_size_sizer(nint sizer, nint child, int width, int height);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizer_set_item_min_size_at(nint sizer, int index, int width, int height);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizer_containing_window(nint sizer);
+
+    // ---- Sizer items ----
+    [LibraryImport(Library)] internal static partial int wxsharp_sizeritem_get_proportion(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_set_proportion(nint item, int proportion);
+    [LibraryImport(Library)] internal static partial int wxsharp_sizeritem_get_flags(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_set_flags(nint item, int flags);
+    [LibraryImport(Library)] internal static partial int wxsharp_sizeritem_get_border(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_set_border(nint item, int border);
+    [LibraryImport(Library)] internal static partial int wxsharp_sizeritem_get_id(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_set_id(nint item, int id);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizeritem_is_window(nint item);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizeritem_is_sizer(nint item);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizeritem_is_spacer(nint item);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizeritem_get_window(nint item);
+    [LibraryImport(Library)] internal static partial nint wxsharp_sizeritem_get_sizer(nint item);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sizeritem_is_shown(nint item);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_show(nint item, [MarshalAs(UnmanagedType.U1)] bool show);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_get_min_size(nint item, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_set_min_size(nint item, int width, int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_get_size(nint item, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_sizeritem_get_position(nint item, out int x, out int y);
+
+    // ---- Sizer subclasses ----
+    [LibraryImport(Library)] internal static partial int wxsharp_boxsizer_get_orientation(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_boxsizer_set_orientation(nint sizer, [MarshalAs(UnmanagedType.U1)] bool vertical);
+    [LibraryImport(Library)] internal static partial int wxsharp_gridsizer_get_rows(nint sizer);
+    [LibraryImport(Library)] internal static partial int wxsharp_gridsizer_get_columns(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridsizer_set_rows(nint sizer, int rows);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridsizer_set_columns(nint sizer, int columns);
+    [LibraryImport(Library)] internal static partial int wxsharp_gridsizer_get_vertical_gap(nint sizer);
+    [LibraryImport(Library)] internal static partial int wxsharp_gridsizer_get_horizontal_gap(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridsizer_set_vertical_gap(nint sizer, int gap);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridsizer_set_horizontal_gap(nint sizer, int gap);
+    [LibraryImport(Library)] internal static partial int wxsharp_gridsizer_effective_rows(nint sizer);
+    [LibraryImport(Library)] internal static partial int wxsharp_gridsizer_effective_columns(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_add_growable_row(nint sizer, int row, int proportion);
+    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_add_growable_column(nint sizer, int column, int proportion);
+    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_remove_growable_row(nint sizer, int row);
+    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_remove_growable_column(nint sizer, int column);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_flexgridsizer_is_row_growable(nint sizer, int row);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_flexgridsizer_is_column_growable(nint sizer, int column);
+    [LibraryImport(Library)] internal static partial int wxsharp_flexgridsizer_get_flexible_direction(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_set_flexible_direction(nint sizer, int direction);
+    [LibraryImport(Library)] internal static partial int wxsharp_flexgridsizer_get_grow_mode(nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_flexgridsizer_set_grow_mode(nint sizer, int mode);
+    [LibraryImport(Library)] internal static partial int wxsharp_flexgridsizer_row_heights(nint sizer, int* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_flexgridsizer_column_widths(nint sizer, int* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial nint wxsharp_staticboxsizer_get_box(nint sizer);
+
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_add_control(nint sizer, nint ctrl, int row, int column, int rowSpan, int columnSpan, int flags, int border);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_add_sizer(nint sizer, nint child, int row, int column, int rowSpan, int columnSpan, int flags, int border);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_get_item_position_control(nint sizer, nint ctrl, out int row, out int column);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_get_item_position_at(nint sizer, int index, out int row, out int column);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_gridbagsizer_set_item_position_control(nint sizer, nint ctrl, int row, int column);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_gridbagsizer_set_item_position_at(nint sizer, int index, int row, int column);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_get_item_span_control(nint sizer, nint ctrl, out int rowSpan, out int columnSpan);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_get_item_span_at(nint sizer, int index, out int rowSpan, out int columnSpan);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_gridbagsizer_set_item_span_control(nint sizer, nint ctrl, int rowSpan, int columnSpan);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_gridbagsizer_set_item_span_at(nint sizer, int index, int rowSpan, int columnSpan);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_find_item_control(nint sizer, nint ctrl);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_find_item_sizer(nint sizer, nint child);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_find_item_at_position(nint sizer, int row, int column);
+    [LibraryImport(Library)] internal static partial nint wxsharp_gridbagsizer_find_item_at_point(nint sizer, int x, int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_get_cell_size(nint sizer, int row, int column, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_get_empty_cell_size(nint sizer, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_gridbagsizer_set_empty_cell_size(nint sizer, int width, int height);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_gridbagsizer_check_for_intersection(nint sizer, int row, int column, int rowSpan, int columnSpan, nint exclude);
+
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_sizer(nint window, nint sizer);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_set_sizer_and_fit(nint window, nint sizer);
+    [LibraryImport(Library)] internal static partial nint wxsharp_window_get_sizer(nint window);
+    [LibraryImport(Library)] internal static partial nint wxsharp_window_containing_sizer(nint window);
+
     // ---- Event binding ----
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_bind(nint window, int eventId, long token);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_unbind(nint window, int eventId);
@@ -829,11 +1108,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_progress_destroy(nint progress);
 
     // ---- Services ----
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_clipboard_set_text(string text);
 
-    [LibraryImport(Library)]
-    internal static partial int wxsharp_clipboard_get_text(byte* buffer, int bufferLength);
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int wxsharp_file_dialog(nint parent, string title, string wildcard,
