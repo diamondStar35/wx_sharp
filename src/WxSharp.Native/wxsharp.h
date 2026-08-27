@@ -313,6 +313,88 @@ extern "C" {
                                           int style);
     WXSHARP_API void wxsharp_shutdown();
 
+
+    // ---- wxWindow, the rest ---------------------------------------------------------------------------
+    WXSHARP_API void wxsharp_window_freeze(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_thaw(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_is_frozen(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_clear_background(wxsharp_handle window);
+
+    WXSHARP_API void wxsharp_window_get_rect(wxsharp_handle window, int* x, int* y, int* width, int* height);
+    WXSHARP_API void wxsharp_window_get_client_rect(wxsharp_handle window, int* x, int* y, int* width, int* height);
+    WXSHARP_API void wxsharp_window_get_screen_rect(wxsharp_handle window, int* x, int* y, int* width, int* height);
+    WXSHARP_API void wxsharp_window_get_screen_position(wxsharp_handle window, int* x, int* y);
+    // These convert in place: pass the point in, read the converted point back out.
+    WXSHARP_API void wxsharp_window_client_to_screen(wxsharp_handle window, int* x, int* y);
+    WXSHARP_API void wxsharp_window_screen_to_client(wxsharp_handle window, int* x, int* y);
+    WXSHARP_API void wxsharp_window_get_virtual_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_set_virtual_size(wxsharp_handle window, int width, int height);
+    WXSHARP_API void wxsharp_window_get_best_virtual_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_get_min_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_get_max_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_get_min_client_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_set_min_client_size(wxsharp_handle window, int width, int height);
+    WXSHARP_API void wxsharp_window_get_max_client_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_set_max_client_size(wxsharp_handle window, int width, int height);
+    WXSHARP_API void wxsharp_window_get_border_size(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_set_client_size(wxsharp_handle window, int width, int height);
+    WXSHARP_API void wxsharp_window_fit_inside(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_convert_dialog_to_pixels(wxsharp_handle window, int* x, int* y);
+    WXSHARP_API void wxsharp_window_convert_pixels_to_dialog(wxsharp_handle window, int* x, int* y);
+
+    WXSHARP_API void wxsharp_window_get_text_extent(wxsharp_handle window, const char* text, int* width,
+                                                    int* height, int* descent, int* external_leading);
+    WXSHARP_API int  wxsharp_window_get_char_height(wxsharp_handle window);
+    WXSHARP_API int  wxsharp_window_get_char_width(wxsharp_handle window);
+
+    WXSHARP_API void wxsharp_window_get_dpi(wxsharp_handle window, int* x, int* y);
+    WXSHARP_API void wxsharp_window_from_dip(wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_window_to_dip(wxsharp_handle window, int* width, int* height);
+
+    WXSHARP_API void wxsharp_window_raise(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_lower(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_is_shown_on_screen(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_close_any(wxsharp_handle window, bool force);
+    WXSHARP_API void wxsharp_window_center_any(wxsharp_handle window, bool on_parent);
+
+    WXSHARP_API bool wxsharp_window_navigate(wxsharp_handle window, bool forward, bool window_change);
+    WXSHARP_API bool wxsharp_window_navigate_in(wxsharp_handle window, bool forward, bool window_change);
+
+    WXSHARP_API void wxsharp_window_set_scrollbar(wxsharp_handle window, bool vertical, int position,
+                                                  int thumb_size, int range, bool refresh);
+    WXSHARP_API void wxsharp_window_set_scroll_pos(wxsharp_handle window, bool vertical, int position, bool refresh);
+    WXSHARP_API int  wxsharp_window_get_scroll_pos(wxsharp_handle window, bool vertical);
+    WXSHARP_API int  wxsharp_window_get_scroll_range(wxsharp_handle window, bool vertical);
+    WXSHARP_API int  wxsharp_window_get_scroll_thumb(wxsharp_handle window, bool vertical);
+    WXSHARP_API bool wxsharp_window_has_scrollbar(wxsharp_handle window, bool vertical);
+    WXSHARP_API bool wxsharp_window_scroll_lines(wxsharp_handle window, int lines);
+    WXSHARP_API bool wxsharp_window_scroll_pages(wxsharp_handle window, int pages);
+    WXSHARP_API bool wxsharp_window_line_up(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_line_down(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_page_up(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_page_down(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_scroll_window(wxsharp_handle window, int dx, int dy);
+
+    WXSHARP_API int  wxsharp_window_get_style_flags(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_set_style_flags(wxsharp_handle window, int style);
+    WXSHARP_API bool wxsharp_window_has_style_flag(wxsharp_handle window, int flag);
+    WXSHARP_API int  wxsharp_window_get_label(wxsharp_handle window, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_window_set_label(wxsharp_handle window, const char* label);
+    WXSHARP_API int  wxsharp_window_get_help_text(wxsharp_handle window, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_window_set_help_text(wxsharp_handle window, const char* text);
+    WXSHARP_API bool wxsharp_window_is_double_buffered(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_set_double_buffered(wxsharp_handle window, bool on);
+    WXSHARP_API int  wxsharp_window_get_background_style(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_set_background_style(wxsharp_handle window, int style);
+    WXSHARP_API int  wxsharp_window_get_variant(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_set_variant(wxsharp_handle window, int variant);
+    WXSHARP_API bool wxsharp_window_can_set_transparent(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_set_transparent(wxsharp_handle window, int alpha);
+
+    WXSHARP_API void wxsharp_window_warp_pointer(wxsharp_handle window, int x, int y);
+    WXSHARP_API int  wxsharp_window_hit_test(wxsharp_handle window, int x, int y);
+    WXSHARP_API int  wxsharp_window_popup_menu_selection(wxsharp_handle window, wxsharp_handle menu, int x, int y);
+
     // ---- Event binding --------------------------------------------------------------------------------
     // Events are hooked on demand: the managed side binds an event ID the first time something subscribes to
     // it on a window and unbinds it when the last subscriber goes away, so an unobserved event never crosses
@@ -465,23 +547,144 @@ extern "C" {
     // ---- Sizers ---------------------------------------------------------------------------------------
     // Explicit layout: a box sizer lays items in one direction; add controls/sizers with a proportion
     // (0 = fixed), expand/centre, and border, plus fixed or stretchable spacers. A window adopts a sizer.
+    // ---- Sizers ---------------------------------------------------------------------------------------
+    // Items are wxSizerItem handles, so what a sizer was told about an item can be read back and changed.
     WXSHARP_API wxsharp_handle wxsharp_boxsizer_create(bool horizontal);
-    WXSHARP_API wxsharp_handle wxsharp_gridsizer_create(int rows, int columns, int vertical_gap,
-                                                        int horizontal_gap);
-    WXSHARP_API wxsharp_handle wxsharp_flexgridsizer_create(int rows, int columns, int vertical_gap,
-                                                            int horizontal_gap);
-    WXSHARP_API void wxsharp_flexgridsizer_add_growable_row(wxsharp_handle sizer, int row, int proportion);
-    WXSHARP_API void wxsharp_flexgridsizer_add_growable_column(wxsharp_handle sizer, int column, int proportion);
+    WXSHARP_API wxsharp_handle wxsharp_gridsizer_create(int rows, int columns, int vertical_gap, int horizontal_gap);
+    WXSHARP_API wxsharp_handle wxsharp_flexgridsizer_create(int rows, int columns, int vertical_gap, int horizontal_gap);
     WXSHARP_API wxsharp_handle wxsharp_staticboxsizer_create(wxsharp_handle box, bool horizontal);
     WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_create(int vertical_gap, int horizontal_gap);
-    WXSHARP_API void wxsharp_gridbagsizer_add_control(wxsharp_handle sizer, wxsharp_handle ctrl,
-                                                      int row, int column, int row_span, int column_span,
-                                                      int flags, int border);
-    WXSHARP_API void wxsharp_sizer_add_control(wxsharp_handle sizer, wxsharp_handle ctrl, int proportion, int flags, int border);
-    WXSHARP_API void wxsharp_sizer_add_sizer(wxsharp_handle sizer, wxsharp_handle child, int proportion, int flags, int border);
-    WXSHARP_API void wxsharp_sizer_add_spacer(wxsharp_handle sizer, int size);
-    WXSHARP_API void wxsharp_sizer_add_stretch_spacer(wxsharp_handle sizer, int proportion);
+
+    WXSHARP_API wxsharp_handle wxsharp_sizer_add_control(wxsharp_handle sizer, wxsharp_handle ctrl, int proportion, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_add_sizer(wxsharp_handle sizer, wxsharp_handle child, int proportion, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_add_spacer(wxsharp_handle sizer, int size);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_add_stretch_spacer(wxsharp_handle sizer, int proportion);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_insert_control(wxsharp_handle sizer, int index, wxsharp_handle ctrl, int proportion, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_insert_sizer(wxsharp_handle sizer, int index, wxsharp_handle child, int proportion, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_insert_spacer(wxsharp_handle sizer, int index, int size);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_insert_stretch_spacer(wxsharp_handle sizer, int index, int proportion);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_prepend_control(wxsharp_handle sizer, wxsharp_handle ctrl, int proportion, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_prepend_sizer(wxsharp_handle sizer, wxsharp_handle child, int proportion, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_prepend_spacer(wxsharp_handle sizer, int size);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_prepend_stretch_spacer(wxsharp_handle sizer, int proportion);
+
+    // Detach leaves the window or sizer alive; remove deletes a nested sizer.
+    WXSHARP_API bool wxsharp_sizer_detach_control(wxsharp_handle sizer, wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_sizer_detach_sizer(wxsharp_handle sizer, wxsharp_handle child);
+    WXSHARP_API bool wxsharp_sizer_detach_at(wxsharp_handle sizer, int index);
+    WXSHARP_API bool wxsharp_sizer_remove_sizer(wxsharp_handle sizer, wxsharp_handle child);
+    WXSHARP_API bool wxsharp_sizer_remove_at(wxsharp_handle sizer, int index);
+    WXSHARP_API void wxsharp_sizer_clear(wxsharp_handle sizer, bool delete_windows);
+    WXSHARP_API void wxsharp_sizer_delete_windows(wxsharp_handle sizer);
+    WXSHARP_API bool wxsharp_sizer_replace_control(wxsharp_handle sizer, wxsharp_handle old_ctrl, wxsharp_handle new_ctrl, bool recursive);
+    WXSHARP_API bool wxsharp_sizer_replace_sizer(wxsharp_handle sizer, wxsharp_handle old_sizer, wxsharp_handle new_sizer, bool recursive);
+
+    WXSHARP_API int  wxsharp_sizer_item_count(wxsharp_handle sizer);
+    WXSHARP_API bool wxsharp_sizer_is_empty(wxsharp_handle sizer);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_item_at(wxsharp_handle sizer, int index);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_item_for_control(wxsharp_handle sizer, wxsharp_handle ctrl, bool recursive);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_item_for_sizer(wxsharp_handle sizer, wxsharp_handle child, bool recursive);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_item_by_id(wxsharp_handle sizer, int id, bool recursive);
+
+    WXSHARP_API bool wxsharp_sizer_show_control(wxsharp_handle sizer, wxsharp_handle ctrl, bool show, bool recursive);
+    WXSHARP_API bool wxsharp_sizer_show_sizer(wxsharp_handle sizer, wxsharp_handle child, bool show, bool recursive);
+    WXSHARP_API bool wxsharp_sizer_show_at(wxsharp_handle sizer, int index, bool show);
+    WXSHARP_API void wxsharp_sizer_show_items(wxsharp_handle sizer, bool show);
+    WXSHARP_API bool wxsharp_sizer_any_items_shown(wxsharp_handle sizer);
+    WXSHARP_API bool wxsharp_sizer_is_shown_control(wxsharp_handle sizer, wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_sizer_is_shown_sizer(wxsharp_handle sizer, wxsharp_handle child);
+    WXSHARP_API bool wxsharp_sizer_is_shown_at(wxsharp_handle sizer, int index);
+
+    WXSHARP_API void wxsharp_sizer_layout(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_sizer_fit(wxsharp_handle sizer, wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_sizer_fit_inside(wxsharp_handle sizer, wxsharp_handle window);
+    WXSHARP_API void wxsharp_sizer_set_size_hints(wxsharp_handle sizer, wxsharp_handle window);
+    WXSHARP_API void wxsharp_sizer_compute_fitting_client_size(wxsharp_handle sizer, wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_sizer_compute_fitting_window_size(wxsharp_handle sizer, wxsharp_handle window, int* width, int* height);
+    WXSHARP_API void wxsharp_sizer_get_min_size(wxsharp_handle sizer, int* width, int* height);
+    WXSHARP_API void wxsharp_sizer_set_min_size(wxsharp_handle sizer, int width, int height);
+    WXSHARP_API void wxsharp_sizer_get_size(wxsharp_handle sizer, int* width, int* height);
+    WXSHARP_API void wxsharp_sizer_get_position(wxsharp_handle sizer, int* x, int* y);
+    WXSHARP_API void wxsharp_sizer_set_dimension(wxsharp_handle sizer, int x, int y, int width, int height);
+    WXSHARP_API bool wxsharp_sizer_set_item_min_size_control(wxsharp_handle sizer, wxsharp_handle ctrl, int width, int height);
+    WXSHARP_API bool wxsharp_sizer_set_item_min_size_sizer(wxsharp_handle sizer, wxsharp_handle child, int width, int height);
+    WXSHARP_API bool wxsharp_sizer_set_item_min_size_at(wxsharp_handle sizer, int index, int width, int height);
+    WXSHARP_API wxsharp_handle wxsharp_sizer_containing_window(wxsharp_handle sizer);
+
+    // ---- Sizer items ----------------------------------------------------------------------------------
+    WXSHARP_API int  wxsharp_sizeritem_get_proportion(wxsharp_handle item);
+    WXSHARP_API void wxsharp_sizeritem_set_proportion(wxsharp_handle item, int proportion);
+    WXSHARP_API int  wxsharp_sizeritem_get_flags(wxsharp_handle item);
+    WXSHARP_API void wxsharp_sizeritem_set_flags(wxsharp_handle item, int flags);
+    WXSHARP_API int  wxsharp_sizeritem_get_border(wxsharp_handle item);
+    WXSHARP_API void wxsharp_sizeritem_set_border(wxsharp_handle item, int border);
+    // A sizer item carries an ID of its own, separate from any window ID, and defaults to none.
+    WXSHARP_API int  wxsharp_sizeritem_get_id(wxsharp_handle item);
+    WXSHARP_API void wxsharp_sizeritem_set_id(wxsharp_handle item, int id);
+    WXSHARP_API bool wxsharp_sizeritem_is_window(wxsharp_handle item);
+    WXSHARP_API bool wxsharp_sizeritem_is_sizer(wxsharp_handle item);
+    WXSHARP_API bool wxsharp_sizeritem_is_spacer(wxsharp_handle item);
+    WXSHARP_API wxsharp_handle wxsharp_sizeritem_get_window(wxsharp_handle item);
+    WXSHARP_API wxsharp_handle wxsharp_sizeritem_get_sizer(wxsharp_handle item);
+    WXSHARP_API bool wxsharp_sizeritem_is_shown(wxsharp_handle item);
+    WXSHARP_API void wxsharp_sizeritem_show(wxsharp_handle item, bool show);
+    WXSHARP_API void wxsharp_sizeritem_get_min_size(wxsharp_handle item, int* width, int* height);
+    WXSHARP_API void wxsharp_sizeritem_set_min_size(wxsharp_handle item, int width, int height);
+    WXSHARP_API void wxsharp_sizeritem_get_size(wxsharp_handle item, int* width, int* height);
+    WXSHARP_API void wxsharp_sizeritem_get_position(wxsharp_handle item, int* x, int* y);
+
+    // ---- Sizer subclasses -----------------------------------------------------------------------------
+    WXSHARP_API int  wxsharp_boxsizer_get_orientation(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_boxsizer_set_orientation(wxsharp_handle sizer, bool vertical);
+    WXSHARP_API int  wxsharp_gridsizer_get_rows(wxsharp_handle sizer);
+    WXSHARP_API int  wxsharp_gridsizer_get_columns(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_gridsizer_set_rows(wxsharp_handle sizer, int rows);
+    WXSHARP_API void wxsharp_gridsizer_set_columns(wxsharp_handle sizer, int columns);
+    WXSHARP_API int  wxsharp_gridsizer_get_vertical_gap(wxsharp_handle sizer);
+    WXSHARP_API int  wxsharp_gridsizer_get_horizontal_gap(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_gridsizer_set_vertical_gap(wxsharp_handle sizer, int gap);
+    WXSHARP_API void wxsharp_gridsizer_set_horizontal_gap(wxsharp_handle sizer, int gap);
+    WXSHARP_API int  wxsharp_gridsizer_effective_rows(wxsharp_handle sizer);
+    WXSHARP_API int  wxsharp_gridsizer_effective_columns(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_flexgridsizer_add_growable_row(wxsharp_handle sizer, int row, int proportion);
+    WXSHARP_API void wxsharp_flexgridsizer_add_growable_column(wxsharp_handle sizer, int column, int proportion);
+    WXSHARP_API void wxsharp_flexgridsizer_remove_growable_row(wxsharp_handle sizer, int row);
+    WXSHARP_API void wxsharp_flexgridsizer_remove_growable_column(wxsharp_handle sizer, int column);
+    WXSHARP_API bool wxsharp_flexgridsizer_is_row_growable(wxsharp_handle sizer, int row);
+    WXSHARP_API bool wxsharp_flexgridsizer_is_column_growable(wxsharp_handle sizer, int column);
+    // 0 horizontal, 1 vertical, 2 both.
+    WXSHARP_API int  wxsharp_flexgridsizer_get_flexible_direction(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_flexgridsizer_set_flexible_direction(wxsharp_handle sizer, int direction);
+    // 0 none, 1 specified, 2 all - wxFlexSizerGrowMode.
+    WXSHARP_API int  wxsharp_flexgridsizer_get_grow_mode(wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_flexgridsizer_set_grow_mode(wxsharp_handle sizer, int mode);
+    WXSHARP_API int  wxsharp_flexgridsizer_row_heights(wxsharp_handle sizer, int* buffer, int buffer_length);
+    WXSHARP_API int  wxsharp_flexgridsizer_column_widths(wxsharp_handle sizer, int* buffer, int buffer_length);
+    WXSHARP_API wxsharp_handle wxsharp_staticboxsizer_get_box(wxsharp_handle sizer);
+
+    WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_add_control(wxsharp_handle sizer, wxsharp_handle ctrl, int row, int column, int row_span, int column_span, int flags, int border);
+    WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_add_sizer(wxsharp_handle sizer, wxsharp_handle child, int row, int column, int row_span, int column_span, int flags, int border);
+    WXSHARP_API void wxsharp_gridbagsizer_get_item_position_control(wxsharp_handle sizer, wxsharp_handle ctrl, int* row, int* column);
+    WXSHARP_API void wxsharp_gridbagsizer_get_item_position_at(wxsharp_handle sizer, int index, int* row, int* column);
+    WXSHARP_API bool wxsharp_gridbagsizer_set_item_position_control(wxsharp_handle sizer, wxsharp_handle ctrl, int row, int column);
+    WXSHARP_API bool wxsharp_gridbagsizer_set_item_position_at(wxsharp_handle sizer, int index, int row, int column);
+    WXSHARP_API void wxsharp_gridbagsizer_get_item_span_control(wxsharp_handle sizer, wxsharp_handle ctrl, int* row_span, int* column_span);
+    WXSHARP_API void wxsharp_gridbagsizer_get_item_span_at(wxsharp_handle sizer, int index, int* row_span, int* column_span);
+    WXSHARP_API bool wxsharp_gridbagsizer_set_item_span_control(wxsharp_handle sizer, wxsharp_handle ctrl, int row_span, int column_span);
+    WXSHARP_API bool wxsharp_gridbagsizer_set_item_span_at(wxsharp_handle sizer, int index, int row_span, int column_span);
+    WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_find_item_control(wxsharp_handle sizer, wxsharp_handle ctrl);
+    WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_find_item_sizer(wxsharp_handle sizer, wxsharp_handle child);
+    WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_find_item_at_position(wxsharp_handle sizer, int row, int column);
+    WXSHARP_API wxsharp_handle wxsharp_gridbagsizer_find_item_at_point(wxsharp_handle sizer, int x, int y);
+    WXSHARP_API void wxsharp_gridbagsizer_get_cell_size(wxsharp_handle sizer, int row, int column, int* width, int* height);
+    WXSHARP_API void wxsharp_gridbagsizer_get_empty_cell_size(wxsharp_handle sizer, int* width, int* height);
+    WXSHARP_API void wxsharp_gridbagsizer_set_empty_cell_size(wxsharp_handle sizer, int width, int height);
+    WXSHARP_API bool wxsharp_gridbagsizer_check_for_intersection(wxsharp_handle sizer, int row, int column, int row_span, int column_span, wxsharp_handle exclude);
+
     WXSHARP_API void wxsharp_window_set_sizer(wxsharp_handle window, wxsharp_handle sizer);
+    WXSHARP_API void wxsharp_window_set_sizer_and_fit(wxsharp_handle window, wxsharp_handle sizer);
+    WXSHARP_API wxsharp_handle wxsharp_window_get_sizer(wxsharp_handle window);
+    WXSHARP_API wxsharp_handle wxsharp_window_containing_sizer(wxsharp_handle window);
 
     // ---- Label ---------------------------------------------------------------------------------------
     // style: WxSharp Alignment enum (left/centre/right).

@@ -51,6 +51,9 @@ This document distinguishes behavioral compatibility from API completeness.
 | Window destruction | `Window.Destroy` schedules deletion and leaves the window visible until it happens, as `wxWindow.Destroy` does. |
 | Timer identity | `Timer` passes its ID through unchanged. As in wxWidgets, a window running more than one timer needs to give each an ID, or every handler sees every tick. |
 | Sizer defaults | `BoxSizer` defaults to horizontal, which is what wxWidgets and Phoenix use. |
+| Sizers | The full `wxSizer` surface: insert, prepend, detach, remove, replace, clear, show and hide by window, nested sizer or index, plus layout, fitting and minimum sizes. `wxSizerItem` is wrapped as `SizerItem` and returned by everything that adds to a sizer, so proportion, flags, border and visibility can be read back and changed. `wxBoxSizer`, `wxGridSizer`, `wxFlexGridSizer`, `wxStaticBoxSizer` and `wxGridBagSizer` are complete. |
+| Sizer item identity | `SizerItem.Id` is the item's own identifier, as `wxSizerItem::GetId` is - not the window's ID, and unset until assigned. `Sizer.GetItemById` searches that; `Sizer.GetItem(Window)` is what finds an item by window. |
+| Window surface | `wxWindow` is complete apart from the members needing a type the wrapper does not have yet. Coordinate spaces (`Rect`, `ClientRect`, `ScreenRect`, `ClientToScreen`, `ScreenToClient`), `Freeze`/`Thaw`, DPI scaling (`FromDip`, `ToDip`, `Dpi`), text metrics, scrolling, `Navigate`, z-order, background style, window variant and transparency all follow wxWidgets. `Close` and `Center` are on `Window`, where wxWidgets puts them, rather than only on `Frame`. |
 
 ## Current coverage boundary
 
@@ -83,6 +86,23 @@ The remaining gap in the `wxAccessible` contract is `GetChild` and `GetParent`,
 which return accessible *objects* rather than child IDs. Bridging those needs a
 token protocol the reverse callback does not have yet; the virtual-children
 model (`GetChildCount` plus ID-addressed getters) is complete.
+
+### Types not wrapped yet
+
+Some members are absent only because the type they take or return is. Each is
+recorded here rather than quietly skipped:
+
+- `wxCursor` — blocks `SetCursor`/`GetCursor`.
+- `wxCaret` — blocks `SetCaret`/`GetCaret`.
+- `wxDropTarget` and the `wxDataObject` family — blocks drag-and-drop and every
+  clipboard format but text. `DropFiles` covers the common case without them.
+- `wxPalette` — blocks the palette accessors; only relevant on paletted displays.
+- `wxHelpProvider` — `Window.HelpText` goes to a help provider, and wxWidgets
+  installs none by default, so it currently keeps nothing.
+- `wxAcceleratorTable` as an object — accelerators are set from an array, and
+  the installed table cannot be read back.
+- `wxImageList` — blocks icons in list, tree, notebook and toolbar controls.
+- `wxTextAttr` — blocks `TextCtrl.SetStyle` and rich-text formatting.
 
 Known gaps in this area: there is no equivalent of `wx.PostEvent` for
 synthesising a command, no `wxLocale` wrapper for wxWidgets' own stock strings,
