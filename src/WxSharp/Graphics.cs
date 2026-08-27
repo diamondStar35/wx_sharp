@@ -26,6 +26,13 @@ public sealed class Bitmap : IDisposable
 {
     private nint _handle;
     internal nint Handle => _handle != 0 ? _handle : throw new ObjectDisposedException(nameof(Bitmap));
+
+    /// <summary>Wraps a bitmap wxWidgets handed us, such as one read from the clipboard. The caller owns
+    /// it from here.</summary>
+    internal static Bitmap Attach(nint handle) => new(handle);
+
+    private Bitmap(nint handle) => _handle = handle;
+
     public Bitmap(string path)
     {
         App.RequireCurrent(); ArgumentException.ThrowIfNullOrWhiteSpace(path);

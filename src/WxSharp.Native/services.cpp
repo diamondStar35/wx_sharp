@@ -1,36 +1,12 @@
-// System services: the clipboard and the native file open/save dialog.
+// System services: the native file, folder, text, number and colour dialogs.
 #include "internal.h"
-#include <wx/clipbrd.h>
 #include <wx/filedlg.h>
 #include <wx/dirdlg.h>
 #include <wx/textdlg.h>
 #include <wx/numdlg.h>
 #include <wx/colordlg.h>
 
-void wxsharp_clipboard_set_text(const char* text)
-{
-    if (wxTheClipboard->Open())
-    {
-        wxTheClipboard->SetData(new wxTextDataObject(Str(text)));
-        wxTheClipboard->Close();
-    }
-}
-
-int wxsharp_clipboard_get_text(char* buffer, int buffer_length)
-{
-    wxString s;
-    if (wxTheClipboard->Open())
-    {
-        if (wxTheClipboard->IsSupported(wxDF_UNICODETEXT))
-        {
-            wxTextDataObject data;
-            wxTheClipboard->GetData(data);
-            s = data.GetText();
-        }
-        wxTheClipboard->Close();
-    }
-    return CopyToBuffer(s, buffer, buffer_length);
-}
+// The clipboard moved to clipboard.cpp, where the other data formats live.
 
 namespace
 {

@@ -332,6 +332,102 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial int wxsharp_window_hit_test(nint window, int x, int y);
     [LibraryImport(Library)] internal static partial int wxsharp_window_popup_menu_selection(nint window, nint menu, int x, int y);
 
+
+    // ---- wxTextCtrl: what is specific to it rather than shared through wxTextEntry ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_is_modified(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_mark_dirty(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_discard_edits(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_set_modified(nint ctrl, [MarshalAs(UnmanagedType.U1)] bool modified);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_is_multiline(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_position_to_xy(nint ctrl, int position, out int x, out int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_xy_to_position(nint ctrl, int x, int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_textbox_hit_test(nint ctrl, int x, int y, out int position);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_load_file(nint ctrl, string path);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_save_file(nint ctrl, string path);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_set_style(nint ctrl, int start, int end, NativeTextAttr* style);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_get_style(nint ctrl, int position, NativeTextAttr* style);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textbox_set_default_style(nint ctrl, NativeTextAttr* style);
+    [LibraryImport(Library)] internal static partial void wxsharp_textbox_get_default_style(nint ctrl, NativeTextAttr* style);
+
+    // ---- Colour names ----
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_colour_parse(string text, out uint argb);
+    [LibraryImport(Library)] internal static partial int wxsharp_colour_name(uint argb, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_change_lightness(uint argb, int alpha);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_make_disabled(uint argb, byte brightness);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_make_grey(uint argb);
+    [LibraryImport(Library)] internal static partial uint wxsharp_colour_make_mono(uint argb, [MarshalAs(UnmanagedType.U1)] bool on);
+    [LibraryImport(Library)] internal static partial double wxsharp_colour_luminance(uint argb);
+    [LibraryImport(Library)] internal static partial byte wxsharp_colour_alpha_blend(byte foreground, byte background, double alpha);
+
+    // ---- wxTextEntry ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_supported(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_value(nint ctrl, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_set_value(nint ctrl, string value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_change_value(nint ctrl, string value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_write_text(nint ctrl, string text);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_append_text(nint ctrl, string text);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_range(nint ctrl, int from, int to, byte* buffer, int bufferLength);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_textentry_replace(nint ctrl, int from, int to, string value);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_remove(nint ctrl, int from, int to);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_clear(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_is_empty(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_copy(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_cut(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_paste(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_copy(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_cut(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_paste(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_undo(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_redo(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_undo(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_can_redo(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_insertion_point(nint ctrl, int position);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_insertion_point_end(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_insertion_point(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_last_position(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_selection(nint ctrl, int from, int to);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_get_selection(nint ctrl, out int from, out int to);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_select_all(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_select_none(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_has_selection(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_selected_text(nint ctrl, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_remove_selection(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_is_editable(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_editable(nint ctrl, [MarshalAs(UnmanagedType.U1)] bool editable);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_set_max_length(nint ctrl, int length);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_force_upper(nint ctrl);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_set_hint(nint ctrl, string hint);
+    [LibraryImport(Library)] internal static partial int wxsharp_textentry_get_hint(nint ctrl, byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_set_margins(nint ctrl, int left, int top);
+    [LibraryImport(Library)] internal static partial void wxsharp_textentry_get_margins(nint ctrl, out int left, out int top);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_auto_complete(nint ctrl, byte** choices, int count);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_auto_complete_files(nint ctrl);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_textentry_auto_complete_directories(nint ctrl);
+
+    // ---- Clipboard ----
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_open();
+    [LibraryImport(Library)] internal static partial void wxsharp_clipboard_close();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_is_opened();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_flush();
+    [LibraryImport(Library)] internal static partial void wxsharp_clipboard_clear();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_is_supported(int format);
+    [LibraryImport(Library)] internal static partial void wxsharp_clipboard_use_primary_selection([MarshalAs(UnmanagedType.U1)] bool primary);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_clipboard_set_text(string text);
+    [LibraryImport(Library)] internal static partial int wxsharp_clipboard_get_text(byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_set_files(byte** paths, int count);
+    [LibraryImport(Library)] internal static partial int wxsharp_clipboard_read_files();
+    [LibraryImport(Library)] internal static partial int wxsharp_clipboard_get_file(int index, byte* buffer, int bufferLength);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_clipboard_set_bitmap(nint bitmap);
+    [LibraryImport(Library)] internal static partial nint wxsharp_clipboard_get_bitmap();
+
+    // ---- System settings ----
+    [LibraryImport(Library)] internal static partial uint wxsharp_system_colour(int which);
+    [LibraryImport(Library)] internal static partial int wxsharp_system_metric(int which, nint window);
+    [LibraryImport(Library)] internal static partial int wxsharp_system_screen_type();
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_system_has_feature(int which);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_system_appearance_is_dark();
+    [LibraryImport(Library)] internal static partial int wxsharp_system_appearance_name(byte* buffer, int bufferLength);
+
     // ---- Sizers ----
 
 
@@ -1012,11 +1108,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_progress_destroy(nint progress);
 
     // ---- Services ----
-    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial void wxsharp_clipboard_set_text(string text);
 
-    [LibraryImport(Library)]
-    internal static partial int wxsharp_clipboard_get_text(byte* buffer, int bufferLength);
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int wxsharp_file_dialog(nint parent, string title, string wildcard,

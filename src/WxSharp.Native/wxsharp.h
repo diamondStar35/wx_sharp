@@ -395,6 +395,84 @@ extern "C" {
     WXSHARP_API int  wxsharp_window_hit_test(wxsharp_handle window, int x, int y);
     WXSHARP_API int  wxsharp_window_popup_menu_selection(wxsharp_handle window, wxsharp_handle menu, int x, int y);
 
+
+    // ---- wxTextEntry ----------------------------------------------------------------------------------
+    // The editing surface wxTextCtrl, wxComboBox and wxSearchCtrl share. Reached by cross-casting from the
+    // window handle; every call is a no-op on a window that is not a text entry.
+    WXSHARP_API bool wxsharp_textentry_supported(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_textentry_get_value(wxsharp_handle ctrl, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_textentry_set_value(wxsharp_handle ctrl, const char* value);
+    // Sets the text without raising a text-changed event.
+    WXSHARP_API void wxsharp_textentry_change_value(wxsharp_handle ctrl, const char* value);
+    WXSHARP_API void wxsharp_textentry_write_text(wxsharp_handle ctrl, const char* text);
+    WXSHARP_API void wxsharp_textentry_append_text(wxsharp_handle ctrl, const char* text);
+    WXSHARP_API int  wxsharp_textentry_get_range(wxsharp_handle ctrl, int from, int to, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_textentry_replace(wxsharp_handle ctrl, int from, int to, const char* value);
+    WXSHARP_API void wxsharp_textentry_remove(wxsharp_handle ctrl, int from, int to);
+    WXSHARP_API void wxsharp_textentry_clear(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_is_empty(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_copy(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_cut(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_paste(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_can_copy(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_can_cut(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_can_paste(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_undo(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_redo(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_can_undo(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_can_redo(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_set_insertion_point(wxsharp_handle ctrl, int position);
+    WXSHARP_API void wxsharp_textentry_set_insertion_point_end(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_textentry_get_insertion_point(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_textentry_get_last_position(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_set_selection(wxsharp_handle ctrl, int from, int to);
+    WXSHARP_API void wxsharp_textentry_get_selection(wxsharp_handle ctrl, int* from, int* to);
+    WXSHARP_API void wxsharp_textentry_select_all(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_select_none(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_has_selection(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_textentry_get_selected_text(wxsharp_handle ctrl, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_textentry_remove_selection(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_is_editable(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textentry_set_editable(wxsharp_handle ctrl, bool editable);
+    WXSHARP_API void wxsharp_textentry_set_max_length(wxsharp_handle ctrl, int length);
+    WXSHARP_API void wxsharp_textentry_force_upper(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_set_hint(wxsharp_handle ctrl, const char* hint);
+    WXSHARP_API int  wxsharp_textentry_get_hint(wxsharp_handle ctrl, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_textentry_set_margins(wxsharp_handle ctrl, int left, int top);
+    WXSHARP_API void wxsharp_textentry_get_margins(wxsharp_handle ctrl, int* left, int* top);
+    WXSHARP_API bool wxsharp_textentry_auto_complete(wxsharp_handle ctrl, const char* const* choices, int count);
+    WXSHARP_API bool wxsharp_textentry_auto_complete_files(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textentry_auto_complete_directories(wxsharp_handle ctrl);
+
+    // ---- Clipboard ------------------------------------------------------------------------------------
+    // Formats: 0 text, 1 file names, 2 bitmap.
+    WXSHARP_API bool wxsharp_clipboard_open();
+    WXSHARP_API void wxsharp_clipboard_close();
+    WXSHARP_API bool wxsharp_clipboard_is_opened();
+    // Hands ownership to the system so the contents survive this application exiting.
+    WXSHARP_API bool wxsharp_clipboard_flush();
+    WXSHARP_API void wxsharp_clipboard_clear();
+    WXSHARP_API bool wxsharp_clipboard_is_supported(int format);
+    WXSHARP_API void wxsharp_clipboard_use_primary_selection(bool primary);
+    WXSHARP_API void wxsharp_clipboard_set_text(const char* text);
+    WXSHARP_API int  wxsharp_clipboard_get_text(char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_clipboard_set_files(const char* const* paths, int count);
+    // Reads the file list and holds it until the next call; then fetch each path by index.
+    WXSHARP_API int  wxsharp_clipboard_read_files();
+    WXSHARP_API int  wxsharp_clipboard_get_file(int index, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_clipboard_set_bitmap(wxsharp_handle bitmap);
+    WXSHARP_API wxsharp_handle wxsharp_clipboard_get_bitmap();
+
+    // ---- System settings ------------------------------------------------------------------------------
+    // What the user's theme says, which is what an application has to follow to work in a high-contrast
+    // scheme rather than fighting it.
+    WXSHARP_API unsigned int wxsharp_system_colour(int which);
+    WXSHARP_API int  wxsharp_system_metric(int which, wxsharp_handle window);
+    WXSHARP_API int  wxsharp_system_screen_type();
+    WXSHARP_API bool wxsharp_system_has_feature(int which);
+    WXSHARP_API bool wxsharp_system_appearance_is_dark();
+    WXSHARP_API int  wxsharp_system_appearance_name(char* buffer, int buffer_length);
+
     // ---- Event binding --------------------------------------------------------------------------------
     // Events are hooked on demand: the managed side binds an event ID the first time something subscribes to
     // it on a window and unbinds it when the last subscriber goes away, so an unobserved event never crosses
@@ -720,6 +798,54 @@ extern "C" {
     WXSHARP_API int  wxsharp_textbox_get_line_text(wxsharp_handle ctrl, int line, char* buffer, int buffer_length);
     // Scrolls so the given character position is visible, without moving the caret.
     WXSHARP_API void wxsharp_textbox_show_position(wxsharp_handle ctrl, int position);
+
+    // A character style, flattened so it can cross the ABI by value. `flags` holds the wxTextAttrFlags bits
+    // saying which of the other fields are actually set; anything unmarked is left to inherit, which is how
+    // wxTextAttr itself behaves.
+    typedef struct wxsharp_text_attr
+    {
+        unsigned int flags;
+        unsigned int text_colour;
+        unsigned int background_colour;
+        int alignment;
+        int left_indent;
+        int left_sub_indent;
+        int right_indent;
+        int font_point_size;
+        int font_family;
+        int font_weight;
+        int font_style;
+        int font_underline;
+        char font_face[128];
+    } wxsharp_text_attr;
+
+    WXSHARP_API bool wxsharp_textbox_is_modified(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textbox_mark_dirty(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textbox_discard_edits(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_textbox_set_modified(wxsharp_handle ctrl, bool modified);
+    WXSHARP_API bool wxsharp_textbox_is_multiline(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_textbox_position_to_xy(wxsharp_handle ctrl, int position, int* x, int* y);
+    WXSHARP_API int wxsharp_textbox_xy_to_position(wxsharp_handle ctrl, int x, int y);
+    WXSHARP_API int wxsharp_textbox_hit_test(wxsharp_handle ctrl, int x, int y, int* position);
+    WXSHARP_API bool wxsharp_textbox_load_file(wxsharp_handle ctrl, const char* path);
+    WXSHARP_API bool wxsharp_textbox_save_file(wxsharp_handle ctrl, const char* path);
+    WXSHARP_API bool wxsharp_textbox_set_style(wxsharp_handle ctrl, int start, int end,
+                                               const wxsharp_text_attr* style);
+    WXSHARP_API bool wxsharp_textbox_get_style(wxsharp_handle ctrl, int position, wxsharp_text_attr* style);
+    WXSHARP_API bool wxsharp_textbox_set_default_style(wxsharp_handle ctrl, const wxsharp_text_attr* style);
+    WXSHARP_API void wxsharp_textbox_get_default_style(wxsharp_handle ctrl, wxsharp_text_attr* style);
+
+    // ---- Colour names ----
+    // wxColour understands both the standard colour names and #RRGGBB notation.
+    WXSHARP_API bool wxsharp_colour_parse(const char* text, unsigned int* argb);
+    WXSHARP_API int wxsharp_colour_name(unsigned int argb, char* buffer, int buffer_length);
+    WXSHARP_API unsigned int wxsharp_colour_change_lightness(unsigned int argb, int alpha);
+    WXSHARP_API unsigned int wxsharp_colour_make_disabled(unsigned int argb, unsigned char brightness);
+    WXSHARP_API unsigned int wxsharp_colour_make_grey(unsigned int argb);
+    WXSHARP_API unsigned int wxsharp_colour_make_mono(unsigned int argb, bool on);
+    WXSHARP_API double wxsharp_colour_luminance(unsigned int argb);
+    WXSHARP_API unsigned char wxsharp_colour_alpha_blend(unsigned char foreground, unsigned char background,
+                                                         double alpha);
 
     // ---- Check box -----------------------------------------------------------------------------------
     // style: WxSharp CheckBoxStyle (two-state or three-state).
