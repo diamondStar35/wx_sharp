@@ -34,30 +34,44 @@ Studio 2022 or newer with the *Desktop development with C++* workload.
 ## Getting started
 
 ```csharp
+using System;
 using WxSharp;
 
-using var app = new App();
+internal static class Program
+{
+    [STAThread]
+    private static void Main()
+    {
+        using var app = new App();
 
-var frame = new Frame(title: "Hello from WxSharp", size: new Size(360, 200));
-var panel = new Panel(frame);
+        var frame = new Frame(title: "Hello from WxSharp", size: new Size(360, 200));
+        var panel = new Panel(frame);
 
-var message = new StaticText(panel, label: "Hello!");
-var close = new Button(panel, label: "Close");
-close.Click += (_, _) => frame.Close();
+        var message = new StaticText(panel, label: "Hello!");
+        var close = new Button(panel, label: "Close");
+        close.Click += (_, _) => frame.Close();
 
-var layout = new BoxSizer(Orientation.Vertical);
-layout.Add(message, flags: SizerFlags.All, border: 8);
-layout.Add(close, flags: SizerFlags.All, border: 8);
-panel.SetSizer(layout);
+        var layout = new BoxSizer(Orientation.Vertical);
+        layout.Add(message, flags: SizerFlags.All, border: 8);
+        layout.Add(close, flags: SizerFlags.All, border: 8);
+        panel.SetSizer(layout);
 
-frame.Show();
-app.MainLoop();
+        frame.Show();
+        app.MainLoop();
+    }
+}
 ```
 
 Create one `App` on the main thread, build the window hierarchy explicitly, and
 enter the event loop. Nothing is created behind your back: if you want a panel,
 make one; if you want a layout, assign a sizer. All UI work happens on the `App`
 thread, and `Wx.CallAfter` is the thread-safe way in from a background thread.
+
+On Windows the entry point needs `[STAThread]`, the same as any other desktop
+UI framework there — which means an explicit `Main` rather than top-level
+statements. .NET otherwise starts on a multi-threaded apartment, where the
+clipboard, drag and drop, and the shell dialogs cannot work. `App` checks for
+this at startup and says so rather than letting it fail later.
 
 ## What's included
 

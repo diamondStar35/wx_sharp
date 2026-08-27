@@ -63,7 +63,7 @@ public class SpinCtrl : Control
     }
 }
 
-public class ComboBox : Control
+public class ComboBox : Control, ITextEntry
 {
     public event EventHandler<CommandEventArgs> SelectionChanged
     {
@@ -77,14 +77,120 @@ public class ComboBox : Control
     }
     public ComboBox(Window parent, string value = "", bool readOnly = false, int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_combobox_create(parent.Handle, id, value, readOnly, Token));
-    public unsafe string Value
+
+    // ---- ITextEntry: the editing surface wxTextCtrl, wxComboBox and wxSearchCtrl share ----------------
+
+    /// <inheritdoc/>
+    public string Value
     {
-        get => ReadString((buffer, length) => NativeMethods.wxsharp_combobox_get_value(Handle, buffer, length));
-        set => NativeMethods.wxsharp_combobox_set_value(Handle, value);
+        get => TextEntryNative.GetValue(Handle);
+        set => TextEntryNative.SetValue(Handle, value);
     }
+
+    /// <inheritdoc/>
+    public void ChangeValue(string value) => TextEntryNative.ChangeValue(Handle, value);
+    /// <inheritdoc/>
+    public void Write(string text) => TextEntryNative.Write(Handle, text);
+    /// <inheritdoc/>
+    public void Append(string text) => TextEntryNative.Append(Handle, text);
+    /// <inheritdoc/>
+    public string GetRange(int from, int to) => TextEntryNative.GetRange(Handle, from, to);
+    /// <inheritdoc/>
+    public void Replace(int from, int to, string value) => TextEntryNative.Replace(Handle, from, to, value);
+    /// <inheritdoc/>
+    public void Remove(int from, int to) => TextEntryNative.Remove(Handle, from, to);
+    /// <inheritdoc/>
+    public bool IsEmpty => TextEntryNative.IsEmpty(Handle);
+
+    /// <inheritdoc/>
+    public void Copy() => TextEntryNative.Copy(Handle);
+    /// <inheritdoc/>
+    public void Cut() => TextEntryNative.Cut(Handle);
+    /// <inheritdoc/>
+    public void Paste() => TextEntryNative.Paste(Handle);
+    /// <inheritdoc/>
+    public bool CanCopy => TextEntryNative.CanCopy(Handle);
+    /// <inheritdoc/>
+    public bool CanCut => TextEntryNative.CanCut(Handle);
+    /// <inheritdoc/>
+    public bool CanPaste => TextEntryNative.CanPaste(Handle);
+    /// <inheritdoc/>
+    public void Undo() => TextEntryNative.Undo(Handle);
+    /// <inheritdoc/>
+    public void Redo() => TextEntryNative.Redo(Handle);
+    /// <inheritdoc/>
+    public bool CanUndo => TextEntryNative.CanUndo(Handle);
+    /// <inheritdoc/>
+    public bool CanRedo => TextEntryNative.CanRedo(Handle);
+
+    /// <inheritdoc/>
+    public int InsertionPoint
+    {
+        get => TextEntryNative.GetInsertionPoint(Handle);
+        set => TextEntryNative.SetInsertionPoint(Handle, value);
+    }
+
+    /// <inheritdoc/>
+    public void MoveCaretToEnd() => TextEntryNative.MoveCaretToEnd(Handle);
+    /// <inheritdoc/>
+    public int LastPosition => TextEntryNative.LastPosition(Handle);
+
+    /// <inheritdoc/>
+    public (int From, int To) Selection
+    {
+        get => TextEntryNative.GetSelection(Handle);
+        set => TextEntryNative.SetSelection(Handle, value.From, value.To);
+    }
+
+    /// <inheritdoc/>
+    public void SelectAll() => TextEntryNative.SelectAll(Handle);
+    /// <inheritdoc/>
+    public void SelectNone() => TextEntryNative.SelectNone(Handle);
+    /// <inheritdoc/>
+    public bool HasSelection => TextEntryNative.HasSelection(Handle);
+    /// <summary>The selected <em>item</em>, not the selected text. wxComboBox inherits
+    /// <c>GetStringSelection</c> from both its bases and resolves it to the list's, so this reports what is
+    /// chosen rather than what is highlighted in the field. For the highlighted text, read
+    /// <see cref="Selection"/> and pass it to <see cref="GetRange"/>.</summary>
+    public string SelectedText => TextEntryNative.SelectedText(Handle);
+    /// <inheritdoc/>
+    public void RemoveSelection() => TextEntryNative.RemoveSelection(Handle);
+
+    /// <inheritdoc/>
+    public bool Editable
+    {
+        get => TextEntryNative.IsEditable(Handle);
+        set => TextEntryNative.SetEditable(Handle, value);
+    }
+
+    /// <inheritdoc/>
+    public int MaxLength { set => TextEntryNative.SetMaxLength(Handle, value); }
+    /// <inheritdoc/>
+    public void ForceUpper() => TextEntryNative.ForceUpper(Handle);
+
+    /// <inheritdoc/>
+    public string Hint
+    {
+        get => TextEntryNative.GetHint(Handle);
+        set => TextEntryNative.SetHint(Handle, value);
+    }
+
+    /// <inheritdoc/>
+    public (int Left, int Top) Margins => TextEntryNative.GetMargins(Handle);
+    /// <inheritdoc/>
+    public bool SetMargins(int left, int top = -1) => TextEntryNative.SetMargins(Handle, left, top);
+
+    /// <inheritdoc/>
+    public bool AutoComplete(params string[] choices) => TextEntryNative.AutoComplete(Handle, choices);
+    /// <inheritdoc/>
+    public bool AutoCompleteFileNames() => TextEntryNative.AutoCompleteFileNames(Handle);
+    /// <inheritdoc/>
+    public bool AutoCompleteDirectories() => TextEntryNative.AutoCompleteDirectories(Handle);
     public void Add(string value) => NativeMethods.wxsharp_combobox_append(Handle, value);
     public void Insert(string value, int index) => NativeMethods.wxsharp_combobox_insert(Handle, value, index);
     public void RemoveAt(int index) => NativeMethods.wxsharp_combobox_delete(Handle, index);
+    /// <summary>Empties the control. wxComboBox resolves the ambiguity between its list and its text by
+    /// clearing both, and so does this.</summary>
     public void Clear() => NativeMethods.wxsharp_combobox_clear(Handle);
     public int Count => NativeMethods.wxsharp_combobox_count(Handle);
 
@@ -107,31 +213,31 @@ public class ComboBox : Control
     }
 }
 
-public class SearchCtrl : Control
+/// <summary>A text field with a search affordance, following <c>wxSearchCtrl</c>. It derives from
+/// <see cref="TextCtrl"/> because wxWidgets does, so the whole editing surface comes with it.</summary>
+public class SearchCtrl : TextCtrl
 {
-    public event EventHandler<CommandEventArgs> TextChanged
-    {
-        add => AddHandler(WxEvents.TextChanged, value);
-        remove => RemoveHandler(WxEvents.TextChanged, value);
-    }
+    /// <summary>The search button was pressed, or Enter was hit in the field.</summary>
     public event EventHandler<CommandEventArgs> Search
     {
         add => AddHandler(WxEvents.Search, value);
         remove => RemoveHandler(WxEvents.Search, value);
     }
+
+    /// <summary>The cancel button was pressed.</summary>
+    public event EventHandler<CommandEventArgs> SearchCancelled
+    {
+        add => AddHandler(WxEvents.SearchCancelled, value);
+        remove => RemoveHandler(WxEvents.SearchCancelled, value);
+    }
+
     public SearchCtrl(Window parent, string value = "", int id = WindowId.Any) : base(parent, id)
         => Initialize(NativeMethods.wxsharp_searchctrl_create(parent.Handle, id, value, Token));
-    public unsafe string Value
-    {
-        get
-        {
-            var length = NativeMethods.wxsharp_searchctrl_get_value(Handle, null, 0); if (length <= 0) return string.Empty;
-            var bytes = new byte[length + 1]; fixed (byte* buffer = bytes) _ = NativeMethods.wxsharp_searchctrl_get_value(Handle, buffer, bytes.Length);
-            return Utf8String.Decode(bytes, length);
-        }
-        set => NativeMethods.wxsharp_searchctrl_set_value(Handle, value);
-    }
+
+    /// <summary>Whether the cancel button is shown.</summary>
     public bool ShowCancelButton { set => NativeMethods.wxsharp_searchctrl_show_cancel(Handle, value); }
+
+    /// <summary>Whether the search button is shown.</summary>
     public bool ShowSearchButton { set => NativeMethods.wxsharp_searchctrl_show_search(Handle, value); }
 }
 

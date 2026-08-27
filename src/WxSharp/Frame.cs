@@ -83,9 +83,7 @@ public class Frame : Window
         set { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_title(Handle, value); }
     }
     public nint NativeHandle { get { OwnerApp.VerifyAccess(); return NativeMethods.wxsharp_window_native_handle(Handle); } }
-    public void Center() { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_center(Handle); }
     public void SetFullScreen(bool fullScreen) { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_fullscreen(Handle, fullScreen); }
-    public void Close() { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_close(Handle); }
 
     /// <summary>Installs a menu bar. The frame takes ownership of <paramref name="menuBar"/>.</summary>
     public void SetMenuBar(MenuBar menuBar)

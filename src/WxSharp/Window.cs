@@ -18,15 +18,16 @@ public static class WindowId { public const int Any = -1; }
 /// <see cref="WxEvents.ButtonClicked"/> on a frame catches its buttons, exactly as in Phoenix. The wrapper
 /// does not re-dispatch events to parents itself, and treats every event the same way.
 /// </remarks>
-public abstract class Window : IDisposable
+public abstract partial class Window : IDisposable
 {
     private readonly List<Window> _children = new();
     private readonly Dictionary<int, List<Subscription>> _subscriptions = new();
     private readonly Dictionary<int, EventArgsFactory> _factories = new();
     private long _nextBindingToken;
-    private nint _handle;
+    private protected nint _handle;
     private bool _destroyed;
     private Accessible? _accessible;
+    private Sizer? _sizer;
     internal long Token { get; }
     internal App OwnerApp { get; }
     public int Id { get; private set; }
@@ -424,8 +425,6 @@ public abstract class Window : IDisposable
         get { Verify(); NativeMethods.wxsharp_control_get_position(_handle, out var x, out var y); return new Point(x, y); }
         set { Verify(); NativeMethods.wxsharp_control_set_position(_handle, value.X, value.Y); }
     }
-    public Size MinSize { set { Verify(); NativeMethods.wxsharp_control_set_min_size(_handle, value.Width, value.Height); } }
-    public Size MaxSize { set { Verify(); NativeMethods.wxsharp_control_set_max_size(_handle, value.Width, value.Height); } }
     public Size BestSize
     {
         get { Verify(); NativeMethods.wxsharp_control_get_best_size(_handle, out var w, out var h); return new Size(w, h); }
@@ -560,9 +559,42 @@ public abstract class Window : IDisposable
         set { Verify(); NativeMethods.wxsharp_control_set_name(_handle, value ?? string.Empty); }
     }
 
+    /// <summary>Gives the window a sizer to lay its children out with, and lays them out once. The window
+    /// takes ownership of the sizer.</summary>
     public void SetSizer(Sizer sizer)
     {
-        ArgumentNullException.ThrowIfNull(sizer); Verify(); NativeMethods.wxsharp_window_set_sizer(_handle, sizer.Handle);
+        ArgumentNullException.ThrowIfNull(sizer);
+        Verify();
+        NativeMethods.wxsharp_window_set_sizer(_handle, sizer.Handle);
+        _sizer = sizer;
+    }
+
+    /// <summary>Gives the window a sizer and resizes the window to the size that sizer needs - the usual
+    /// last line of a dialog's constructor. Follows <c>wxWindow.SetSizerAndFit</c>.</summary>
+    public void SetSizerAndFit(Sizer sizer)
+    {
+        ArgumentNullException.ThrowIfNull(sizer);
+        Verify();
+        NativeMethods.wxsharp_window_set_sizer_and_fit(_handle, sizer.Handle);
+        _sizer = sizer;
+    }
+
+    /// <summary>The sizer laying out this window's children, or null when it has none.</summary>
+    public Sizer? GetSizer()
+    {
+        Verify();
+        // The wrapper object is kept so callers get back the same instance they assigned; wxWidgets only
+        // knows the native pointer.
+        return NativeMethods.wxsharp_window_get_sizer(_handle) == 0 ? null : _sizer;
+    }
+
+    /// <summary>The sizer this window is an item of, or null when it is not in one. Follows
+    /// <c>wxWindow.GetContainingSizer</c>.</summary>
+    public Sizer? GetContainingSizer()
+    {
+        Verify();
+        var handle = NativeMethods.wxsharp_window_containing_sizer(_handle);
+        return handle == 0 ? null : Sizer.Attach(handle);
     }
 
     public virtual void Destroy()
@@ -586,6 +618,7 @@ public abstract class Window : IDisposable
         // managed subscriber lists.
         _subscriptions.Clear(); _factories.Clear();
         _accessible?.Detach(this); _accessible = null;
+        _sizer = null;
         Invalidated?.Invoke(); Invalidated = null;
         OwnerApp.NotifyWindowInvalidated(this);
         _destroyed = true; _handle = 0;

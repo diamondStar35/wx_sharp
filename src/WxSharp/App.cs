@@ -25,6 +25,7 @@ public class App : IDisposable
     public App()
     {
         if (Current is not null) throw new InvalidOperationException("Only one App may exist at a time.");
+        RequireSingleThreadedApartment();
         _threadId = Environment.CurrentManagedThreadId;
         if (!NativeMethods.wxsharp_init()) throw new InvalidOperationException("wxWidgets initialization failed.");
         unsafe { NativeMethods.wxsharp_set_event_handler(&Dispatch); }
@@ -32,6 +33,19 @@ public class App : IDisposable
         unsafe { NativeMethods.wxsharp_set_virtual_list_handler(&DispatchVirtualList); }
         Current = this;
         NativeMethods.wxsharp_set_exit_on_frame_delete(true);
+    }
+
+    // Windows GUI toolkits run in a single-threaded apartment; wxWidgets brings OLE up during
+    // initialization and needs one too. .NET starts Main in a multi-threaded apartment unless it is marked,
+    // and the apartment cannot be changed once the thread is running - so this has to be caught here, where
+    // the remedy can be named, rather than later as an unexplained clipboard or drag-and-drop failure.
+    private static void RequireSingleThreadedApartment()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) return;
+        throw new InvalidOperationException(
+            "A WxSharp application must run on a single-threaded apartment thread. Mark the entry point " +
+            "with [STAThread], which requires an explicit Main method rather than top-level statements.");
     }
 
     public bool ExitOnFrameDelete

@@ -89,6 +89,7 @@ TYPES = OrderedDict([
 SKIP = {
     'Create', 'Init', 'Destroy', 'CreateBase', 'SendDestroyEvent',
     'GetClassInfo', 'GetClassName', 'IsKindOf', 'Ref', 'UnRef', 'UnShare', 'CloneRefData', 'CreateRefData',
+    'Ok',   # the long-deprecated spelling of IsOk
     'GetRefData', 'SetRefData', 'IsSameAs',
     'MSWGetStyle', 'MSWOnDraw', 'MSWOnMeasure', 'MSWWindowProc', 'MSWCommand', 'MSWOnNotify',
     'MSWGetBgBrush', 'MSWGetBgBrushForChild', 'MSWShouldPreProcessMessage', 'MSWClickButtonIfPossible',
@@ -104,6 +105,14 @@ SKIP = {
     'GetEventTable', 'SetNextHandler', 'SetPreviousHandler', 'GetNextHandler', 'GetPreviousHandler',
     'SetEvtHandlerEnabled', 'GetEvtHandlerEnabled', 'IsUnlinked', 'Unlink',
     'operator', 'GetHandle', 'AssociateHandle', 'DissociateHandle',
+    'OnChar', 'OnContextMenu', 'OnCopy', 'OnCut', 'OnDelete', 'OnPaste', 'OnRedo', 'OnUndo',
+    'OnSelectAll', 'OnSetFocus', 'OnDropFiles',
+    'OnUpdateCopy', 'OnUpdateCut', 'OnUpdateDelete', 'OnUpdatePaste', 'OnUpdateRedo', 'OnUpdateUndo',
+    'OnUpdateSelectAll',
+    'AdoptAttributesFromHWND', 'ForwardEnableTextChangedEvents', 'SendTextUpdatedEvent',
+    'SendTextUpdatedEventIfAllowed', 'SuppressTextChangedEvents', 'ResumeTextChangedEvents',
+    'EventsAllowed', 'EventsSuppressor', 'GetRichVersion', 'IsInkEdit', 'HideNativeCaret',
+    'ShowNativeCaret', 'GetCompositeControlsDefaultAttributes',
     'GetValidator', 'SetValidator', 'Validate', 'TransferDataToWindow', 'TransferDataFromWindow',
     'InitDialog', 'OnInternalIdle', 'OnPaint', 'OnEraseBackground', 'OnSysColourChanged', 'OnIdle',
     'SetConstraints', 'GetConstraints', 'SetAutoLayout', 'GetAutoLayout', 'SetSizeConstraint',
@@ -140,6 +149,22 @@ SKIP = {
     'CanBeOutsideClientArea', 'CanApplyThemeBorder', 'IsTopNavigationDomain', 'HasMultiplePages',
     'AlwaysShowScrollbars', 'IsScrollbarAlwaysShown', 'SaveField', 'RestoreField', 'SaveValue',
     'RestoreValue', 'IsTopLevel', 'IsDescendant',
+    # Layout internals and a lookup keyed on wxObject user data, which the wrapper does not expose.
+    'UpdateOnDPIChange', 'SetContainingWindow', 'FindItemWithData',
+    # Need a wrapped type the project does not have yet: wxCaret, wxCursor, wxDropTarget, wxPalette,
+    # wxAcceleratorTable as an object. Tracked in the parity document rather than silently skipped.
+    'GetCaret', 'SetCaret', 'GetCursor', 'SetCursor', 'GetCursorBundle', 'SetCursorBundle',
+    'GetDropTarget', 'SetDropTarget', 'GetPalette', 'SetPalette', 'HasCustomPalette',
+    'GetAncestorWithCustomPalette', 'GetAcceleratorTable',
+    # Layout direction, physical-pixel conversion and touch are platform plumbing.
+    'GetLayoutDirection', 'SetLayoutDirection', 'FromPhys', 'ToPhys', 'MakeDPIFromScaleFactor',
+    'EnableTouchEvents', 'CanScroll', 'IsExposed', 'GetClientAreaOrigin', 'GetBestHeight',
+    'GetBestWidth', 'ClientToWindowSize', 'WindowToClientSize', 'HasTransparentBackground',
+    'IsTransparentBackgroundSupported', 'PrepareDC', 'PrepareReadOnlyDC',
+    # Posting an event needs the wx.PostEvent equivalent, which is not wrapped.
+    'PostSizeEvent', 'PostSizeEventToParent', 'SendSizeEvent', 'SendSizeEventToParent',
+    # The help-provider machinery, which needs wxHelpProvider.
+    'GetHelpIdAtPoint', 'GetHelpTextAtPoint', 'SetHelpTextForId',
 }
 
 # wx names the wrapper deliberately answers with one differently-named member. Left side is the wx member.
@@ -160,7 +185,7 @@ COLLAPSE = {
     'SetMinSize': 'MinSize', 'GetMinSize': 'MinSize', 'SetSizeHints': 'MinSize',
     'SetMaxSize': 'MaxSize', 'GetMaxSize': 'MaxSize',
     'GetBestSize': 'BestSize', 'GetEffectiveMinSize': 'BestSize',
-    'SetName': 'AccessibleName', 'GetName': 'AccessibleName',
+    'SetName': 'Name', 'GetName': 'Name',
     'GetAccessible': 'Accessible', 'SetAccessible': 'Accessible', 'GetOrCreateAccessible': 'Accessible',
     'CreateAccessible': 'Accessible',
     'SetId': 'Id', 'GetId': 'Id', 'GetParent': 'Parent',
@@ -202,7 +227,67 @@ def is_api(member, wx_name, bases):
 
 # Where one managed type answers a wx member under a name of its own. Keyed by managed type so the same
 # wx name can mean different things on different controls.
+# Managed base classes whose members a derived wrapper inherits, where the derivation mirrors wxWidgets'.
+MANAGED_BASES = {
+    'SearchCtrl': ('TextCtrl',),
+}
+
 PER_TYPE = {
+    'Window': {'GetRect': 'Rect', 'GetClientRect': 'ClientRect', 'GetScreenRect': 'ScreenRect',
+               'GetScreenPosition': 'ScreenPosition', 'GetVirtualSize': 'VirtualSize',
+               'SetVirtualSize': 'VirtualSize', 'GetBestVirtualSize': 'BestVirtualSize',
+               'GetMinClientSize': 'MinClientSize', 'SetMinClientSize': 'MinClientSize',
+               'GetMaxClientSize': 'MaxClientSize', 'SetMaxClientSize': 'MaxClientSize',
+               'GetWindowBorderSize': 'BorderSize', 'GetCharHeight': 'CharHeight',
+               'GetCharWidth': 'CharWidth', 'GetDPI': 'Dpi', 'FromDIP': 'FromDip', 'ToDIP': 'ToDip',
+               'GetBackgroundStyle': 'BackgroundStyle', 'SetBackgroundStyle': 'BackgroundStyle',
+               'GetWindowVariant': 'Variant', 'SetWindowVariant': 'Variant',
+               'IsDoubleBuffered': 'DoubleBuffered', 'SetDoubleBuffered': 'DoubleBuffered',
+               'GetHelpText': 'HelpText', 'SetHelpText': 'HelpText',
+               'GetScrollPos': 'GetScrollPosition', 'SetScrollPos': 'SetScrollPosition',
+               'GetMinWidth': 'MinSize', 'GetMinHeight': 'MinSize',
+               'GetMaxWidth': 'MaxSize', 'GetMaxHeight': 'MaxSize',
+               'GetBorder': 'Border'},
+    'TextCtrl': {'GetDefaultStyle': 'DefaultStyle', 'SetDefaultStyle': 'DefaultStyle',
+                 'GetHint': 'Hint', 'SetHint': 'Hint', 'GetMargins': 'Margins', 'SetMargins': 'SetMargins',
+                 'SetMaxLength': 'MaxLength', 'SetModified': 'IsModified', 'IsModified': 'IsModified',
+                 'IsSingleLine': 'IsMultiLine', 'IsMultiLine': 'IsMultiLine',
+                 'GetLineText': 'GetLineText', 'GetNumberOfLines': 'LineCount',
+                 'GetLineLength': 'GetLineLength', 'ShowPosition': 'ShowPosition',
+                 'GetInsertionPoint': 'InsertionPoint', 'SetInsertionPoint': 'InsertionPoint',
+                 'SetInsertionPointEnd': 'MoveCaretToEnd', 'GetLastPosition': 'LastPosition',
+                 'GetSelection': 'Selection', 'SetSelection': 'Selection',
+                 'GetStringSelection': 'SelectedText', 'IsEditable': 'Editable', 'SetEditable': 'Editable',
+                 'ChangeValue': 'ChangeValue', 'WriteText': 'Write', 'AppendText': 'Append',
+                 'GetRange': 'GetRange', 'Replace': 'Replace', 'Remove': 'Remove', 'IsEmpty': 'IsEmpty',
+                 'AutoComplete': 'AutoComplete', 'AutoCompleteFileNames': 'AutoCompleteFileNames',
+                 'AutoCompleteDirectories': 'AutoCompleteDirectories', 'ForceUpper': 'ForceUpper',
+                 'SelectNone': 'SelectNone', 'HasSelection': 'HasSelection',
+                 'RemoveSelection': 'RemoveSelection'},
+    'ComboBox': {'GetHint': 'Hint', 'SetHint': 'Hint', 'GetMargins': 'Margins', 'SetMargins': 'SetMargins',
+                 'SetMaxLength': 'MaxLength', 'GetInsertionPoint': 'InsertionPoint',
+                 'SetInsertionPoint': 'InsertionPoint', 'SetInsertionPointEnd': 'MoveCaretToEnd',
+                 'GetLastPosition': 'LastPosition', 'GetSelection': 'Selection',
+                 'SetSelection': 'Selection', 'GetStringSelection': 'SelectedText',
+                 'IsEditable': 'Editable', 'SetEditable': 'Editable', 'ChangeValue': 'ChangeValue',
+                 'WriteText': 'Write', 'AppendText': 'Append', 'GetRange': 'GetRange',
+                 'Replace': 'Replace', 'Remove': 'Remove', 'IsEmpty': 'IsEmpty',
+                 'AutoComplete': 'AutoComplete', 'AutoCompleteFileNames': 'AutoCompleteFileNames',
+                 'AutoCompleteDirectories': 'AutoCompleteDirectories', 'ForceUpper': 'ForceUpper',
+                 'SelectNone': 'SelectNone', 'HasSelection': 'HasSelection',
+                 'RemoveSelection': 'RemoveSelection',
+                 'GetString': 'this[]', 'SetString': 'this[]', 'FindString': 'IndexOf'},
+    'SearchCtrl': {'ShowCancelButton': 'ShowCancelButton', 'IsCancelButtonVisible': 'ShowCancelButton',
+                   'ShowSearchButton': 'ShowSearchButton', 'IsSearchButtonVisible': 'ShowSearchButton'},
+    'Colour': {'Set': 'Parse', 'FromString': 'Parse', 'GetAsString': 'ToName',
+               'Red': 'R', 'GetRed': 'R', 'Green': 'G', 'GetGreen': 'G',
+               'Blue': 'B', 'GetBlue': 'B', 'Alpha': 'A', 'GetAlpha': 'A',
+               'GetRGB': 'ToArgb', 'GetRGBA': 'ToArgb', 'SetRGB': 'FromArgb', 'SetRGBA': 'FromArgb',
+               'InitRGBA': 'FromArgb', 'GetLuminance': 'Luminance'},
+    'Clipboard': {'Open': 'Open', 'Close': 'Close', 'IsOpened': 'IsOpen', 'Flush': 'Flush',
+                  'Clear': 'Clear', 'IsSupported': 'IsSupported',
+                  'UsePrimarySelection': 'UsePrimarySelection', 'IsUsingPrimarySelection': 'UsePrimarySelection',
+                  'SetData': 'SetText', 'GetData': 'GetText', 'AddData': 'SetText'},
     'CheckBox': {'GetValue': 'Checked', 'SetValue': 'Checked', 'IsChecked': 'Checked'},
     'ToggleButton': {'GetValue': 'Value', 'SetValue': 'Value'},
     'RadioButton': {'GetValue': 'Value', 'SetValue': 'Value'},
@@ -219,13 +304,6 @@ PER_TYPE = {
                  'GetRootItem': 'Root', 'SelectItem': 'Selection',
                  'UnselectAll': 'Unselect', 'Unselect': 'Unselect',
                  'Collapse': 'Expand', 'DeleteAllItems': 'Clear', 'Delete': 'Remove'},
-    'TextCtrl': {'GetInsertionPoint': 'InsertionPoint', 'SetInsertionPoint': 'InsertionPoint',
-                 'SetInsertionPointEnd': 'MoveCaretToEnd', 'GetLastPosition': 'Length',
-                 'GetNumberOfLines': 'LineCount', 'GetSelection': 'Selection',
-                 'SetSelection': 'Selection', 'GetStringSelection': 'SelectedText',
-                 'SetEditable': 'Editable', 'IsEditable': 'Editable', 'AppendText': 'Append',
-                 'WriteText': 'Write', 'IsEmpty': 'Length'},
-    'ComboBox': {'GetString': 'this[]', 'SetString': 'this[]', 'FindString': 'IndexOf'},
     'Choice': {'GetString': 'this[]', 'SetString': 'this[]', 'Select': 'SelectedIndex'},
     'Menu': {'FindItemByPosition': 'this[]', 'GetMenuItemCount': 'Count'},
     'MenuItem': {'GetItemLabel': 'Label', 'SetItemLabel': 'Label', 'GetItemLabelText': 'Label',
@@ -242,6 +320,39 @@ PER_TYPE = {
     'StatusBar': {'SetStatusText': 'SetText', 'GetStatusText': 'GetText'},
     'SpinCtrl': {'GetValue': 'Value', 'SetValue': 'Value'},
     'SpinCtrlDouble': {'GetValue': 'Value', 'SetValue': 'Value'},
+    'Sizer': {'GetItemCount': 'ItemCount', 'IsEmpty': 'IsEmpty', 'GetMinSize': 'MinSize',
+              'SetMinSize': 'MinSize', 'GetSize': 'Size', 'GetPosition': 'Position',
+              'Detach': 'Detach', 'DetachItem': 'DetachAt', 'Remove': 'Remove', 'Replace': 'Replace',
+              'Clear': 'Clear', 'DeleteWindows': 'DeleteWindows', 'Insert': 'Insert', 'Prepend': 'Prepend',
+              'InsertSpacer': 'InsertSpacer', 'InsertStretchSpacer': 'InsertStretchSpacer',
+              'PrependSpacer': 'PrependSpacer', 'PrependStretchSpacer': 'PrependStretchSpacer',
+              'Show': 'Show', 'Hide': 'Hide', 'IsShown': 'IsShown', 'ShowItems': 'ShowItems',
+              'AreAnyItemsShown': 'AreAnyItemsShown', 'Layout': 'Layout', 'Fit': 'Fit',
+              'FitInside': 'FitInside', 'SetSizeHints': 'SetSizeHints', 'GetItem': 'GetItem',
+              'GetItemById': 'GetItemById', 'SetItemMinSize': 'SetItemMinSize',
+              'SetDimension': 'SetDimension', 'ComputeFittingClientSize': 'ComputeFittingClientSize',
+              'ComputeFittingWindowSize': 'ComputeFittingWindowSize'},
+    'BoxSizer': {'GetOrientation': 'Orientation', 'SetOrientation': 'Orientation',
+                 'IsVertical': 'Orientation', 'AddSpacer': 'AddSpacer'},
+    'GridSizer': {'GetRows': 'Rows', 'SetRows': 'Rows', 'GetCols': 'Columns', 'SetCols': 'Columns',
+                  'GetVGap': 'VerticalGap', 'SetVGap': 'VerticalGap', 'GetHGap': 'HorizontalGap',
+                  'SetHGap': 'HorizontalGap', 'GetEffectiveRowsCount': 'EffectiveRows',
+                  'GetEffectiveColsCount': 'EffectiveColumns'},
+    'FlexGridSizer': {'AddGrowableCol': 'AddGrowableColumn', 'RemoveGrowableCol': 'RemoveGrowableColumn',
+                      'RemoveGrowableRow': 'RemoveGrowableRow', 'IsColGrowable': 'IsColumnGrowable',
+                      'IsRowGrowable': 'IsRowGrowable', 'GetFlexibleDirection': 'FlexibleDirection',
+                      'SetFlexibleDirection': 'FlexibleDirection',
+                      'GetNonFlexibleGrowMode': 'NonFlexibleGrowMode',
+                      'SetNonFlexibleGrowMode': 'NonFlexibleGrowMode',
+                      'GetRowHeights': 'GetRowHeights', 'GetColWidths': 'GetColumnWidths'},
+    'GridBagSizer': {'Add': 'AddAt', 'GetItemPosition': 'GetItemPosition',
+                     'SetItemPosition': 'SetItemPosition', 'GetItemSpan': 'GetItemSpan',
+                     'SetItemSpan': 'SetItemSpan', 'FindItemAtPosition': 'FindItemAtPosition',
+                     'FindItemAtPoint': 'FindItemAtPoint', 'GetCellSize': 'GetCellSize',
+                     'GetEmptyCellSize': 'EmptyCellSize', 'SetEmptyCellSize': 'EmptyCellSize',
+                     'CheckForIntersection': 'CheckForIntersection'},
+    'StaticBoxSizer': {'GetStaticBox': 'Box', 'AreAnyItemsShown': 'AreAnyItemsShown',
+                       'Detach': 'Detach', 'ShowItems': 'ShowItems'},
 }
 
 
@@ -330,13 +441,22 @@ def managed_members():
                                 r'(?:class|record struct|readonly record struct|struct|enum)\s+\w+', text[start:])
                 body = text[start:start + nxt.start()] if nxt else text[start:]
                 members = {hit.group(1) for hit in CS_MEMBER_RE.finditer(body)}
+                # A record struct declares its positional parameters as public properties.
+                params = re.match(r'\s*\(([^)]*)\)', body)
+                if params:
+                    for part in params.group(1).split(','):
+                        words = part.strip().split('=')[0].split()
+                        if len(words) >= 2:
+                            members.add(words[-1])
                 per_type.setdefault(cls, set()).update(members)
     return per_type
 
 
 def normalise(name, cs_name=None):
-    if cs_name and name in PER_TYPE.get(cs_name, {}):
-        return PER_TYPE[cs_name][name]
+    # A derived wrapper inherits its base's aliases along with its members.
+    for candidate in (cs_name,) + MANAGED_BASES.get(cs_name, ()) if cs_name else ():
+        if name in PER_TYPE.get(candidate, {}):
+            return PER_TYPE[candidate][name]
     return COLLAPSE.get(name, name)
 
 
@@ -363,9 +483,17 @@ def main():
         wx_members = {m for m in wx_members if is_api(m, wx_name, bases)}
 
         have = set(managed.get(cs_name, set()))
-        if cs_name not in ('Sizer', 'BoxSizer', 'GridSizer', 'FlexGridSizer', 'GridBagSizer',
-                           'StaticBoxSizer', 'Menu', 'MenuItem', 'MenuBar', 'Timer', 'Clipboard',
-                           'Font', 'Colour', 'Bitmap', 'Image', 'ProgressDialog'):
+        for managed_base in MANAGED_BASES.get(cs_name, ()):
+            have |= managed.get(managed_base, set())
+        SIZERS = ('BoxSizer', 'GridSizer', 'FlexGridSizer', 'GridBagSizer', 'StaticBoxSizer')
+        if cs_name in SIZERS:
+            have |= managed.get('Sizer', set())          # the managed base
+        if cs_name in ('FlexGridSizer', 'GridBagSizer'):
+            have |= managed.get('GridSizer', set())      # wxFlexGridSizer derives from wxGridSizer
+        if cs_name == 'GridBagSizer':
+            have |= managed.get('FlexGridSizer', set())
+        if cs_name not in ('Sizer',) + SIZERS + ('Menu', 'MenuItem', 'MenuBar', 'Timer', 'Clipboard',
+                                                 'Font', 'Colour', 'Bitmap', 'Image', 'ProgressDialog'):
             have |= inherited
         have_normalised = {normalise(m, cs_name) for m in have} | have
 
