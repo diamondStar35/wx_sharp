@@ -59,5 +59,7 @@ public sealed class Icon : IDisposable
         App.RequireCurrent(); _handle = NativeMethods.wxsharp_icon_load(path);
         if (_handle == 0) throw new ArgumentException("The icon could not be loaded.", nameof(path));
     }
+    internal static Icon Attach(nint handle) => new(handle);
+    private Icon(nint handle) => _handle = handle;
     public void Dispose() { if (_handle != 0) NativeMethods.wxsharp_icon_destroy(_handle); _handle = 0; }
 }

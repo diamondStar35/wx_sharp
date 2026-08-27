@@ -11,6 +11,7 @@ namespace WxSharp;
 public class App : IDisposable
 {
     private static readonly Dictionary<long, Window> Windows = new();
+    private static readonly Dictionary<nint, Window> ByHandle = new();
     private static readonly Dictionary<long, Action> DeferredActions = new();
     private static long _nextToken;
     private readonly int _threadId;
@@ -133,7 +134,18 @@ public class App : IDisposable
         return token;
     }
 
-    internal static void Unregister(long token) => Windows.Remove(token);
+    internal static void Unregister(long token)
+    {
+        if (Windows.Remove(token, out var window) && window.NativeHandleForLookup != 0)
+            ByHandle.Remove(window.NativeHandleForLookup);
+    }
+
+    // wxWidgets hands back raw wxWindow pointers from calls like GetDefaultItem; this maps one back to the
+    // wrapper that owns it. Anything wxWidgets created on its own has no wrapper and comes back null.
+    internal static void MapHandle(nint handle, Window window) => ByHandle[handle] = window;
+
+    internal static Window? Lookup(nint handle)
+        => handle != 0 && ByHandle.TryGetValue(handle, out var window) ? window : null;
 
     internal void NotifyWindowInvalidated(Window window)
     {

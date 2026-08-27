@@ -425,6 +425,16 @@ public sealed class MenuBar : IDisposable
 
     internal nint Handle => _handle != 0 ? _handle : throw new ObjectDisposedException(nameof(MenuBar));
 
+    /// <summary>Wraps a menu bar the frame already owns. The wrapper does not take ownership - the frame
+    /// keeps it, and destroys it with itself.</summary>
+    internal static MenuBar Attach(nint handle) => new(handle, owned: false);
+
+    private MenuBar(nint handle, bool owned)
+    {
+        _handle = handle;
+        _owned = owned;
+    }
+
     public MenuBar()
     {
         App.RequireCurrent();
@@ -518,6 +528,16 @@ public class StatusBar : Control
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(fields);
         Initialize(NativeMethods.wxsharp_statusbar_create(frame.Handle, fields, Token));
+        frame.AdoptStatusBar(this);
+    }
+
+    /// <summary>Wraps a bar wxWidgets created, which happens when a frame makes its own.</summary>
+    internal StatusBar(Frame frame, nint handle, int fields, int style, int id) : base(frame, id)
+    {
+        Initialize(handle == 0
+            ? NativeMethods.wxsharp_frame_create_statusbar(frame.Handle, fields, style, id, Token)
+            : handle);
+        frame.AdoptStatusBar(this);
     }
     public void SetText(string text, int field = 0) => NativeMethods.wxsharp_statusbar_set_text(Handle, text, field);
     public unsafe string GetText(int field = 0)
@@ -551,7 +571,19 @@ public class ToolBar : Control
     }
 
     public ToolBar(Frame frame) : base(frame, WindowId.Any)
-        => Initialize(NativeMethods.wxsharp_toolbar_create(frame.Handle, Token));
+    {
+        Initialize(NativeMethods.wxsharp_toolbar_create(frame.Handle, Token));
+        frame.AdoptToolBar(this);
+    }
+
+    /// <summary>Wraps a bar wxWidgets created, which happens when a frame makes its own.</summary>
+    internal ToolBar(Frame frame, nint handle, int style, int id) : base(frame, id)
+    {
+        Initialize(handle == 0
+            ? NativeMethods.wxsharp_frame_create_toolbar(frame.Handle, style, id, Token)
+            : handle);
+        frame.AdoptToolBar(this);
+    }
     public void AddTool(int id, string label, string help = "", MenuItemKind kind = MenuItemKind.Normal)
         => NativeMethods.wxsharp_toolbar_add_tool(Handle, id, label, help, (int)kind);
     public void AddSeparator() => NativeMethods.wxsharp_toolbar_add_separator(Handle);

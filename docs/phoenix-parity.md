@@ -59,6 +59,10 @@ This document distinguishes behavioral compatibility from API completeness.
 | `ComboBox.SelectedText` | Reports the selected item rather than the highlighted text, which is `wxComboBox`'s own resolution of inheriting `GetStringSelection` twice. `Selection` plus `GetRange` reads the highlighted text. |
 | `ChangeValue` | Sets the text without raising `TextChanged`, as `wxTextEntry::ChangeValue` does; assigning `Value` raises it. |
 | Single-threaded apartment | On Windows, `App` requires the entry point to be marked `[STAThread]` and says so at startup. wxWidgets brings OLE up during initialization, and .NET otherwise starts on a multi-threaded apartment where it cannot. Python has no equivalent constraint, which is why Phoenix says nothing about it. |
+| Language lookup | wxWidgets has two `FindLanguageInfo` overloads and neither takes both spellings: the string one parses the POSIX form (`pt_BR`) by splitting on `_` and `.`, and the `wxLocaleIdent` one takes the BCP 47 tag (`pt-BR`). Both are exposed, as `FindLanguageInfo` and `FindLanguageInfoByTag`; `FindLanguage` tries them in that order for a code whose spelling is not known in advance. |
+| `Locale` versus `Translations` | Both load the same gettext `.mo` catalogues. `Locale` additionally sets the C runtime locale, so dates, numbers and currency follow the language too; `Translations` only translates. wxWidgets marks `wxLocale` as superseded but still ships it, and so does this. |
+| Frame geometry | `wxTopLevelWindow::SaveGeometry` takes a `GeometryStore` the caller implements. The wrapper supplies one that serialises to an opaque string, so placement can go straight into whatever settings file an application already has. The contents are wxWidgets' own field names and vary by platform. |
+| Frame-owned bars | `Frame.StatusBar` and `Frame.ToolBar` hand back the same wrapper each time rather than a fresh one around the same native object. A bar wxWidgets made without the wrapper knowing is adopted on first read. |
 
 ## Current coverage boundary
 
@@ -109,6 +113,13 @@ recorded here rather than quietly skipped:
   the installed table cannot be read back.
 - `wxImageList` — blocks icons in list, tree, notebook and toolbar controls.
 
+`Frame` is complete against `wxFrame` and `wxTopLevelWindow`: window state, the title-bar buttons, full
+screen, user attention, icon bundles, the frame-owned menu, status and tool bars, and geometry persistence.
+`Locale` and `Translations` are complete against `wxLocale` and `wxTranslations`, and `Language` is generated
+from `wx/language.h` so its 912 values stay in step with the header rather than being transcribed. Because
+wxWidgets reads GNU gettext catalogues, a project already shipping a
+`locale/<lang>/LC_MESSAGES/<domain>.mo` tree needs no conversion.
+
 `Colour` is complete against `wxColour`, including name and `#RRGGBB` parsing
 and the transforms a themed interface derives its palette with — lightening,
 disabling, greyscale and alpha blending are all computed by wxWidgets rather
@@ -123,8 +134,16 @@ and high-contrast-safe interface has to read its colours from. `TextAttr` covers
 was given.
 
 Known gaps in this area: there is no equivalent of `wx.PostEvent` for
-synthesising a command, and no `wxLocale` wrapper for wxWidgets' own stock
-strings. Command-event propagation and vetoing are
+synthesising a command.
+
+Single-instance detection and inter-process messaging are deliberately not
+wrapped. On Windows `wxSingleInstanceChecker` is `CreateMutex` plus a test for
+`ERROR_ALREADY_EXISTS`, which `System.Threading.Mutex` already gives; and
+`wxServer`/`wxClient`/`wxConnection` resolve to DDE there, because `wx/ipc.h`
+defaults `wxUSE_DDE_FOR_IPC` to 1 on Windows and the TCP classes are not
+compiled in at all. A named pipe through `System.IO.Pipes` is both simpler and
+closer to what such an application actually needs, and neither wxWidgets class
+would be carrying its weight. Command-event propagation and vetoing are
 implemented but are not covered by an automated test, because triggering either
 needs a synthesised event the smoke test cannot produce.
 

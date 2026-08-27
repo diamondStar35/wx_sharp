@@ -350,6 +350,7 @@ public abstract partial class Window : IDisposable
     {
         if (handle == 0) { App.Unregister(Token); throw new InvalidOperationException("wxWidgets failed to create the window."); }
         _handle = handle;
+        App.MapHandle(handle, this);
         Id = NativeMethods.wxsharp_control_get_id(handle);
     }
 
@@ -605,6 +606,8 @@ public abstract partial class Window : IDisposable
     public void Dispose() { Destroy(); GC.SuppressFinalize(this); }
 
     internal void InvalidateFromAppShutdown() => Invalidate();
+    internal nint NativeHandleForLookup => _handle;
+
     internal void InvalidateFromNative() => Invalidate();
     internal void EnsureAlive() => ObjectDisposedException.ThrowIf(_destroyed || _handle == 0, this);
     private protected void Verify() { OwnerApp.VerifyAccess(); EnsureAlive(); }

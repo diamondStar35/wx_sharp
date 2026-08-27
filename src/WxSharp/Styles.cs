@@ -285,3 +285,83 @@ public enum ChoiceStyle
     Unsorted = 0,
     Sorted = 1,
 }
+
+/// <summary>How a status bar looks and behaves, following the <c>wxSTB_*</c> flags.</summary>
+[Flags]
+public enum StatusBarStyle
+{
+    None = 0,
+
+    /// <summary>Show the resize grip in the corner.</summary>
+    SizeGrip = 0x0010,
+
+    /// <summary>Show a tooltip with the whole text when a field is too narrow for it. Worth keeping: a
+    /// truncated field otherwise silently loses the end of what it says.</summary>
+    ShowTips = 0x0020,
+
+    /// <summary>Cut text that does not fit at the start.</summary>
+    EllipsizeStart = 0x0040,
+
+    /// <summary>Cut text that does not fit in the middle.</summary>
+    EllipsizeMiddle = 0x0080,
+
+    /// <summary>Cut text that does not fit at the end.</summary>
+    EllipsizeEnd = 0x0100,
+
+    /// <summary>Repaint the whole bar when it is resized.</summary>
+    FullRepaintOnResize = 0x00010000,
+
+    Default = SizeGrip | EllipsizeEnd | ShowTips | FullRepaintOnResize,
+}
+
+/// <summary>How a toolbar is laid out, following the <c>wxTB_*</c> flags.</summary>
+[Flags]
+public enum ToolBarStyle
+{
+    None = 0,
+
+    /// <summary>Lay the tools out in a row along the top.</summary>
+    Horizontal = 0x0004,
+
+    /// <summary>Lay the tools out in a column down the left.</summary>
+    Vertical = 0x0008,
+
+    /// <summary>Down the left. The same as <see cref="Vertical"/>.</summary>
+    Left = Vertical,
+
+    /// <summary>Flat buttons, without a raised border.</summary>
+    Flat = 0x0020,
+
+    /// <summary>Let the user drag the bar out of the frame. GTK only.</summary>
+    Dockable = 0x0040,
+
+    /// <summary>Hide the icons.</summary>
+    NoIcons = 0x0080,
+
+    /// <summary>Show each tool's label. Labels help anyone who does not recognise the icon, which is most
+    /// people the first time and everyone using a magnifier.</summary>
+    Text = 0x0100,
+
+    /// <summary>Drop the divider between the bar and the window. Windows only.</summary>
+    NoDivider = 0x0200,
+
+    /// <summary>Skip the automatic alignment. Windows only.</summary>
+    NoAlign = 0x0400,
+
+    /// <summary>Put the label beside the icon rather than under it.</summary>
+    HorizontalLayout = 0x0800,
+
+    /// <summary>Labels beside the icons.</summary>
+    HorizontalText = HorizontalLayout | Text,
+
+    /// <summary>Do not show tooltips.</summary>
+    NoToolTips = 0x1000,
+
+    /// <summary>Along the bottom of the window.</summary>
+    Bottom = 0x2000,
+
+    /// <summary>Down the right of the window.</summary>
+    Right = 0x4000,
+
+    Default = Horizontal,
+}

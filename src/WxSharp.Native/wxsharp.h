@@ -1219,6 +1219,139 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_icon_load(const char* path);
     WXSHARP_API void wxsharp_icon_destroy(wxsharp_handle icon);
     WXSHARP_API void wxsharp_frame_set_icon(wxsharp_handle frame, wxsharp_handle icon);
+
+    // ---- The rest of wxFrame / wxTopLevelWindow ----
+    WXSHARP_API void wxsharp_frame_iconize(wxsharp_handle frame, bool iconize);
+    WXSHARP_API bool wxsharp_frame_is_iconized(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_maximize(wxsharp_handle frame, bool maximize);
+    WXSHARP_API bool wxsharp_frame_is_maximized(wxsharp_handle frame);
+    WXSHARP_API bool wxsharp_frame_is_always_maximized(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_restore(wxsharp_handle frame);
+    WXSHARP_API bool wxsharp_frame_is_active(wxsharp_handle frame);
+    WXSHARP_API bool wxsharp_frame_show_full_screen(wxsharp_handle frame, bool show, int style);
+    WXSHARP_API bool wxsharp_frame_is_full_screen(wxsharp_handle frame);
+    WXSHARP_API bool wxsharp_frame_enable_full_screen_view(wxsharp_handle frame, bool enable, int style);
+    WXSHARP_API void wxsharp_frame_show_without_activating(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_request_user_attention(wxsharp_handle frame, int flags);
+    WXSHARP_API bool wxsharp_frame_enable_close_button(wxsharp_handle frame, bool enable);
+    WXSHARP_API bool wxsharp_frame_enable_maximize_button(wxsharp_handle frame, bool enable);
+    WXSHARP_API bool wxsharp_frame_enable_minimize_button(wxsharp_handle frame, bool enable);
+    WXSHARP_API void wxsharp_frame_centre_on_screen(wxsharp_handle frame, int direction);
+    WXSHARP_API int wxsharp_frame_get_content_protection(wxsharp_handle frame);
+    WXSHARP_API bool wxsharp_frame_set_content_protection(wxsharp_handle frame, int protection);
+    WXSHARP_API void wxsharp_frame_set_represented_filename(wxsharp_handle frame, const char* path);
+    WXSHARP_API void wxsharp_frame_set_window_modality(wxsharp_handle frame, int modality);
+    WXSHARP_API void wxsharp_frame_get_default_size(int* width, int* height);
+    WXSHARP_API wxsharp_handle wxsharp_frame_get_default_item(wxsharp_handle frame);
+    WXSHARP_API wxsharp_handle wxsharp_frame_set_default_item(wxsharp_handle frame, wxsharp_handle window);
+    WXSHARP_API wxsharp_handle wxsharp_frame_get_icon(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_set_icons(wxsharp_handle frame, wxsharp_handle* icons, int count);
+    WXSHARP_API int wxsharp_frame_get_icons(wxsharp_handle frame);
+    WXSHARP_API wxsharp_handle wxsharp_frame_get_icon_at(int index);
+    WXSHARP_API wxsharp_handle wxsharp_frame_get_menubar(wxsharp_handle frame);
+    WXSHARP_API wxsharp_handle wxsharp_frame_find_item_in_menubar(wxsharp_handle frame, int id);
+    WXSHARP_API wxsharp_handle wxsharp_frame_get_statusbar(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_set_statusbar(wxsharp_handle frame, wxsharp_handle bar);
+    WXSHARP_API wxsharp_handle wxsharp_frame_create_statusbar(wxsharp_handle frame, int fields, int style,
+                                                              int id, long long token);
+    WXSHARP_API void wxsharp_frame_set_status_text(wxsharp_handle frame, const char* text, int field);
+    WXSHARP_API void wxsharp_frame_push_status_text(wxsharp_handle frame, const char* text, int field);
+    WXSHARP_API void wxsharp_frame_pop_status_text(wxsharp_handle frame, int field);
+    WXSHARP_API void wxsharp_frame_set_status_widths(wxsharp_handle frame, const int* widths, int count);
+    WXSHARP_API int wxsharp_frame_get_status_bar_pane(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_set_status_bar_pane(wxsharp_handle frame, int pane);
+    WXSHARP_API wxsharp_handle wxsharp_frame_get_toolbar(wxsharp_handle frame);
+    WXSHARP_API void wxsharp_frame_set_toolbar(wxsharp_handle frame, wxsharp_handle bar);
+    WXSHARP_API wxsharp_handle wxsharp_frame_create_toolbar(wxsharp_handle frame, int style, int id,
+                                                            long long token);
+    WXSHARP_API void wxsharp_frame_use_native_statusbar(bool native);
+    WXSHARP_API bool wxsharp_frame_uses_native_statusbar(void);
+    WXSHARP_API int wxsharp_frame_save_geometry(wxsharp_handle frame, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_frame_restore_to_geometry(wxsharp_handle frame, const char* text);
+
+    // ---- Language and translation ----
+    // One entry from the wxWidgets language database, flattened so it can cross the ABI by value.
+    typedef struct wxsharp_language_info
+    {
+        int language;
+        int layout_direction;
+        unsigned int win_lang;
+        unsigned int win_sublang;
+        char locale_tag[64];
+        char canonical_name[64];
+        char canonical_ref[64];
+        char description[128];
+        char description_native[128];
+    } wxsharp_language_info;
+
+    WXSHARP_API wxsharp_handle wxsharp_locale_create(int language, int flags);
+    WXSHARP_API void wxsharp_locale_destroy(wxsharp_handle locale);
+    WXSHARP_API bool wxsharp_locale_is_ok(wxsharp_handle locale);
+    WXSHARP_API int wxsharp_locale_get_language(wxsharp_handle locale);
+    WXSHARP_API int wxsharp_locale_get_name(wxsharp_handle locale, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_canonical_name(wxsharp_handle locale, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_locale(wxsharp_handle locale, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_sys_name(wxsharp_handle locale, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_locale_add_catalog(wxsharp_handle locale, const char* domain,
+                                                int msg_id_language);
+    WXSHARP_API bool wxsharp_locale_is_loaded(wxsharp_handle locale, const char* domain);
+    WXSHARP_API int wxsharp_locale_get_string(wxsharp_handle locale, const char* original,
+                                              const char* domain, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_string_plural(wxsharp_handle locale, const char* singular,
+                                                     const char* plural, unsigned int n, const char* domain,
+                                                     char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_header_value(wxsharp_handle locale, const char* header,
+                                                    const char* domain, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_locale_add_catalog_lookup_path_prefix(const char* prefix);
+    WXSHARP_API int wxsharp_locale_get_system_language(void);
+    WXSHARP_API int wxsharp_locale_get_system_encoding_name(char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_locale_is_available(int language);
+    WXSHARP_API int wxsharp_locale_get_language_name(int language, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_language_canonical_name(int language, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_locale_get_language_info(int language, wxsharp_language_info* info);
+    WXSHARP_API bool wxsharp_locale_find_language_info(const char* text, wxsharp_language_info* info);
+    WXSHARP_API bool wxsharp_locale_find_language_info_by_tag(const char* tag,
+                                                              wxsharp_language_info* info);
+    WXSHARP_API int wxsharp_locale_get_info(int index, int category, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_locale_get_os_info(int index, int category, char* buffer, int buffer_length);
+
+    WXSHARP_API wxsharp_handle wxsharp_translations_get(void);
+    WXSHARP_API wxsharp_handle wxsharp_translations_create(void);
+    WXSHARP_API void wxsharp_translations_set(wxsharp_handle translations);
+    WXSHARP_API void wxsharp_translations_set_language(wxsharp_handle translations, int language);
+    WXSHARP_API void wxsharp_translations_set_language_named(wxsharp_handle translations,
+                                                             const char* language);
+    WXSHARP_API bool wxsharp_translations_add_catalog(wxsharp_handle translations, const char* domain,
+                                                      int msg_id_language);
+    WXSHARP_API bool wxsharp_translations_add_available_catalog(wxsharp_handle translations,
+                                                                const char* domain, int msg_id_language);
+    WXSHARP_API bool wxsharp_translations_add_std_catalog(wxsharp_handle translations);
+    WXSHARP_API bool wxsharp_translations_is_loaded(wxsharp_handle translations, const char* domain);
+    WXSHARP_API int wxsharp_translations_available_count(wxsharp_handle translations, const char* domain);
+    WXSHARP_API int wxsharp_translations_available_at(int index, char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_translations_get_best_translation(wxsharp_handle translations,
+                                                              const char* domain, int msg_id_language,
+                                                              char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_translations_get_best_available_translation(wxsharp_handle translations,
+                                                                        const char* domain, char* buffer,
+                                                                        int buffer_length);
+    WXSHARP_API int wxsharp_translations_get_translated_string(wxsharp_handle translations,
+                                                               const char* original, const char* domain,
+                                                               const char* context, char* buffer,
+                                                               int buffer_length);
+    WXSHARP_API int wxsharp_translations_get_translated_string_plural(wxsharp_handle translations,
+                                                                      const char* original, unsigned int n,
+                                                                      const char* domain, const char* context,
+                                                                      char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_translations_get_header_value(wxsharp_handle translations, const char* header,
+                                                          const char* domain, char* buffer,
+                                                          int buffer_length);
+    WXSHARP_API void wxsharp_translations_add_lookup_prefix(const char* prefix);
+    WXSHARP_API int wxsharp_get_translation(const char* original, const char* domain, const char* context,
+                                            char* buffer, int buffer_length);
+    WXSHARP_API int wxsharp_get_translation_plural(const char* singular, const char* plural, unsigned int n,
+                                                    const char* domain, const char* context, char* buffer,
+                                                    int buffer_length);
     WXSHARP_API void wxsharp_begin_busy_cursor();
     WXSHARP_API void wxsharp_end_busy_cursor();
     WXSHARP_API wxsharp_handle wxsharp_progress_create(wxsharp_handle parent, const char* title,
