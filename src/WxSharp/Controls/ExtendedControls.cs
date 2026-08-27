@@ -333,25 +333,25 @@ public class ScrollBar : Control
         remove => RemoveHandler(WxEvents.ScrollThumbReleased, value);
     }
 
-    public event EventHandler<ScrollEventArgs> LineUp
+    public event EventHandler<ScrollEventArgs> ScrolledLineUp
     {
         add => AddHandler(WxEvents.ScrollLineUp, value);
         remove => RemoveHandler(WxEvents.ScrollLineUp, value);
     }
 
-    public event EventHandler<ScrollEventArgs> LineDown
+    public event EventHandler<ScrollEventArgs> ScrolledLineDown
     {
         add => AddHandler(WxEvents.ScrollLineDown, value);
         remove => RemoveHandler(WxEvents.ScrollLineDown, value);
     }
 
-    public event EventHandler<ScrollEventArgs> PageUp
+    public event EventHandler<ScrollEventArgs> ScrolledPageUp
     {
         add => AddHandler(WxEvents.ScrollPageUp, value);
         remove => RemoveHandler(WxEvents.ScrollPageUp, value);
     }
 
-    public event EventHandler<ScrollEventArgs> PageDown
+    public event EventHandler<ScrollEventArgs> ScrolledPageDown
     {
         add => AddHandler(WxEvents.ScrollPageDown, value);
         remove => RemoveHandler(WxEvents.ScrollPageDown, value);
