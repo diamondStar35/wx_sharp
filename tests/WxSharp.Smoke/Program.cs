@@ -396,6 +396,138 @@ using (var app = new SmokeApp())
     if (!Colour.White.IsOpaque || !Colour.Transparent.IsTransparent || Colour.White.IsTranslucent)
         throw new InvalidOperationException("A colour misreported its transparency.");
 
+    // ---- The rest of wxFrame: window state, the frame-owned bars, and geometry.
+    if (frame.IsIconized || frame.IsMaximized || frame.IsFullScreen)
+        throw new InvalidOperationException("A freshly shown frame reported an unexpected window state.");
+    frame.Iconize();
+    if (!frame.IsIconized)
+        throw new InvalidOperationException("Iconize did not minimise the frame.");
+    frame.Iconize(false);
+    if (frame.IsIconized)
+        throw new InvalidOperationException("Iconize(false) did not restore the frame.");
+    frame.Maximize();
+    if (!frame.IsMaximized)
+        throw new InvalidOperationException("Maximize did not maximise the frame.");
+    frame.Restore();
+    if (frame.IsMaximized)
+        throw new InvalidOperationException("Restore did not un-maximise the frame.");
+
+    _ = frame.IsActive;
+    _ = frame.IsAlwaysMaximized;
+    _ = frame.EnableMinimizeButton(true);
+    _ = frame.EnableMaximizeButton(true);
+    frame.RequestUserAttention();
+    frame.CentreOnScreen();
+    if (Frame.DefaultSize.Width <= 0)
+        throw new InvalidOperationException("The default frame size had no width.");
+
+    // The frame hands back the same wrapper for the bar it already owns, rather than a second one around
+    // the same native object.
+    if (!ReferenceEquals(frame.StatusBar, statusBar))
+        throw new InvalidOperationException("The frame did not hand back the status bar it was given.");
+    if (frame.ToolBar is not null)
+        throw new InvalidOperationException("A frame with no toolbar claimed to have one.");
+
+    frame.SetStatusText("ready");
+    if (statusBar.GetText() != "ready")
+        throw new InvalidOperationException($"The status field read back as '{statusBar.GetText()}'.");
+    frame.PushStatusText("busy");
+    if (statusBar.GetText() != "busy")
+        throw new InvalidOperationException("PushStatusText did not replace the field text.");
+    frame.PopStatusText();
+    if (statusBar.GetText() != "ready")
+        throw new InvalidOperationException("PopStatusText did not restore the field text.");
+    frame.SetStatusWidths(-1);
+    frame.StatusBarPane = 0;
+    if (frame.StatusBarPane != 0)
+        throw new InvalidOperationException("StatusBarPane did not round-trip.");
+
+    if (frame.GetMenuBar() is null)
+        throw new InvalidOperationException("The frame did not report the menu bar it was given.");
+    if (frame.FindItemInMenuBar(closeId) is null)
+        throw new InvalidOperationException("FindItemInMenuBar did not find a menu item by its command ID.");
+
+    // Geometry saves to an opaque string and comes back; wxWidgets decides what is in it.
+    var geometry = frame.SaveGeometry();
+    if (geometry is null || geometry.Length == 0)
+        throw new InvalidOperationException("SaveGeometry reported nothing to save.");
+    if (!frame.RestoreToGeometry(geometry))
+        throw new InvalidOperationException("RestoreToGeometry rejected what SaveGeometry produced.");
+
+    // ---- Languages: what a settings dialog builds its picker from.
+    if (Locale.SystemLanguage == WxSharp.Language.Unknown)
+        throw new InvalidOperationException("The system reported no preferred language.");
+
+    // A generated enum is only worth having if its values still line up with the wxWidgets header, so check
+    // two known ones rather than trusting the generator.
+    var english = Locale.GetLanguageInfo(WxSharp.Language.EnglishUs);
+    if (english is null || english.CanonicalName != "en_US")
+        throw new InvalidOperationException($"English (US) reported as '{english?.CanonicalName}'.");
+    var french = Locale.FindLanguageInfo("fr");
+    if (french is null || french.Language != WxSharp.Language.French)
+        throw new InvalidOperationException($"'fr' resolved to {french?.Language}.");
+
+    // wxWidgets keeps the two spellings apart: the POSIX lookup splits on underscores and does not
+    // understand a dash, and the tag lookup is the other way round. FindLanguage tries both.
+    if (Locale.FindLanguageInfo("pt_BR")?.Language != WxSharp.Language.PortugueseBrazilian)
+        throw new InvalidOperationException("'pt_BR' did not resolve to Brazilian Portuguese.");
+    if (Locale.FindLanguageInfo("pt-BR") is not null)
+        throw new InvalidOperationException("The POSIX lookup unexpectedly accepted a BCP 47 tag.");
+    if (Locale.FindLanguageInfoByTag("pt-BR")?.Language != WxSharp.Language.PortugueseBrazilian)
+        throw new InvalidOperationException("'pt-BR' did not resolve through the tag lookup.");
+    foreach (var spelling in new[] { "pt_BR", "pt-BR" })
+    {
+        if (Locale.FindLanguage(spelling)?.Language != WxSharp.Language.PortugueseBrazilian)
+            throw new InvalidOperationException($"FindLanguage did not accept '{spelling}'.");
+    }
+    if (Locale.FindLanguage("not a language at all") is not null)
+        throw new InvalidOperationException("A meaningless string resolved to a language.");
+
+    var arabic = Locale.GetLanguageInfo(WxSharp.Language.Arabic);
+    if (arabic is null || arabic.LayoutDirection != LayoutDirection.RightToLeft)
+        throw new InvalidOperationException("Arabic did not report a right-to-left layout.");
+    if (Locale.GetLanguageName(WxSharp.Language.German).Length == 0)
+        throw new InvalidOperationException("German had no name in the database.");
+    if (Locale.GetLanguageCanonicalName(WxSharp.Language.German) != "de")
+        throw new InvalidOperationException("German did not report the canonical name 'de'.");
+    _ = Locale.IsAvailable(WxSharp.Language.EnglishUs);
+    _ = Locale.SystemEncodingName;
+
+    // ---- Translation: an untranslated string comes back as itself, which is what makes it safe to wrap
+    // every user-visible string from the start.
+    Translations.AddCatalogLookupPathPrefix(AppContext.BaseDirectory);
+    var translations = new Translations();
+    translations.SetLanguage(WxSharp.Language.EnglishUs);
+    if (Translations.Get(expected) != expected)
+        throw new InvalidOperationException("An untranslated string did not come back unchanged.");
+    if (Translations.Get("one file", "many files", 3).Length == 0)
+        throw new InvalidOperationException("A plural translation came back empty.");
+    if (translations.IsLoaded("wxsharp-no-such-domain"))
+        throw new InvalidOperationException("A domain with no catalogue reported itself loaded.");
+    if (translations.GetTranslatedString("no catalogue has this string") is not null)
+        throw new InvalidOperationException("GetTranslatedString invented a translation.");
+    if (translations.GetAvailableTranslations("wxsharp-no-such-domain").Length != 0)
+        throw new InvalidOperationException("A domain with no catalogues listed some anyway.");
+    // Installing it hands ownership to wxWidgets, so nothing here disposes it.
+    Translations.Current = translations;
+    if (Translations.Current is null)
+        throw new InvalidOperationException("The installed translations did not come back.");
+
+    // wxLocale does the same job and additionally sets the C runtime locale.
+    using (var locale = new Locale(WxSharp.Language.EnglishUs, LocaleInitFlags.DontLoadDefault))
+    {
+        if (locale.Language != WxSharp.Language.EnglishUs)
+            throw new InvalidOperationException($"The locale reported {locale.Language}.");
+        if (locale.CanonicalName != "en_US")
+            throw new InvalidOperationException($"The locale canonical name was '{locale.CanonicalName}'.");
+        if (locale.GetString(expected) != expected)
+            throw new InvalidOperationException("An untranslated string did not survive the locale.");
+        _ = locale.IsOk;
+        _ = locale.SystemName;
+        if (locale.IsLoaded("wxsharp-no-such-domain"))
+            throw new InvalidOperationException("The locale claimed to have loaded a missing catalogue.");
+    }
+
     // ---- The clipboard, round-tripped through the formats it supports.
     Clipboard.SetText(expected);
     if (!Clipboard.IsSupported(ClipboardFormat.Text) || Clipboard.GetText() != expected)
