@@ -3,7 +3,7 @@ using System;
 namespace WxSharp;
 
 /// <summary>A native wxTextCtrl. Single-line by default.</summary>
-public class TextCtrl : Control
+public class TextCtrl : Control, ITextEntry
 {
     public event EventHandler<CommandEventArgs> TextChanged
     {
@@ -38,47 +38,118 @@ public class TextCtrl : Control
         ApplyInitialGeometry(position, size);
     }
 
-    public unsafe string Value
+    /// <summary>For a subclass that creates its own native control, as wxSearchCtrl does — it derives from
+    /// wxTextCtrl in wxWidgets, and so inherits the whole editing surface.</summary>
+    private protected TextCtrl(Window parent, int id) : base(parent, id) { }
+
+    // ---- ITextEntry: the editing surface wxTextCtrl, wxComboBox and wxSearchCtrl share ----------------
+
+    /// <inheritdoc/>
+    public string Value
     {
-        get
-        {
-            var length = NativeMethods.wxsharp_textbox_get_value(Handle, null, 0);
-            if (length <= 0) return string.Empty;
-            var buffer = new byte[length + 1];
-            fixed (byte* p = buffer) _ = NativeMethods.wxsharp_textbox_get_value(Handle, p, length + 1);
-            return Utf8String.Decode(buffer, length);
-        }
-        set => NativeMethods.wxsharp_textbox_set_value(Handle, value);
+        get => TextEntryNative.GetValue(Handle);
+        set => TextEntryNative.SetValue(Handle, value);
     }
 
-    public void Append(string text) => NativeMethods.wxsharp_textbox_append(Handle, text);
-    public void Write(string text) => NativeMethods.wxsharp_textbox_write(Handle, text);
-    public void Clear() => NativeMethods.wxsharp_textbox_clear(Handle);
-    public void SelectAll() => NativeMethods.wxsharp_textbox_select_all(Handle);
-    public int Length => NativeMethods.wxsharp_textbox_length(Handle);
+    /// <inheritdoc/>
+    public void ChangeValue(string value) => TextEntryNative.ChangeValue(Handle, value);
+    /// <inheritdoc/>
+    public void Write(string text) => TextEntryNative.Write(Handle, text);
+    /// <inheritdoc/>
+    public void Append(string text) => TextEntryNative.Append(Handle, text);
+    /// <inheritdoc/>
+    public string GetRange(int from, int to) => TextEntryNative.GetRange(Handle, from, to);
+    /// <inheritdoc/>
+    public void Replace(int from, int to, string value) => TextEntryNative.Replace(Handle, from, to, value);
+    /// <inheritdoc/>
+    public void Remove(int from, int to) => TextEntryNative.Remove(Handle, from, to);
+    /// <inheritdoc/>
+    public void Clear() => TextEntryNative.Clear(Handle);
+    /// <inheritdoc/>
+    public bool IsEmpty => TextEntryNative.IsEmpty(Handle);
+
+    /// <inheritdoc/>
+    public void Copy() => TextEntryNative.Copy(Handle);
+    /// <inheritdoc/>
+    public void Cut() => TextEntryNative.Cut(Handle);
+    /// <inheritdoc/>
+    public void Paste() => TextEntryNative.Paste(Handle);
+    /// <inheritdoc/>
+    public bool CanCopy => TextEntryNative.CanCopy(Handle);
+    /// <inheritdoc/>
+    public bool CanCut => TextEntryNative.CanCut(Handle);
+    /// <inheritdoc/>
+    public bool CanPaste => TextEntryNative.CanPaste(Handle);
+    /// <inheritdoc/>
+    public void Undo() => TextEntryNative.Undo(Handle);
+    /// <inheritdoc/>
+    public void Redo() => TextEntryNative.Redo(Handle);
+    /// <inheritdoc/>
+    public bool CanUndo => TextEntryNative.CanUndo(Handle);
+    /// <inheritdoc/>
+    public bool CanRedo => TextEntryNative.CanRedo(Handle);
+
+    /// <inheritdoc/>
     public int InsertionPoint
     {
-        get => NativeMethods.wxsharp_textbox_get_insertion_point(Handle);
-        set => NativeMethods.wxsharp_textbox_set_insertion_point(Handle, value);
+        get => TextEntryNative.GetInsertionPoint(Handle);
+        set => TextEntryNative.SetInsertionPoint(Handle, value);
     }
-    public void MoveCaretToEnd() => NativeMethods.wxsharp_textbox_set_insertion_point_end(Handle);
+
+    /// <inheritdoc/>
+    public void MoveCaretToEnd() => TextEntryNative.MoveCaretToEnd(Handle);
+    /// <inheritdoc/>
+    public int LastPosition => TextEntryNative.LastPosition(Handle);
+
+    /// <inheritdoc/>
     public (int From, int To) Selection
     {
-        get { NativeMethods.wxsharp_textbox_get_selection(Handle, out var from, out var to); return (from, to); }
-        set => NativeMethods.wxsharp_textbox_set_selection(Handle, value.From, value.To);
+        get => TextEntryNative.GetSelection(Handle);
+        set => TextEntryNative.SetSelection(Handle, value.From, value.To);
     }
-    public unsafe string SelectedText
+
+    /// <inheritdoc/>
+    public void SelectAll() => TextEntryNative.SelectAll(Handle);
+    /// <inheritdoc/>
+    public void SelectNone() => TextEntryNative.SelectNone(Handle);
+    /// <inheritdoc/>
+    public bool HasSelection => TextEntryNative.HasSelection(Handle);
+    /// <inheritdoc/>
+    public string SelectedText => TextEntryNative.SelectedText(Handle);
+    /// <inheritdoc/>
+    public void RemoveSelection() => TextEntryNative.RemoveSelection(Handle);
+
+    /// <inheritdoc/>
+    public bool Editable
     {
-        get
-        {
-            var length = NativeMethods.wxsharp_textbox_get_selected_text(Handle, null, 0);
-            if (length <= 0) return string.Empty;
-            var buffer = new byte[length + 1];
-            fixed (byte* p = buffer) _ = NativeMethods.wxsharp_textbox_get_selected_text(Handle, p, length + 1);
-            return Utf8String.Decode(buffer, length);
-        }
+        get => TextEntryNative.IsEditable(Handle);
+        set => TextEntryNative.SetEditable(Handle, value);
     }
-    public bool Editable { set => NativeMethods.wxsharp_textbox_set_editable(Handle, value); }
+
+    /// <inheritdoc/>
+    public int MaxLength { set => TextEntryNative.SetMaxLength(Handle, value); }
+    /// <inheritdoc/>
+    public void ForceUpper() => TextEntryNative.ForceUpper(Handle);
+
+    /// <inheritdoc/>
+    public string Hint
+    {
+        get => TextEntryNative.GetHint(Handle);
+        set => TextEntryNative.SetHint(Handle, value);
+    }
+
+    /// <inheritdoc/>
+    public (int Left, int Top) Margins => TextEntryNative.GetMargins(Handle);
+    /// <inheritdoc/>
+    public bool SetMargins(int left, int top = -1) => TextEntryNative.SetMargins(Handle, left, top);
+
+    /// <inheritdoc/>
+    public bool AutoComplete(params string[] choices) => TextEntryNative.AutoComplete(Handle, choices);
+    /// <inheritdoc/>
+    public bool AutoCompleteFileNames() => TextEntryNative.AutoCompleteFileNames(Handle);
+    /// <inheritdoc/>
+    public bool AutoCompleteDirectories() => TextEntryNative.AutoCompleteDirectories(Handle);
+
 
     /// <summary>How many lines the control holds. Always 1 for a single-line control.</summary>
     public int LineCount => NativeMethods.wxsharp_textbox_line_count(Handle);
@@ -101,5 +172,102 @@ public class TextCtrl : Control
     public void ShowPosition(int position) => NativeMethods.wxsharp_textbox_show_position(Handle, position);
 
     /// <summary>Scrolls to the end without moving the caret.</summary>
-    public void ScrollToEnd() => ShowPosition(Length);
+    public void ScrollToEnd() => ShowPosition(LastPosition);
+
+    /// <summary>Whether the control was created with <see cref="TextCtrlStyle.MultiLine"/>. Several members
+    /// here only mean anything on a multi-line control.</summary>
+    public bool IsMultiLine => NativeMethods.wxsharp_textbox_is_multiline(Handle);
+
+    // ---- The modified flag ------------------------------------------------------------------------------
+
+    /// <summary>Whether the text has been edited since the control was created or since the last
+    /// <see cref="DiscardEdits"/>. This is what a "save your changes?" prompt should be asking.</summary>
+    public bool IsModified
+    {
+        get => NativeMethods.wxsharp_textbox_is_modified(Handle);
+        set => NativeMethods.wxsharp_textbox_set_modified(Handle, value);
+    }
+
+    /// <summary>Marks the text as edited without changing it.</summary>
+    public void MarkDirty() => NativeMethods.wxsharp_textbox_mark_dirty(Handle);
+
+    /// <summary>Clears the modified flag, as after saving.</summary>
+    public void DiscardEdits() => NativeMethods.wxsharp_textbox_discard_edits(Handle);
+
+    // ---- Positions and coordinates ----------------------------------------------------------------------
+
+    /// <summary>The column and line a character position falls on. False when the position is out of
+    /// range, in which case the column and line are meaningless.</summary>
+    public bool PositionToXY(int position, out int column, out int line)
+        => NativeMethods.wxsharp_textbox_position_to_xy(Handle, position, out column, out line);
+
+    /// <summary>The character position at a column and line, or -1 when there is no such place.</summary>
+    public int XYToPosition(int column, int line) => NativeMethods.wxsharp_textbox_xy_to_position(Handle, column, line);
+
+    /// <summary>Which character a point in client coordinates lands on. Some platforms do not implement
+    /// this and answer <see cref="TextCtrlHitTest.Unknown"/>.</summary>
+    public TextCtrlHitTest HitTest(Point point, out int position)
+        => (TextCtrlHitTest)NativeMethods.wxsharp_textbox_hit_test(Handle, point.X, point.Y, out position);
+
+    // ---- Files ------------------------------------------------------------------------------------------
+
+    /// <summary>Replaces the contents with a file's, and clears the modified flag.</summary>
+    public bool LoadFile(string path) => NativeMethods.wxsharp_textbox_load_file(Handle, path ?? string.Empty);
+
+    /// <summary>Writes the contents to a file, and clears the modified flag. An empty path saves back over
+    /// the file the control was last loaded from.</summary>
+    public bool SaveFile(string path = "") => NativeMethods.wxsharp_textbox_save_file(Handle, path ?? string.Empty);
+
+    // ---- Styling ----------------------------------------------------------------------------------------
+    // Styling needs the control to have been created with TextCtrlStyle.Rich or Rich2; without it the
+    // platform has nowhere to record per-character attributes and these report failure.
+
+    /// <summary>Applies a style to a range of characters.</summary>
+    public unsafe bool SetStyle(int start, int end, TextAttr style)
+    {
+        ArgumentNullException.ThrowIfNull(style);
+        var native = style.ToNative();
+        return NativeMethods.wxsharp_textbox_set_style(Handle, start, end, &native);
+    }
+
+    /// <summary>The style in force at a character position, or null when the control cannot report one.</summary>
+    public unsafe TextAttr? GetStyle(int position)
+    {
+        NativeTextAttr native;
+        return NativeMethods.wxsharp_textbox_get_style(Handle, position, &native)
+            ? TextAttr.FromNative(native)
+            : null;
+    }
+
+    /// <summary>The style newly written text takes, so appending in a colour needs no second call.</summary>
+    public unsafe TextAttr DefaultStyle
+    {
+        get
+        {
+            NativeTextAttr native;
+            NativeMethods.wxsharp_textbox_get_default_style(Handle, &native);
+            return TextAttr.FromNative(native);
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            var native = value.ToNative();
+            NativeMethods.wxsharp_textbox_set_default_style(Handle, &native);
+        }
+    }
+}
+
+/// <summary>Where a point landed relative to the text, following <c>wxTextCtrlHitTestResult</c>.</summary>
+public enum TextCtrlHitTest
+{
+    /// <summary>The platform does not implement hit testing for this control.</summary>
+    Unknown = -2,
+    /// <summary>Before the text, either to its left or above it.</summary>
+    Before = -1,
+    /// <summary>Directly on a character.</summary>
+    OnText = 0,
+    /// <summary>Below the last line.</summary>
+    Below = 1,
+    /// <summary>Past the end of the line.</summary>
+    Beyond = 2,
 }

@@ -54,6 +54,11 @@ This document distinguishes behavioral compatibility from API completeness.
 | Sizers | The full `wxSizer` surface: insert, prepend, detach, remove, replace, clear, show and hide by window, nested sizer or index, plus layout, fitting and minimum sizes. `wxSizerItem` is wrapped as `SizerItem` and returned by everything that adds to a sizer, so proportion, flags, border and visibility can be read back and changed. `wxBoxSizer`, `wxGridSizer`, `wxFlexGridSizer`, `wxStaticBoxSizer` and `wxGridBagSizer` are complete. |
 | Sizer item identity | `SizerItem.Id` is the item's own identifier, as `wxSizerItem::GetId` is - not the window's ID, and unset until assigned. `Sizer.GetItemById` searches that; `Sizer.GetItem(Window)` is what finds an item by window. |
 | Window surface | `wxWindow` is complete apart from the members needing a type the wrapper does not have yet. Coordinate spaces (`Rect`, `ClientRect`, `ScreenRect`, `ClientToScreen`, `ScreenToClient`), `Freeze`/`Thaw`, DPI scaling (`FromDip`, `ToDip`, `Dpi`), text metrics, scrolling, `Navigate`, z-order, background style, window variant and transparency all follow wxWidgets. `Close` and `Center` are on `Window`, where wxWidgets puts them, rather than only on `Frame`. |
+| Text entry | `wxTextEntry` is a mix-in in wxWidgets, so it is `ITextEntry` here, implemented by `TextCtrl`, `ComboBox` and `SearchCtrl`. `SearchCtrl` derives from `TextCtrl` because `wxSearchCtrl` does. |
+| `ComboBox.Clear` | Empties the item list *and* the field. `wxComboBox` inherits `Clear` from both its bases and resolves it to one method that does both, and so does this. |
+| `ComboBox.SelectedText` | Reports the selected item rather than the highlighted text, which is `wxComboBox`'s own resolution of inheriting `GetStringSelection` twice. `Selection` plus `GetRange` reads the highlighted text. |
+| `ChangeValue` | Sets the text without raising `TextChanged`, as `wxTextEntry::ChangeValue` does; assigning `Value` raises it. |
+| Single-threaded apartment | On Windows, `App` requires the entry point to be marked `[STAThread]` and says so at startup. wxWidgets brings OLE up during initialization, and .NET otherwise starts on a multi-threaded apartment where it cannot. Python has no equivalent constraint, which is why Phoenix says nothing about it. |
 
 ## Current coverage boundary
 
@@ -94,19 +99,32 @@ recorded here rather than quietly skipped:
 
 - `wxCursor` — blocks `SetCursor`/`GetCursor`.
 - `wxCaret` — blocks `SetCaret`/`GetCaret`.
-- `wxDropTarget` and the `wxDataObject` family — blocks drag-and-drop and every
-  clipboard format but text. `DropFiles` covers the common case without them.
+- `wxDropTarget` and the `wxDataObject` family — blocks drag-and-drop and any
+  clipboard format beyond text, file lists and bitmaps, which `Clipboard`
+  offers directly. `DropFiles` covers the common drop case without them.
 - `wxPalette` — blocks the palette accessors; only relevant on paletted displays.
 - `wxHelpProvider` — `Window.HelpText` goes to a help provider, and wxWidgets
   installs none by default, so it currently keeps nothing.
 - `wxAcceleratorTable` as an object — accelerators are set from an array, and
   the installed table cannot be read back.
 - `wxImageList` — blocks icons in list, tree, notebook and toolbar controls.
-- `wxTextAttr` — blocks `TextCtrl.SetStyle` and rich-text formatting.
+
+`Colour` is complete against `wxColour`, including name and `#RRGGBB` parsing
+and the transforms a themed interface derives its palette with — lightening,
+disabling, greyscale and alpha blending are all computed by wxWidgets rather
+than reimplemented, so they match exactly. `IsOk` is always true: `wxColour` has
+an uninitialised state to guard against and a value type has none.
+
+`Clipboard` covers `wxClipboard` for text, file lists and bitmaps, including
+holding it open across several operations and `Flush` so content outlives the
+process. `SystemSettings` covers `wxSystemSettings`, which is what a theme-aware
+and high-contrast-safe interface has to read its colours from. `TextAttr` covers
+`wxTextAttr`, keeping its set-or-inherit model: a style overrides only what it
+was given.
 
 Known gaps in this area: there is no equivalent of `wx.PostEvent` for
-synthesising a command, no `wxLocale` wrapper for wxWidgets' own stock strings,
-and clipboard support is text-only. Command-event propagation and vetoing are
+synthesising a command, and no `wxLocale` wrapper for wxWidgets' own stock
+strings. Command-event propagation and vetoing are
 implemented but are not covered by an automated test, because triggering either
 needs a synthesised event the smoke test cannot produce.
 

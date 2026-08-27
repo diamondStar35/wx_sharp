@@ -74,3 +74,223 @@ void wxsharp_textbox_show_position(wxsharp_handle ctrl, int position)
 {
     static_cast<wxTextCtrl*>(ctrl)->ShowPosition(position);
 }
+
+// ---- The rest of wxTextCtrl -------------------------------------------------------------------------------
+// Everything below is specific to wxTextCtrl rather than shared through wxTextEntry: the modified flag, the
+// position/coordinate conversions, file loading, and character styling.
+
+namespace
+{
+    wxTextCtrl* Tc(wxsharp_handle h) { return static_cast<wxTextCtrl*>(h); }
+
+    // MakeFont takes the wrapper's own compact family/weight/style codes rather than wxWidgets' numbering,
+    // so reading a font back has to map the other way for the values to round-trip.
+    int FamilyCode(wxFontFamily family)
+    {
+        switch (family)
+        {
+            case wxFONTFAMILY_ROMAN:    return 1;
+            case wxFONTFAMILY_SCRIPT:   return 2;
+            case wxFONTFAMILY_SWISS:    return 3;
+            case wxFONTFAMILY_MODERN:   return 4;
+            case wxFONTFAMILY_TELETYPE: return 5;
+            default:                    return 0;
+        }
+    }
+
+    int WeightCode(wxFontWeight weight)
+    {
+        if (weight <= wxFONTWEIGHT_INVALID) return 0;
+        if (weight < wxFONTWEIGHT_NORMAL)   return 1;
+        if (weight > wxFONTWEIGHT_NORMAL)   return 2;
+        return 0;
+    }
+
+    int StyleCode(wxFontStyle style)
+    {
+        switch (style)
+        {
+            case wxFONTSTYLE_ITALIC: return 1;
+            case wxFONTSTYLE_SLANT:  return 2;
+            default:                 return 0;
+        }
+    }
+
+    // Turns the flat struct that crosses the ABI into a real wxTextAttr, setting only what the caller marked
+    // as present so wxWidgets' own "unset means inherit" behaviour survives the trip.
+    wxTextAttr ToTextAttr(const wxsharp_text_attr* a)
+    {
+        wxTextAttr attr;
+        if (a == nullptr)
+            return attr;
+
+        if (a->flags & wxTEXT_ATTR_TEXT_COLOUR)
+            attr.SetTextColour(ColourFromArgb(a->text_colour));
+        if (a->flags & wxTEXT_ATTR_BACKGROUND_COLOUR)
+            attr.SetBackgroundColour(ColourFromArgb(a->background_colour));
+        if (a->flags & wxTEXT_ATTR_ALIGNMENT)
+            attr.SetAlignment(static_cast<wxTextAttrAlignment>(a->alignment));
+        if (a->flags & wxTEXT_ATTR_LEFT_INDENT)
+            attr.SetLeftIndent(a->left_indent, a->left_sub_indent);
+        if (a->flags & wxTEXT_ATTR_RIGHT_INDENT)
+            attr.SetRightIndent(a->right_indent);
+        if (a->flags & wxTEXT_ATTR_FONT)
+            attr.SetFont(MakeFont(a->font_point_size, a->font_family, a->font_weight, a->font_style,
+                                  a->font_underline != 0, a->font_face),
+                         a->flags & wxTEXT_ATTR_FONT);
+        return attr;
+    }
+
+    void FromTextAttr(const wxTextAttr& attr, wxsharp_text_attr* out)
+    {
+        if (out == nullptr)
+            return;
+        *out = wxsharp_text_attr();
+        out->flags = attr.GetFlags();
+        out->text_colour = ArgbFromColour(attr.GetTextColour());
+        out->background_colour = ArgbFromColour(attr.GetBackgroundColour());
+        out->alignment = static_cast<int>(attr.GetAlignment());
+        out->left_indent = attr.GetLeftIndent();
+        out->left_sub_indent = attr.GetLeftSubIndent();
+        out->right_indent = attr.GetRightIndent();
+
+        if (attr.HasFont())
+        {
+            const wxFont font = attr.GetFont();
+            if (font.IsOk())
+            {
+                out->font_point_size = font.GetPointSize();
+                out->font_family = FamilyCode(font.GetFamily());
+                out->font_weight = WeightCode(font.GetWeight());
+                out->font_style = StyleCode(font.GetStyle());
+                out->font_underline = font.GetUnderlined() ? 1 : 0;
+                CopyToBuffer(font.GetFaceName(), out->font_face, sizeof(out->font_face));
+            }
+        }
+    }
+}
+
+bool wxsharp_textbox_is_modified(wxsharp_handle ctrl) { return Tc(ctrl)->IsModified(); }
+void wxsharp_textbox_mark_dirty(wxsharp_handle ctrl) { Tc(ctrl)->MarkDirty(); }
+void wxsharp_textbox_discard_edits(wxsharp_handle ctrl) { Tc(ctrl)->DiscardEdits(); }
+void wxsharp_textbox_set_modified(wxsharp_handle ctrl, bool modified) { Tc(ctrl)->SetModified(modified); }
+
+bool wxsharp_textbox_is_multiline(wxsharp_handle ctrl) { return Tc(ctrl)->IsMultiLine(); }
+
+// The line and column a character position falls on. False when the position is out of range.
+bool wxsharp_textbox_position_to_xy(wxsharp_handle ctrl, int position, int* x, int* y)
+{
+    long column = 0, line = 0;
+    const bool ok = Tc(ctrl)->PositionToXY(position, &column, &line);
+    if (x) *x = static_cast<int>(column);
+    if (y) *y = static_cast<int>(line);
+    return ok;
+}
+
+int wxsharp_textbox_xy_to_position(wxsharp_handle ctrl, int x, int y)
+{
+    return static_cast<int>(Tc(ctrl)->XYToPosition(x, y));
+}
+
+// Which character a point lands on. The result is a wxTextCtrlHitTestResult; -2 means the platform does not
+// implement it.
+int wxsharp_textbox_hit_test(wxsharp_handle ctrl, int x, int y, int* position)
+{
+    long pos = 0;
+    const wxTextCtrlHitTestResult result = Tc(ctrl)->HitTest(wxPoint(x, y), &pos);
+    if (position) *position = static_cast<int>(pos);
+    return static_cast<int>(result);
+}
+
+bool wxsharp_textbox_load_file(wxsharp_handle ctrl, const char* path)
+{
+    return Tc(ctrl)->LoadFile(Str(path));
+}
+
+// An empty path saves back over the file the control was last loaded from, as wxTextCtrl does.
+bool wxsharp_textbox_save_file(wxsharp_handle ctrl, const char* path)
+{
+    return Tc(ctrl)->SaveFile(Str(path));
+}
+
+bool wxsharp_textbox_set_style(wxsharp_handle ctrl, int start, int end, const wxsharp_text_attr* style)
+{
+    return Tc(ctrl)->SetStyle(start, end, ToTextAttr(style));
+}
+
+bool wxsharp_textbox_get_style(wxsharp_handle ctrl, int position, wxsharp_text_attr* style)
+{
+    wxTextAttr attr;
+    if (!Tc(ctrl)->GetStyle(position, attr))
+        return false;
+    FromTextAttr(attr, style);
+    return true;
+}
+
+bool wxsharp_textbox_set_default_style(wxsharp_handle ctrl, const wxsharp_text_attr* style)
+{
+    return Tc(ctrl)->SetDefaultStyle(ToTextAttr(style));
+}
+
+void wxsharp_textbox_get_default_style(wxsharp_handle ctrl, wxsharp_text_attr* style)
+{
+    FromTextAttr(Tc(ctrl)->GetDefaultStyle(), style);
+}
+
+// ---- Colour names -----------------------------------------------------------------------------------------
+// wxColour parses the standard colour names and the #RRGGBB / rgb(...) notations, and names a colour back
+// when it matches one of the standard ones.
+
+bool wxsharp_colour_parse(const char* text, unsigned int* argb)
+{
+    wxColour colour;
+    if (!colour.Set(Str(text)))
+        return false;
+    if (argb) *argb = ArgbFromColour(colour);
+    return true;
+}
+
+int wxsharp_colour_name(unsigned int argb, char* buffer, int buffer_length)
+{
+    const wxColour colour = ColourFromArgb(argb);
+    return CopyToBuffer(colour.GetAsString(wxC2S_NAME | wxC2S_CSS_SYNTAX), buffer, buffer_length);
+}
+
+// The colour transforms wxWidgets already implements, kept native so the results match exactly rather than
+// being reimplemented from the documented formulas.
+unsigned int wxsharp_colour_change_lightness(unsigned int argb, int alpha)
+{
+    return ArgbFromColour(ColourFromArgb(argb).ChangeLightness(alpha));
+}
+
+unsigned int wxsharp_colour_make_disabled(unsigned int argb, unsigned char brightness)
+{
+    wxColour colour = ColourFromArgb(argb);
+    return ArgbFromColour(colour.MakeDisabled(brightness));
+}
+
+unsigned int wxsharp_colour_make_grey(unsigned int argb)
+{
+    wxColour colour = ColourFromArgb(argb);
+    unsigned char r = colour.Red(), g = colour.Green(), b = colour.Blue();
+    wxColour::MakeGrey(&r, &g, &b);
+    return ArgbFromColour(wxColour(r, g, b, colour.Alpha()));
+}
+
+unsigned int wxsharp_colour_make_mono(unsigned int argb, bool on)
+{
+    wxColour colour = ColourFromArgb(argb);
+    unsigned char r = colour.Red(), g = colour.Green(), b = colour.Blue();
+    wxColour::MakeMono(&r, &g, &b, on);
+    return ArgbFromColour(wxColour(r, g, b, colour.Alpha()));
+}
+
+double wxsharp_colour_luminance(unsigned int argb)
+{
+    return ColourFromArgb(argb).GetLuminance();
+}
+
+unsigned char wxsharp_colour_alpha_blend(unsigned char foreground, unsigned char background, double alpha)
+{
+    return wxColour::AlphaBlend(foreground, background, alpha);
+}

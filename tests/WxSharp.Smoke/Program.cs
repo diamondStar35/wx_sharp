@@ -1,6 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using WxSharp;
+
+internal static class Program
+{
+    // A wxWidgets application has to run in a single-threaded apartment on Windows, the same as any
+    // other GUI toolkit there, so that OLE comes up and the clipboard works.
+    [STAThread]
+    private static void Main(string[] args)
+    {
 
 const string expected = "WxSharp — العربية — 日本語 — 🚀";
 
@@ -246,6 +256,169 @@ using (var app = new SmokeApp())
         throw new InvalidOperationException("Enumerating tree children returned the wrong count.");
     tree.EnsureVisible(child);
     tree.Unselect();
+
+    // ---- wxTextEntry: the editing surface three controls share, reached through each of them.
+    foreach (ITextEntry entry in new ITextEntry[] { multiline, combo, search })
+    {
+        var name = entry.GetType().Name;
+        entry.ChangeValue("abcdef");
+        if (entry.Value != "abcdef")
+            throw new InvalidOperationException($"{name}: ChangeValue did not set the text.");
+        if (entry.LastPosition != 6 || entry.IsEmpty)
+            throw new InvalidOperationException($"{name}: reported the wrong length.");
+        if (entry.GetRange(1, 3) != "bc")
+            throw new InvalidOperationException($"{name}: GetRange returned '{entry.GetRange(1, 3)}'.");
+
+        entry.Selection = (1, 3);
+        if (!entry.HasSelection || entry.Selection != (1, 3) || entry.GetRange(1, 3) != "bc")
+            throw new InvalidOperationException($"{name}: selection did not round-trip.");
+        // SelectedText means the selected item on a combo box, which is wxComboBox's own resolution of
+        // inheriting GetStringSelection from two bases.
+        if (entry is not ComboBox && entry.SelectedText != "bc")
+            throw new InvalidOperationException($"{name}: SelectedText was '{entry.SelectedText}'.");
+        entry.SelectNone();
+        if (entry.HasSelection)
+            throw new InvalidOperationException($"{name}: SelectNone left a selection.");
+
+        entry.Replace(0, 1, "X");
+        if (entry.Value != "Xbcdef")
+            throw new InvalidOperationException($"{name}: Replace produced '{entry.Value}'.");
+        entry.Remove(0, 1);
+        if (entry.Value != "bcdef")
+            throw new InvalidOperationException($"{name}: Remove produced '{entry.Value}'.");
+
+        entry.MoveCaretToEnd();
+        if (entry.InsertionPoint != entry.LastPosition)
+            throw new InvalidOperationException($"{name}: the caret did not move to the end.");
+        entry.InsertionPoint = 0;
+        entry.Write("Z");
+        if (!entry.Value.StartsWith('Z'))
+            throw new InvalidOperationException($"{name}: Write did not insert at the caret.");
+
+        entry.Append("!");
+        if (!entry.Value.EndsWith('!'))
+            throw new InvalidOperationException($"{name}: Append did not add at the end.");
+
+        // Reading the clipboard state must not throw, whatever the clipboard holds.
+        _ = entry.CanCopy; _ = entry.CanCut; _ = entry.CanPaste; _ = entry.CanUndo; _ = entry.CanRedo;
+        entry.MaxLength = 64;
+        _ = entry.Margins;
+
+        entry.Clear();
+        if (!entry.IsEmpty)
+            throw new InvalidOperationException($"{name}: Clear left text behind.");
+    }
+
+    // Clear on a combo box empties the list as well as the field, because wxComboBox resolves the two
+    // inherited Clear methods to one that does both. Put the item back for the list tests further down.
+    if (combo.Count != 0)
+        throw new InvalidOperationException($"Combo box Clear left {combo.Count} items in the list.");
+    combo.Add("second");
+
+    // ChangeValue is the one that does not raise the event - the whole reason it exists.
+    var textChanges = 0;
+    using (var watcher = multiline.Bind(WxEvents.TextChanged, (_, _) => textChanges++))
+    {
+        multiline.ChangeValue("quiet");
+        if (textChanges != 0)
+            throw new InvalidOperationException("ChangeValue raised a text-changed event.");
+        multiline.Value = "loud";
+        if (textChanges != 1)
+            throw new InvalidOperationException($"Setting Value raised {textChanges} events, expected 1.");
+    }
+    multiline.ChangeValue("one\ntwo\nthree");
+
+    // Editable is shared too, and a read-only field still reports its text.
+    search.Editable = false;
+    if (search.Editable) throw new InvalidOperationException("A field stayed editable.");
+    search.Editable = true;
+
+    // ---- The rest of wxTextCtrl: the modified flag, coordinates, and styling.
+    if (!multiline.IsMultiLine || search.IsMultiLine)
+        throw new InvalidOperationException("A text control misreported whether it is multi-line.");
+
+    multiline.DiscardEdits();
+    if (multiline.IsModified)
+        throw new InvalidOperationException("DiscardEdits left the control modified.");
+    multiline.MarkDirty();
+    if (!multiline.IsModified)
+        throw new InvalidOperationException("MarkDirty did not set the modified flag.");
+    multiline.IsModified = false;
+    if (multiline.IsModified)
+        throw new InvalidOperationException("Clearing IsModified did not take.");
+
+    // The control holds three lines, so the start of the second is column 0, line 1.
+    var secondLine = multiline.XYToPosition(0, 1);
+    if (secondLine < 0 || !multiline.PositionToXY(secondLine, out var atColumn, out var atLine))
+        throw new InvalidOperationException("A text position did not convert to coordinates.");
+    if (atColumn != 0 || atLine != 1)
+        throw new InvalidOperationException($"Position {secondLine} reported as column {atColumn}, line {atLine}.");
+    _ = multiline.HitTest(new Point(2, 2), out _);
+
+    // Styling needs a rich control, so take the answer the platform gives rather than insisting on one.
+    var style = new TextAttr { TextColour = Colour.Red, Alignment = TextAttrAlignment.Right };
+    if (!style.Has(TextAttrFlags.TextColour) || style.Has(TextAttrFlags.BackgroundColour))
+        throw new InvalidOperationException("TextAttr recorded the wrong set of overridden properties.");
+    if (multiline.SetStyle(0, 3, style))
+    {
+        var readBack = multiline.GetStyle(1);
+        if (readBack is not null && readBack.Has(TextAttrFlags.TextColour) && readBack.TextColour != Colour.Red)
+            throw new InvalidOperationException($"A character style read back as {readBack.TextColour}.");
+    }
+    _ = multiline.DefaultStyle;
+
+    // ---- Colour names, which is how a theme or a config file spells a colour.
+    if (!Colour.TryParse("red", out var parsedByName) || parsedByName != Colour.Red)
+        throw new InvalidOperationException($"'red' parsed as {parsedByName}.");
+    if (!Colour.TryParse("#204080", out var parsedByHex) || parsedByHex != new Colour(0x20, 0x40, 0x80))
+        throw new InvalidOperationException($"'#204080' parsed as {parsedByHex}.");
+    if (Colour.TryParse("not a colour at all", out _))
+        throw new InvalidOperationException("A meaningless string parsed as a colour.");
+    if (Colour.Red.ToName().Length == 0)
+        throw new InvalidOperationException("A colour had no name at all.");
+
+    // The transforms a themed interface uses: dimming for a disabled control, and lightening or darkening
+    // to derive a hover or selection colour that still contrasts.
+    if (Colour.White.Luminance <= Colour.Black.Luminance)
+        throw new InvalidOperationException("White did not read as brighter than black.");
+    if (Colour.Red.ChangeLightness(100) != Colour.Red)
+        throw new InvalidOperationException("ChangeLightness(100) did not leave the colour alone.");
+    if (Colour.Black.ChangeLightness(160).Luminance <= Colour.Black.Luminance)
+        throw new InvalidOperationException("Lightening black did not brighten it.");
+    var grey = new Colour(200, 40, 40).MakeGrey();
+    if (grey.R != grey.G || grey.G != grey.B)
+        throw new InvalidOperationException($"MakeGrey produced {grey}.");
+    if (new Colour(200, 40, 40).MakeMono(false) != Colour.Black)
+        throw new InvalidOperationException("MakeMono(false) was not black.");
+    _ = Colour.Red.MakeDisabled();
+    if (Colour.AlphaBlend(255, 0, 1.0) != 255 || Colour.AlphaBlend(255, 0, 0.0) != 0)
+        throw new InvalidOperationException("AlphaBlend did not respect its end points.");
+    if (!Colour.White.IsOpaque || !Colour.Transparent.IsTransparent || Colour.White.IsTranslucent)
+        throw new InvalidOperationException("A colour misreported its transparency.");
+
+    // ---- The clipboard, round-tripped through the formats it supports.
+    Clipboard.SetText(expected);
+    if (!Clipboard.IsSupported(ClipboardFormat.Text) || Clipboard.GetText() != expected)
+        throw new InvalidOperationException($"Clipboard text did not round-trip: '{Clipboard.GetText()}'.");
+
+    string[] clipboardFiles = [@"C:\one.mp3", @"C:\two.flac"];
+    if (Clipboard.SetFiles(clipboardFiles))
+    {
+        var readBack = Clipboard.GetFiles();
+        if (readBack.Length != 2 || readBack[1] != clipboardFiles[1])
+            throw new InvalidOperationException("A clipboard file list did not round-trip.");
+    }
+    Clipboard.SetText(expected);   // leave the clipboard as we found it for the text assertion above
+
+    // ---- System settings: what the user's theme says, which is what a themed UI has to follow.
+    var windowColour = SystemSettings.GetColour(SystemColour.Window);
+    var textColour = SystemSettings.GetColour(SystemColour.WindowText);
+    if (windowColour == textColour)
+        throw new InvalidOperationException("The theme reported the same colour for window and text.");
+    if (SystemSettings.GetMetric(SystemMetric.ScreenX) <= 0)
+        throw new InvalidOperationException("The theme reported no screen width.");
+    _ = SystemSettings.IsDarkAppearance;
+    _ = SystemSettings.ScreenType;
 
     // ---- The rest of wxWindow: coordinate spaces, freezing, DPI and text metrics.
     frame.Freeze();
@@ -501,6 +674,9 @@ static void VerifyLifecycle(SmokeApp app)
     if (!app.OnInitCalled || !app.OnExitCalled || App.Current is not null)
         throw new InvalidOperationException("App lifecycle hooks or automatic cleanup did not run.");
 }
+}
+}
+
 
 sealed class ExpectedCallbackException : Exception { }
 
