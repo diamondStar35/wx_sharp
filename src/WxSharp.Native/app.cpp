@@ -4,6 +4,7 @@
 #include <cstdlib>
 #ifdef __WXMSW__
 #include <windows.h>
+#include <wx/msw/darkmode.h>
 #endif
 
 wxsharp_event_cb g_event_cb = nullptr;
@@ -145,4 +146,40 @@ void wxsharp_shutdown()
         wxTheApp->OnExit();
     wxEntryCleanup();
     g_initialized = false;
+}
+
+// ---- Appearance ---------------------------------------------------------------------------------------
+
+// The portable way to ask for a light or dark interface. wxWidgets answers whether it could: some platforms
+// only allow it before any window exists, and some not at all, which the caller has to be able to tell
+// apart from a plain failure.
+int wxsharp_app_set_appearance(int appearance)
+{
+    if (!wxTheApp)
+        return 0; // Failure.
+    return static_cast<int>(wxTheApp->SetAppearance(static_cast<wxApp::Appearance>(appearance)));
+}
+
+// MSW's own dark mode, which goes further than SetAppearance: it themes the controls wxWidgets draws
+// itself, not just the window frame. It is Windows-only and experimental upstream, so everywhere else this
+// reports false rather than pretending to have done something.
+bool wxsharp_app_enable_dark_mode(int flags)
+{
+#ifdef __WXMSW__
+    return wxTheApp && wxTheApp->MSWEnableDarkMode(flags);
+#else
+    (void)flags;
+    return false;
+#endif
+}
+
+// Whether this build can turn MSW dark mode on at all, so a caller can tell "refused" from "not a thing
+// here" without testing the platform itself.
+bool wxsharp_app_supports_dark_mode()
+{
+#ifdef __WXMSW__
+    return true;
+#else
+    return false;
+#endif
 }

@@ -59,6 +59,10 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)]
     internal static partial void wxsharp_set_top_window(nint window);
 
+    [LibraryImport(Library)] internal static partial int wxsharp_app_set_appearance(int appearance);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_app_enable_dark_mode(int flags);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_app_supports_dark_mode();
+
     [LibraryImport(Library)]
     internal static partial void wxsharp_call_after(long token);
 

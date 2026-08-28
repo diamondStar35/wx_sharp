@@ -410,6 +410,10 @@ extern "C" {
     WXSHARP_API void wxsharp_exit_main_loop();
     WXSHARP_API void wxsharp_set_exit_on_frame_delete(bool value);
     WXSHARP_API void wxsharp_set_top_window(wxsharp_handle window);
+    // Light or dark interface. Returns wxApp::AppearanceResult: 0 failure, 1 ok, 2 cannot change now.
+    WXSHARP_API int  wxsharp_app_set_appearance(int appearance);
+    WXSHARP_API bool wxsharp_app_enable_dark_mode(int flags);
+    WXSHARP_API bool wxsharp_app_supports_dark_mode();
     WXSHARP_API void wxsharp_call_after(long long token);
     WXSHARP_API bool wxsharp_yield(bool only_if_needed);
     WXSHARP_API int  wxsharp_message_box(wxsharp_handle parent, const char* message, const char* caption,
