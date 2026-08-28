@@ -118,22 +118,14 @@ SKIP = {
     'SendTextUpdatedEventIfAllowed', 'SuppressTextChangedEvents', 'ResumeTextChangedEvents',
     'EventsAllowed', 'EventsSuppressor', 'GetRichVersion', 'IsInkEdit', 'HideNativeCaret',
     'ShowNativeCaret', 'GetCompositeControlsDefaultAttributes',
-    'GetValidator', 'SetValidator', 'Validate', 'TransferDataToWindow', 'TransferDataFromWindow',
-    'InitDialog', 'OnInternalIdle', 'OnPaint', 'OnEraseBackground', 'OnSysColourChanged', 'OnIdle',
+    'OnPaint', 'OnEraseBackground', 'OnSysColourChanged', 'OnIdle',
     'SetConstraints', 'GetConstraints', 'SetAutoLayout', 'GetAutoLayout', 'SetSizeConstraint',
     'LayoutPhase1', 'LayoutPhase2', 'DoPhase', 'ResetConstraints', 'SetConstraintSizes',
-    'GetSizeAvailableForScrollTarget', 'SendIdleEvents', 'UpdateWindowUI', 'DoUpdateWindowUI',
-    'GetUpdateRegion', 'GetUpdateClientRect', 'SetInitialBestSize', 'CacheBestSize', 'InvalidateBestSize',
-    'AdjustForLayoutDirection', 'GetContentScaleFactor', 'GetDPIScaleFactor',
-    'AddChild', 'RemoveChild', 'DestroyChildren', 'GetChildren', 'SetParent', 'Reparent',
-    'PushEventHandler', 'PopEventHandler', 'RemoveEventHandler', 'GetEventHandler', 'SetEventHandler',
-    'FindWindow', 'FindWindowById', 'FindWindowByName', 'FindWindowByLabel', 'FindFocus', 'GetCapture',
-    'NewControlId', 'UnreserveControlId', 'GetTopLevelParent', 'GetGrandParent',
-    # Layout constraints: superseded by sizers, and not wrapped anywhere.
+    'SendIdleEvents', 'DoUpdateWindowUI',
+    'GetUpdateRegion', 'SetInitialBestSize', 'CacheBestSize', 'AdjustForLayoutDirection', # Layout constraints: superseded by sizers, and not wrapped anywhere.
     'AddConstraintReference', 'RemoveConstraintReference', 'DeleteRelatedConstraints',
     'GetConstraintsInvolvedIn', 'GetClientSizeConstraint', 'GetPositionConstraint', 'GetSizeConstraint',
-    'MoveConstraint', 'UnsetConstraints', 'SetInitialSize',
-    # Dialog layout adaptation: a wx feature for small screens, driven entirely by wx itself.
+    'MoveConstraint', 'UnsetConstraints', # Dialog layout adaptation: a wx feature for small screens, driven entirely by wx itself.
     'CanDoLayoutAdaptation', 'EnableLayoutAdaptation', 'GetLayoutAdaptationDone',
     'GetLayoutAdaptationLevel', 'GetLayoutAdaptationMode', 'GetLayoutAdapter',
     'IsLayoutAdaptationEnabled', 'SetLayoutAdaptationDone', 'SetLayoutAdaptationLevel',
@@ -162,13 +154,10 @@ SKIP = {
     'GetDropTarget', 'SetDropTarget', 'GetPalette', 'SetPalette', 'HasCustomPalette',
     'GetAncestorWithCustomPalette', 'GetAcceleratorTable',
     # Protected platform hooks which Doxygen places in a public-looking section but Phoenix doesn't expose.
-    'CreateLboxItem', 'CreateCloseButton', 'GetNormalState', 'EmulateKeyPress',
-    # Parser noise from ownership annotations, not an API member.
+    'CreateLboxItem', 'CreateCloseButton', 'GetNormalState', # Parser noise from ownership annotations, not an API member.
     'Free',
     # Layout direction, physical-pixel conversion and touch are platform plumbing.
-    'GetLayoutDirection', 'SetLayoutDirection', 'FromPhys', 'ToPhys', 'MakeDPIFromScaleFactor',
-    'EnableTouchEvents', 'CanScroll', 'IsExposed', 'GetClientAreaOrigin', 'GetBestHeight',
-    'GetBestWidth', 'ClientToWindowSize', 'WindowToClientSize', 'HasTransparentBackground',
+    'GetLayoutDirection', 'SetLayoutDirection', 'MakeDPIFromScaleFactor',
     'IsTransparentBackgroundSupported', 'PrepareDC', 'PrepareReadOnlyDC',
     # Posting an event needs the wx.PostEvent equivalent, which is not wrapped.
     'PostSizeEvent', 'PostSizeEventToParent', 'SendSizeEvent', 'SendSizeEventToParent',
@@ -249,6 +238,12 @@ MANAGED_BASES = {
 # for this particular type. These cannot be global skips because another control may legitimately expose
 # a member with the same name.
 PER_TYPE_SKIP = {
+    # wxTextCtrl's, not wxWindow's; it reaches the union only because they share a header sweep.
+    # EmulateKeyPress is wxTextCtrl's. The rest need a type the wrapper has not wrapped yet: wxValidator,
+    # and a live wxEvent object for the members that take one.
+    'Window': {'EmulateKeyPress', 'GetValidator', 'SetValidator', 'ProcessWindowEvent',
+               'ProcessWindowEventLocally', 'HandleWindowEvent', 'HandleAsNavigationKey',
+               'CallForEachChild'},
     'Font': {'IsFree', 'RealizeResource', 'GetResourceHandle', 'FreeResource', 'GetHFONT',
              'ConvertFromLegacyWeightIfNecessary'},
     'SpinCtrl': {'ContainsHWND', 'GetBuddyWndProc', 'GetSpinForTextCtrl', 'ProcessTextCommand',
@@ -287,7 +282,16 @@ PER_TYPE = {
     'TreeCtrl': {'GetItemText': 'GetText', 'SetItemText': 'SetText', 'GetCount': 'Count',
                  'GetSelection': 'Selection', 'SelectItem': 'Selection'},
     'ListCtrl': {'ClearAll': 'ClearAll', 'GetItemData': 'GetItemData', 'SetItemData': 'SetItemData'},
-    'Window': {'GetRect': 'Rect', 'GetClientRect': 'ClientRect', 'GetScreenRect': 'ScreenRect',
+    'Window': {'GetExtraStyle': 'ExtraStyle', 'SetExtraStyle': 'ExtraStyle',
+               'GetGrandParent': 'GrandParent', 'GetNextSibling': 'NextSibling',
+               'GetPrevSibling': 'PreviousSibling', 'GetThemeEnabled': 'ThemeEnabled',
+               'SetThemeEnabled': 'ThemeEnabled', 'GetContentScaleFactor': 'ContentScaleFactor',
+               'GetDPIScaleFactor': 'DpiScaleFactor', 'GetUpdateClientRect': 'UpdateClientRect',
+               'GetWindowChildren': 'GetChildren', 'FromPhys': 'FromPhysical', 'ToPhys': 'ToPhysical',
+               'GetEventHandler': 'PushEventHandler', 'SetEventHandler': 'PushEventHandler',
+               'FindWindowByName': 'FindWindow', 'FindWindowByLabel': 'FindWindow',
+               'SetParent': 'Reparent', 'HasTransparentBackground': 'HasTransparentBackground',
+               'GetRect': 'Rect', 'GetClientRect': 'ClientRect', 'GetScreenRect': 'ScreenRect',
                'GetScreenPosition': 'ScreenPosition', 'GetVirtualSize': 'VirtualSize',
                'SetVirtualSize': 'VirtualSize', 'GetBestVirtualSize': 'BestVirtualSize',
                'GetMinClientSize': 'MinClientSize', 'SetMinClientSize': 'MinClientSize',
@@ -471,8 +475,6 @@ def strip_comments(text):
 def public_members(class_name):
     """Every public member function wxWidgets declares for a class, across the headers that define it."""
     found = set()
-    for base in (INCLUDE, os.path.join(INCLUDE, 'wx')):
-        pass
     roots = [os.path.join(INCLUDE, 'wx'), os.path.join(INCLUDE, 'wx', 'msw'),
              os.path.join(INCLUDE, 'wx', 'generic')]
     for root in roots:
@@ -504,19 +506,24 @@ def public_members(class_name):
                             break
                     i += 1
                 body = text[start + 1:i]
+                # Only the class's own members count, and only its own access specifiers apply. wxWidgets
+                # nests classes inside classes - wxWindowBase holds ChildrenRepositioningGuard - and that
+                # guard's `private:` used to flip the access for everything after it, hiding two thirds of
+                # wxWindow behind a member it has nothing to do with.
+                nesting = 0
                 for line in body.split('\n'):
-                    hit = ACCESS_RE.match(line)
-                    if hit:
-                        access = hit.group(1)
+                    if line.strip().startswith('#'):
                         continue
-                    if access != 'public':
-                        continue
-                    if line.count('{') or line.strip().startswith('#'):
-                        # Still parse inline definitions; only skip preprocessor lines.
-                        if line.strip().startswith('#'):
+                    if nesting == 0:
+                        hit = ACCESS_RE.match(line)
+                        if hit:
+                            access = hit.group(1)
+                            nesting += line.count('{') - line.count('}')
                             continue
-                    for member in MEMBER_RE.finditer(line):
-                        found.add(member.group(1))
+                        if access == 'public':
+                            for member in MEMBER_RE.finditer(line):
+                                found.add(member.group(1))
+                    nesting += line.count('{') - line.count('}')
     return found
 
 

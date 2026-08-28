@@ -69,6 +69,8 @@ add_library(wxsharp SHARED
   services.cpp
   font.cpp
   services2.cpp
+  window_more.cpp
+  dialogs.cpp
   virtuals.cpp)
 
 if(WIN32)

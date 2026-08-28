@@ -1747,6 +1747,75 @@ extern "C" {
     WXSHARP_API bool wxsharp_font_can_use_private();
 
 
+
+    // ---- wxWindow, continued --------------------------------------------------------------------------
+    WXSHARP_API wxsharp_handle wxsharp_window_find_focus();
+    WXSHARP_API wxsharp_handle wxsharp_window_find_by_id(long id, wxsharp_handle parent);
+    WXSHARP_API wxsharp_handle wxsharp_window_find_child_by_id(wxsharp_handle window, long id);
+    WXSHARP_API wxsharp_handle wxsharp_window_find_child_by_name(wxsharp_handle window, const char* name);
+    WXSHARP_API wxsharp_handle wxsharp_window_get_capture();
+    WXSHARP_API int  wxsharp_window_new_control_id(int count);
+    WXSHARP_API void wxsharp_window_unreserve_control_id(int id, int count);
+
+    WXSHARP_API wxsharp_handle wxsharp_window_top_level_parent(wxsharp_handle window);
+    WXSHARP_API wxsharp_handle wxsharp_window_grand_parent(wxsharp_handle window);
+    WXSHARP_API wxsharp_handle wxsharp_window_next_sibling(wxsharp_handle window);
+    WXSHARP_API wxsharp_handle wxsharp_window_prev_sibling(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_reparent(wxsharp_handle window, wxsharp_handle parent);
+    WXSHARP_API void wxsharp_window_destroy_children(wxsharp_handle window);
+    WXSHARP_API int  wxsharp_window_child_count(wxsharp_handle window);
+    WXSHARP_API wxsharp_handle wxsharp_window_child_at(wxsharp_handle window, int index);
+
+    WXSHARP_API void wxsharp_window_move_before_in_tab_order(wxsharp_handle window, wxsharp_handle other);
+    WXSHARP_API void wxsharp_window_move_after_in_tab_order(wxsharp_handle window, wxsharp_handle other);
+
+    WXSHARP_API bool wxsharp_window_can_accept_focus(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_can_accept_focus_from_keyboard(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_can_be_focused(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_is_focusable(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_disable_focus_from_keyboard(wxsharp_handle window);
+
+    WXSHARP_API void wxsharp_window_push_event_handler(wxsharp_handle window, wxsharp_handle handler);
+    WXSHARP_API wxsharp_handle wxsharp_window_pop_event_handler(wxsharp_handle window, bool delete_handler);
+    WXSHARP_API bool wxsharp_window_remove_event_handler(wxsharp_handle window, wxsharp_handle handler);
+    WXSHARP_API wxsharp_handle wxsharp_window_get_event_handler(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_set_event_handler(wxsharp_handle window, wxsharp_handle handler);
+
+    WXSHARP_API long wxsharp_window_get_extra_style(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_set_extra_style(wxsharp_handle window, long style);
+    WXSHARP_API bool wxsharp_window_has_extra_style(wxsharp_handle window, int flag);
+    WXSHARP_API void wxsharp_window_toggle_style(wxsharp_handle window, int flag);
+    WXSHARP_API bool wxsharp_window_get_theme_enabled(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_set_theme_enabled(wxsharp_handle window, bool enable);
+    WXSHARP_API bool wxsharp_window_is_retained(wxsharp_handle window);
+    WXSHARP_API bool wxsharp_window_is_this_enabled(wxsharp_handle window);
+
+    WXSHARP_API void wxsharp_window_set_initial_size(wxsharp_handle window, int width, int height);
+    WXSHARP_API void wxsharp_window_invalidate_best_size(wxsharp_handle window);
+    WXSHARP_API int  wxsharp_window_get_best_height(wxsharp_handle window, int width);
+    WXSHARP_API int  wxsharp_window_get_best_width(wxsharp_handle window, int height);
+    WXSHARP_API double wxsharp_window_content_scale_factor(wxsharp_handle window);
+    WXSHARP_API double wxsharp_window_dpi_scale_factor(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_client_to_window_size(wxsharp_handle window, int width, int height,
+                                                          int* out_w, int* out_h);
+    WXSHARP_API void wxsharp_window_window_to_client_size(wxsharp_handle window, int width, int height,
+                                                          int* out_w, int* out_h);
+    WXSHARP_API void wxsharp_window_from_phys(wxsharp_handle window, int width, int height,
+                                              int* out_w, int* out_h);
+    WXSHARP_API void wxsharp_window_to_phys(wxsharp_handle window, int width, int height,
+                                            int* out_w, int* out_h);
+
+    WXSHARP_API bool wxsharp_window_can_scroll(wxsharp_handle window, int orientation);
+    WXSHARP_API bool wxsharp_window_is_exposed(wxsharp_handle window, int x, int y, int width, int height);
+    WXSHARP_API void wxsharp_window_update_client_rect(wxsharp_handle window, int* x, int* y,
+                                                       int* width, int* height);
+
+    WXSHARP_API bool wxsharp_window_show_with_effect(wxsharp_handle window, int effect,
+                                                     unsigned int milliseconds);
+    WXSHARP_API bool wxsharp_window_hide_with_effect(wxsharp_handle window, int effect,
+                                                     unsigned int milliseconds);
+    WXSHARP_API void wxsharp_window_enable_touch_events(wxsharp_handle window, int events);
+
     // ---- Platform services ----------------------------------------------------------------------------
     // Where the platform keeps files, the sounds and stock art it provides, the displays attached, and the
     // window furniture other classes hang off.
@@ -1830,6 +1899,65 @@ extern "C" {
 
     WXSHARP_API void wxsharp_rich_tooltip_show(wxsharp_handle window, const char* title, const char* message,
                                                int icon, int timeout_ms, int show_delay_ms);
+
+
+    // ---- Common dialogs, as real windows --------------------------------------------------------------
+    WXSHARP_API wxsharp_handle wxsharp_filedlg_create(wxsharp_handle parent, const char* message,
+                                                      const char* directory, const char* file,
+                                                      const char* wildcard, int style, long long token);
+    WXSHARP_API int  wxsharp_filedlg_get_path(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API int  wxsharp_filedlg_get_directory(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API int  wxsharp_filedlg_get_filename(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API int  wxsharp_filedlg_get_wildcard(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API int  wxsharp_filedlg_get_message(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API void wxsharp_filedlg_set_path(wxsharp_handle dlg, const char* path);
+    WXSHARP_API void wxsharp_filedlg_set_directory(wxsharp_handle dlg, const char* dir);
+    WXSHARP_API void wxsharp_filedlg_set_filename(wxsharp_handle dlg, const char* name);
+    WXSHARP_API void wxsharp_filedlg_set_wildcard(wxsharp_handle dlg, const char* wildcard);
+    WXSHARP_API void wxsharp_filedlg_set_message(wxsharp_handle dlg, const char* message);
+    WXSHARP_API int  wxsharp_filedlg_get_filter_index(wxsharp_handle dlg);
+    WXSHARP_API void wxsharp_filedlg_set_filter_index(wxsharp_handle dlg, int index);
+    WXSHARP_API int  wxsharp_filedlg_path_count(wxsharp_handle dlg);
+    WXSHARP_API int  wxsharp_filedlg_path_at(wxsharp_handle dlg, int index, char* buffer, int length);
+    WXSHARP_API int  wxsharp_filedlg_filename_at(wxsharp_handle dlg, int index, char* buffer, int length);
+
+    WXSHARP_API wxsharp_handle wxsharp_dirdlg_create(wxsharp_handle parent, const char* message,
+                                                     const char* default_path, int style, long long token);
+    WXSHARP_API int  wxsharp_dirdlg_get_path(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API void wxsharp_dirdlg_set_path(wxsharp_handle dlg, const char* path);
+    WXSHARP_API int  wxsharp_dirdlg_get_message(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API void wxsharp_dirdlg_set_message(wxsharp_handle dlg, const char* message);
+    WXSHARP_API int  wxsharp_dirdlg_path_count(wxsharp_handle dlg);
+    WXSHARP_API int  wxsharp_dirdlg_path_at(wxsharp_handle dlg, int index, char* buffer, int length);
+
+    WXSHARP_API wxsharp_handle wxsharp_textdlg_create(wxsharp_handle parent, const char* message,
+                                                      const char* caption, const char* value, int style,
+                                                      long long token);
+    WXSHARP_API int  wxsharp_textdlg_get_value(wxsharp_handle dlg, char* buffer, int length);
+    WXSHARP_API void wxsharp_textdlg_set_value(wxsharp_handle dlg, const char* value);
+    WXSHARP_API void wxsharp_textdlg_set_max_length(wxsharp_handle dlg, unsigned long length);
+    WXSHARP_API void wxsharp_textdlg_force_upper(wxsharp_handle dlg);
+
+    WXSHARP_API wxsharp_handle wxsharp_numdlg_create(wxsharp_handle parent, const char* message,
+                                                     const char* prompt, const char* caption,
+                                                     long long value, long long minimum, long long maximum,
+                                                     long long token);
+    WXSHARP_API long long wxsharp_numdlg_get_value(wxsharp_handle dlg);
+
+    WXSHARP_API wxsharp_handle wxsharp_colourdlg_create(wxsharp_handle parent, unsigned int initial,
+                                                        bool full, long long token);
+    WXSHARP_API unsigned int wxsharp_colourdlg_get_colour(wxsharp_handle dlg);
+    WXSHARP_API void wxsharp_colourdlg_set_colour(wxsharp_handle dlg, unsigned int colour);
+    WXSHARP_API unsigned int wxsharp_colourdlg_get_custom(wxsharp_handle dlg, int index);
+    WXSHARP_API void wxsharp_colourdlg_set_custom(wxsharp_handle dlg, int index, unsigned int colour);
+
+    WXSHARP_API wxsharp_handle wxsharp_fontdlg_create(wxsharp_handle parent, wxsharp_handle initial,
+                                                      long long token);
+    WXSHARP_API wxsharp_handle wxsharp_fontdlg_get_font(wxsharp_handle dlg);
+    WXSHARP_API unsigned int wxsharp_fontdlg_get_colour(wxsharp_handle dlg);
+    WXSHARP_API void wxsharp_fontdlg_set_colour(wxsharp_handle dlg, unsigned int colour);
+    WXSHARP_API void wxsharp_fontdlg_enable_effects(wxsharp_handle dlg, bool enable);
+    WXSHARP_API void wxsharp_fontdlg_set_range(wxsharp_handle dlg, int minimum, int maximum);
 
     // ---- Services ------------------------------------------------------------------------------------
     // Shows a native open/save file dialog; returns true and writes the chosen path if confirmed.

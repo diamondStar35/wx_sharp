@@ -20,8 +20,18 @@ public class Dialog : Window
     }
 
     public Dialog(Window? parent = null, int id = WindowId.Any, string title = "",
-        Point? position = null, Size? size = null, DialogStyle style = DialogStyle.Default) : base(parent, id)
+        Point? position = null, Size? size = null, DialogStyle style = DialogStyle.Default)
+        : this(parent, id, title, position, size, style, deferNativeCreation: false)
     {
+    }
+
+    /// <summary>For a dialog wxWidgets builds itself - the file, folder, text, number, colour and font
+    /// pickers. Each of those is a real <c>wxDialog</c> with its own constructor, so the derived class makes
+    /// the native window and calls <see cref="Window.Initialize"/> rather than this doing it.</summary>
+    private protected Dialog(Window? parent, int id, string title, Point? position, Size? size,
+        DialogStyle style, bool deferNativeCreation) : base(parent, id)
+    {
+        if (deferNativeCreation) return;
         var p = position ?? new Point(-1, -1);
         var s = size ?? new Size(-1, -1);
         Initialize(GetType() == typeof(Dialog)
@@ -30,6 +40,19 @@ public class Dialog : Window
             : NativeMethods.wxsharp_custom_dialog_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width,
                 s.Height, (int)style, Token));
     }
+
+    /// <summary>Reads a string out of a native dialog with the usual two-call protocol.</summary>
+    private protected unsafe string ReadDialogString(ReadDialogText read)
+    {
+        Verify();
+        var length = read(Handle, null, 0);
+        if (length <= 0) return string.Empty;
+        var bytes = new byte[length + 1];
+        fixed (byte* buffer = bytes) _ = read(Handle, buffer, bytes.Length);
+        return Utf8String.Decode(bytes, length);
+    }
+
+    private protected unsafe delegate int ReadDialogText(nint dialog, byte* buffer, int bufferLength);
 
     /// <summary>Builds the platform's standard button row. wxWidgets decides the order, the spacing and which
     /// button is the default, which is also the order a screen reader reads them in - so prefer this over
