@@ -52,6 +52,15 @@ void wxsharp_control_get_best_size(wxsharp_handle ctrl, int* width, int* height)
     if (height) *height = s.y;
 }
 
+// The window's font, as a handle the caller owns. This is what makes the usual adjustment possible - take
+// the window's own font, embolden or resize it, put it back - so a heading follows the user's chosen font
+// rather than replacing it with a hard-coded one.
+wxsharp_handle wxsharp_control_get_font(wxsharp_handle ctrl)
+{
+    return new wxFont(static_cast<wxWindow*>(ctrl)->GetFont());
+}
+
+
 void wxsharp_control_fit(wxsharp_handle ctrl) { static_cast<wxWindow*>(ctrl)->Fit(); }
 
 // The mouse pointer's current position in the control's client coordinates (used for hover hit-testing on a
@@ -89,10 +98,9 @@ unsigned int wxsharp_control_get_foreground_colour(wxsharp_handle ctrl)
 }
 
 // ---- Font, tooltip, border ------------------------------------------------------------------------------
-void wxsharp_control_set_font(wxsharp_handle ctrl, int point_size, int family, int weight, int style,
-                              bool underline, const char* face)
+void wxsharp_control_set_font(wxsharp_handle ctrl, wxsharp_handle font)
 {
-    static_cast<wxWindow*>(ctrl)->SetFont(MakeFont(point_size, family, weight, style, underline, face));
+    static_cast<wxWindow*>(ctrl)->SetFont(*static_cast<wxFont*>(font));
 }
 
 void wxsharp_control_set_tooltip(wxsharp_handle ctrl, const char* text)

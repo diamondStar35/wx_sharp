@@ -128,15 +128,10 @@ public sealed class TextAttr
         native.LeftIndent = _leftIndent;
         native.LeftSubIndent = _leftSubIndent;
         native.RightIndent = _rightIndent;
-        if (_font is not null)
-        {
-            native.FontPointSize = _font.PointSize;
-            native.FontFamily = (int)_font.Family;
-            native.FontWeight = (int)_font.Weight;
-            native.FontStyle = (int)_font.Style;
-            native.FontUnderline = _font.Underline ? 1 : 0;
-            Utf8String.CopyInto(_font.Face, native.FontFace, NativeTextAttr.FaceLength);
-        }
+        // The font travels as a handle the native side reads during the call, so everything wxWidgets
+        // knows about it survives - strikethrough, encoding and pixel sizes included, which the flattened
+        // form could not carry even though the flags promised them.
+        if (_font is not null) native.Font = _font.Handle;
         return native;
     }
 
@@ -152,25 +147,17 @@ public sealed class TextAttr
             _rightIndent = native.RightIndent,
             Flags = (TextAttrFlags)native.Flags,
         };
-        if ((attr.Flags & TextAttrFlags.Font) != 0)
-        {
-            fixed (NativeTextAttr* p = &native)
-            {
-                attr._font = new Font(native.FontPointSize, (FontFamily)native.FontFamily,
-                    (FontWeight)native.FontWeight, (FontStyle)native.FontStyle, native.FontUnderline != 0,
-                    Utf8String.DecodeFixed(p->FontFace, NativeTextAttr.FaceLength));
-            }
-        }
+        // wxWidgets hands back a font it made for us; this object owns it from here.
+        if ((attr.Flags & TextAttrFlags.Font) != 0 && native.Font != 0)
+            attr._font = Font.Attach(native.Font);
         return attr;
     }
 }
 
 /// <summary>The flat form of <see cref="TextAttr"/> that crosses the native boundary.</summary>
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct NativeTextAttr
+internal struct NativeTextAttr
 {
-    internal const int FaceLength = 128;
-
     public uint Flags;
     public uint TextColour;
     public uint BackgroundColour;
@@ -178,10 +165,8 @@ internal unsafe struct NativeTextAttr
     public int LeftIndent;
     public int LeftSubIndent;
     public int RightIndent;
-    public int FontPointSize;
-    public int FontFamily;
-    public int FontWeight;
-    public int FontStyle;
-    public int FontUnderline;
-    public fixed byte FontFace[FaceLength];
+
+    // The font as a handle. It used to be six flattened scalars plus a fixed face-name buffer, which could
+    // not carry strikethrough, the encoding or a pixel size - all three of which the flags above offer.
+    public nint Font;
 }

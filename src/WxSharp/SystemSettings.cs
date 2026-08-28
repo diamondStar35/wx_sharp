@@ -107,9 +107,32 @@ public enum SystemFeature
 /// scheme some people rely on. Ask for the colours here instead, and the interface follows whatever the user
 /// has chosen — including a dark theme, which <see cref="IsDarkAppearance"/> reports.
 /// </remarks>
+/// <summary>One of the fonts the platform itself uses, following <c>wxSystemFont</c>. A themed interface
+/// starts from these rather than from a hard-coded family and size, so it follows whatever the user has
+/// chosen.</summary>
+public enum SystemFont
+{
+    OemFixed = 10,
+    AnsiFixed = 11,
+    AnsiVariable = 12,
+    System = 13,
+    DeviceDefault = 14,
+    SystemFixed = 16,
+    /// <summary>The font dialogs and controls are drawn in - what an application should normally use.</summary>
+    DefaultGui = 17,
+}
+
 public static class SystemSettings
 {
     /// <summary>A colour from the current theme.</summary>
+    /// <summary>One of the platform's own fonts. Following <c>wxSystemSettings.GetFont</c>; the caller owns
+    /// the returned font and should dispose it.</summary>
+    public static Font GetFont(SystemFont which)
+    {
+        _ = App.RequireCurrent();
+        return Font.Attach(NativeMethods.wxsharp_font_from_system((int)which));
+    }
+
     public static Colour GetColour(SystemColour which)
     {
         _ = App.RequireCurrent();

@@ -66,7 +66,9 @@ add_library(wxsharp SHARED
   layout.cpp
   extras.cpp
   chrome.cpp
-  services.cpp)
+  services.cpp
+  font.cpp
+  virtuals.cpp)
 
 if(WIN32)
   target_sources(wxsharp PRIVATE wxsharp.rc)

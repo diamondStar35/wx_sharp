@@ -15,12 +15,11 @@ public enum ClipboardFormat
 /// <summary>The system clipboard, following <c>wxClipboard</c>.</summary>
 ///
 /// <remarks>
-/// Each call opens and closes the clipboard around its own work, which is enough for one-off reads and
-/// writes. Wrap several in <see cref="Open"/> and <see cref="Close"/> to hold it open across them — that is
-/// also the only way to put more than one format on at once.
+/// As in Phoenix, call <see cref="Open"/> before reading or writing and <see cref="Close"/> afterwards.
+/// Keep the clipboard open through <c>Set* → Flush → Close</c> when copied data must be rendered immediately.
 ///
-/// Content copied by an application disappears when that application exits, unless <see cref="Flush"/> hands
-/// it to the system first.
+/// <para><see cref="Flush"/> has the same explicit lifetime semantics as Phoenix: successful data remains
+/// available after the application exits only when the caller flushes it.</para>
 /// </remarks>
 public static class Clipboard
 {
@@ -43,8 +42,9 @@ public static class Clipboard
         get { _ = App.RequireCurrent(); return NativeMethods.wxsharp_clipboard_is_opened(); }
     }
 
-    /// <summary>Hands the contents to the system so they outlive this application. Without it, everything
-    /// copied vanishes when the process exits.</summary>
+    /// <summary>Renders the contents and hands them to the system, so they outlive this application and no
+    /// other application has to call back into it to read them. See the note on <see cref="Clipboard"/> for
+    /// why this matters beyond the contents merely surviving.</summary>
     public static bool Flush()
     {
         _ = App.RequireCurrent();
@@ -65,9 +65,18 @@ public static class Clipboard
         return NativeMethods.wxsharp_clipboard_is_supported((int)format);
     }
 
+    /// <summary>Starts Phoenix's asynchronous format-availability query. Bind
+    /// <see cref="WxEvents.ClipboardChanged"/> on <paramref name="sink"/> for completion.</summary>
+    public static bool IsSupportedAsync(Window sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        _ = App.RequireCurrent();
+        return NativeMethods.wxsharp_clipboard_is_supported_async(sink.Handle);
+    }
+
     /// <summary>On X11, switches between the clipboard proper and the primary selection. No effect
     /// elsewhere.</summary>
-    public static void UsePrimarySelection(bool primary = true)
+    public static void UsePrimarySelection(bool primary = false)
     {
         _ = App.RequireCurrent();
         NativeMethods.wxsharp_clipboard_use_primary_selection(primary);
@@ -75,10 +84,14 @@ public static class Clipboard
 
     // ---- Text -----------------------------------------------------------------------------------------
 
-    public static void SetText(string text)
+    /// <summary>Puts text on the clipboard. False when the write failed, which usually means another
+    /// application held the clipboard for a moment; retrying is reasonable, giving up quietly is
+    /// reasonable, and crashing is not.</summary>
+    public static bool SetText(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         _ = App.RequireCurrent();
-        NativeMethods.wxsharp_clipboard_set_text(text ?? string.Empty);
+        return NativeMethods.wxsharp_clipboard_set_text(text);
     }
 
     /// <summary>The clipboard's text, or an empty string when it holds none.</summary>
@@ -106,7 +119,8 @@ public static class Clipboard
         {
             for (var i = 0; i < paths.Length; ++i)
             {
-                var utf8 = Encoding.UTF8.GetBytes((paths[i] ?? string.Empty) + "\0");
+                ArgumentNullException.ThrowIfNull(paths[i]);
+                var utf8 = Encoding.UTF8.GetBytes(paths[i] + "\0");
                 handles[i] = GCHandle.Alloc(utf8, GCHandleType.Pinned);
                 pointers[i] = handles[i].AddrOfPinnedObject();
             }

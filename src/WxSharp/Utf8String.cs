@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace WxSharp;
@@ -41,4 +42,8 @@ internal static class Utf8String
         var end = Array.IndexOf(buffer, (byte)0);
         return Encoding.UTF8.GetString(buffer, 0, end < 0 ? buffer.Length : end);
     }
+
+    /// <summary>Decodes a null-terminated string the native side owns.</summary>
+    internal static unsafe string DecodeNullTerminated(byte* buffer)
+        => buffer is null ? string.Empty : Marshal.PtrToStringUTF8((nint)buffer) ?? string.Empty;
 }

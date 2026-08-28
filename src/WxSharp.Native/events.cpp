@@ -14,6 +14,7 @@
 
 #include <wx/bookctrl.h>
 #include <wx/checklst.h>
+#include <wx/clipbrd.h>
 #include <wx/combobox.h>
 #include <wx/dataview.h>
 #include <wx/dateevt.h>
@@ -424,6 +425,7 @@ namespace
             add(WXSHARP_EV_TOOL_ENTER, wxEVT_TOOL_ENTER, FillCommand, ROW_PROPAGATES);
             add(WXSHARP_EV_TOOL_RCLICKED, wxEVT_TOOL_RCLICKED, FillCommand, ROW_PROPAGATES);
             add(WXSHARP_EV_TOOL_DROPDOWN, wxEVT_TOOL_DROPDOWN, FillCommand, ROW_PROPAGATES);
+            add(WXSHARP_EV_CLIPBOARD_CHANGED, wxEVT_CLIPBOARD_CHANGED, FillNone);
 
             // Book controls. The "changing" variants can be vetoed to refuse the page change.
             add(WXSHARP_EV_NOTEBOOK_PAGE_CHANGED, wxEVT_NOTEBOOK_PAGE_CHANGED, FillBook, ROW_PROPAGATES);
@@ -537,6 +539,11 @@ namespace
         const auto found = rows.find(eventId);
         return found == rows.end() ? nullptr : &found->second;
     }
+
+    // Whether a row describes a wxCommandEvent, which is what decides whether an event of that type can be
+    // synthesised. The fill function is the honest test: it is chosen per row from the concrete wx event
+    // class, so a row that fills from wxCommandEvent is one.
+    bool IsCommandRow(const EventRow* row) { return row && row->fill == FillCommand; }
 
     // ---- The sink ---------------------------------------------------------------------------------------
     // One per (window, event id). Connected with the legacy dynamic API because the row's wxEventType is a
@@ -684,6 +691,52 @@ bool wxsharp_window_unbind(wxsharp_handle window, int event_id)
     return true;
 }
 
+// Application-level events. wxApp is a wxEvtHandler like any window, and a few events - the application
+// being activated, the session ending - are only ever sent there, so they need a bind target that is not a
+// window. One sink per event id, exactly as the window path does it.
+namespace
+{
+    std::unordered_map<int, EventSink*>& AppBindings()
+    {
+        static std::unordered_map<int, EventSink*> bindings;
+        return bindings;
+    }
+}
+
+bool wxsharp_app_bind(int event_id, long long token)
+{
+    if (!wxTheApp)
+        return false;
+    const EventRow* row = FindRow(event_id);
+    if (!row)
+        return false;
+
+    auto& bindings = AppBindings();
+    if (bindings.find(event_id) != bindings.end())
+        return true; // already hooked; the managed side refcounts its own subscribers
+
+    auto* sink = new EventSink(token, row);
+    wxTheApp->Connect(wxID_ANY, wxID_ANY, row->type, wxEventHandler(EventSink::OnEvent), nullptr, sink);
+    bindings.emplace(event_id, sink);
+    return true;
+}
+
+bool wxsharp_app_unbind(int event_id)
+{
+    auto& bindings = AppBindings();
+    const auto entry = bindings.find(event_id);
+    if (entry == bindings.end() || !wxTheApp)
+        return false;
+
+    const EventRow* row = FindRow(event_id);
+    if (row)
+        wxTheApp->Disconnect(wxID_ANY, wxID_ANY, row->type,
+                             wxEventHandler(EventSink::OnEvent), nullptr, entry->second);
+    delete entry->second;
+    bindings.erase(entry);
+    return true;
+}
+
 void wxsharp_window_unbind_all(wxsharp_handle window)
 {
     WxSharpReleaseBindings(static_cast<wxWindow*>(window));
@@ -778,4 +831,38 @@ bool wxsharp_event_propagates(int event_id)
 {
     const EventRow* row = FindRow(event_id);
     return row && (row->flags & ROW_PROPAGATES) != 0;
+}
+
+// Synthesises a command event and sends it, the way wx.PostEvent and wxEvtHandler::ProcessEvent do. An
+// application needs this to drive its own commands: a dialog answering Enter by raising the same command
+// its button raises has no other way to say so, and neither does a test that wants to observe propagation
+// or vetoing without a user present.
+//
+// Only command events can be synthesised. The other event classes carry state wxWidgets fills in from a
+// real occurrence - a key event's raw scan code, a mouse event's position - and a fabricated one would be
+// a lie that handlers cast to the wrong type; wxWidgets itself raises them, so the wrapper does not.
+// Returns -1 when the event type cannot be synthesised, otherwise whether a handler took the event (always
+// 0 for a queued one, which has not run yet). Refusal and "nobody handled it" are different answers and a
+// bool cannot carry both.
+int wxsharp_post_command_event(wxsharp_handle window, int event_id, int id, int int_value,
+                               const char* text, bool process_now)
+{
+    const EventRow* row = FindRow(event_id);
+    if (!IsCommandRow(row) || !window)
+        return -1;
+
+    auto* target = static_cast<wxWindow*>(window);
+    wxCommandEvent e(row->type, id);
+    e.SetEventObject(target);
+    e.SetInt(int_value);
+    if (text)
+        e.SetString(Str(text));
+
+    if (process_now)
+        return target->GetEventHandler()->ProcessEvent(e) ? 1 : 0;
+
+    // Queued, so it is dispatched from the event loop rather than inside the caller's stack frame - which
+    // is what makes it safe to raise from a handler that is still running.
+    target->GetEventHandler()->AddPendingEvent(e);
+    return 0;
 }

@@ -119,7 +119,9 @@ public class ListCtrl : Control
 
     public ListCtrl(Window parent, int id = WindowId.Any, ListCtrlStyle style = ListCtrlStyle.Default)
         : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_listctrl_create(parent.Handle, id, (int)style, Token));
+        => Initialize(GetType() == typeof(ListCtrl)
+            ? NativeMethods.wxsharp_listctrl_create(parent.Handle, id, (int)style, Token)
+            : NativeMethods.wxsharp_custom_listctrl_create(parent.Handle, id, (int)style, Token));
 
     public long Count => NativeMethods.wxsharp_listctrl_count(Handle);
 
@@ -158,8 +160,44 @@ public class ListCtrl : Control
         var bytes = new byte[length + 1]; fixed (byte* buffer = bytes) _ = NativeMethods.wxsharp_listctrl_get_item(Handle, item, column, buffer, bytes.Length);
         return Utf8String.Decode(bytes, length);
     }
-    public bool RemoveAt(long item) => NativeMethods.wxsharp_listctrl_delete_item(Handle, item);
-    public void Clear() => NativeMethods.wxsharp_listctrl_clear(Handle);
+    public bool RemoveAt(long item)
+    {
+        _itemData?.Remove(item);
+        return NativeMethods.wxsharp_listctrl_delete_item(Handle, item);
+    }
+    public void Clear()
+    {
+        _itemData?.Clear();
+        NativeMethods.wxsharp_listctrl_clear(Handle);
+    }
+
+    /// <summary>Removes every row <em>and</em> every column, following <c>wxListCtrl.ClearAll</c>.
+    /// <see cref="Clear"/> removes only the rows, which is the distinction wxWidgets draws.</summary>
+    public void ClearAll()
+    {
+        Clear();
+        NativeMethods.wxsharp_listctrl_clear_columns(Handle);
+    }
+
+    // Held managed-side for the same reason as TreeCtrl's: wxListCtrl's item data is a native pointer-sized
+    // value, and handing it a managed object's address to keep across a collection is a lifetime bug
+    // waiting for load. The row index is the key, so the data moves with nothing and is dropped with the row.
+    private Dictionary<long, object?>? _itemData;
+
+    /// <summary>Attaches an arbitrary object to a row, following <c>wxListCtrl.SetItemData</c>.</summary>
+    public void SetItemData(long item, object? data)
+    {
+        Verify();
+        (_itemData ??= [])[item] = data;
+    }
+
+    /// <summary>The object attached to a row by <see cref="SetItemData"/>, or null. Follows
+    /// <c>wxListCtrl.GetItemData</c>.</summary>
+    public object? GetItemData(long item)
+    {
+        Verify();
+        return _itemData is not null && _itemData.TryGetValue(item, out var data) ? data : null;
+    }
 
     // ---- Selection, focus and visibility -------------------------------------------------------------
 
@@ -181,6 +219,15 @@ public class ListCtrl : Control
             if (value >= 0) { SetSelected(value); SetFocused(value); }
         }
     }
+
+    /// <summary>The first selected row, or -1 when nothing is selected. Follows
+    /// <c>wxListCtrl.GetFirstSelected</c>; pair it with <see cref="GetNextSelected"/> to walk a
+    /// multiple selection without materialising it.</summary>
+    public long GetFirstSelected() => NativeMethods.wxsharp_listctrl_next_selected(Handle, -1);
+
+    /// <summary>The next selected row after <paramref name="item"/>, or -1 when there is none. Follows
+    /// <c>wxListCtrl.GetNextSelected</c>.</summary>
+    public long GetNextSelected(long item) => NativeMethods.wxsharp_listctrl_next_selected(Handle, item);
 
     /// <summary>Every selected row, in order.</summary>
     public long[] GetSelectedIndices()
@@ -220,7 +267,21 @@ public class ListCtrl : Control
     /// must be quick and free of side effects. Follows <c>wxListCtrl.OnGetItemText</c>.</summary>
     protected virtual string OnGetItemText(long item, int column) => string.Empty;
 
+    /// <summary>Supplies the image-list index for an item in virtual mode. Phoenix exposes this protected
+    /// <c>wxListCtrl.OnGetItemImage</c> hook; -1 means no image.</summary>
+    protected virtual int OnGetItemImage(long item) => -1;
+
+    /// <summary>Supplies the image-list index for a particular column in virtual mode.</summary>
+    protected virtual int OnGetItemColumnImage(long item, int column)
+        => column == 0 ? OnGetItemImage(item) : -1;
+
+    /// <summary>Supplies the checked state for an item in a virtual list with check boxes.</summary>
+    protected virtual bool OnGetItemIsChecked(long item) => false;
+
     internal string GetVirtualItemText(long item, int column) => OnGetItemText(item, column) ?? string.Empty;
+    internal int GetVirtualItemImage(long item) => OnGetItemImage(item);
+    internal int GetVirtualItemColumnImage(long item, int column) => OnGetItemColumnImage(item, column);
+    internal bool GetVirtualItemIsChecked(long item) => OnGetItemIsChecked(item);
 
     /// <summary>Redraws one row, after the data behind a virtual list changed.</summary>
     public void RefreshItem(long item) => NativeMethods.wxsharp_listctrl_refresh_item(Handle, item);
@@ -353,7 +414,9 @@ public class TreeCtrl : Control
 
     public TreeCtrl(Window parent, int id = WindowId.Any, TreeCtrlStyle style = TreeCtrlStyle.Default)
         : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_treectrl_create(parent.Handle, id, (int)style, Token));
+        => Initialize(GetType() == typeof(TreeCtrl)
+            ? NativeMethods.wxsharp_treectrl_create(parent.Handle, id, (int)style, Token)
+            : NativeMethods.wxsharp_custom_treectrl_create(parent.Handle, id, (int)style, Token));
 
     /// <summary>The root item. Hidden from the user when the control was created with
     /// <see cref="TreeCtrlStyle.HideRoot"/>, but still the parent to add top-level items to.</summary>
@@ -392,9 +455,19 @@ public class TreeCtrl : Control
 
     /// <summary>Clears the selection.</summary>
     public void Unselect() => NativeMethods.wxsharp_tree_unselect(Handle);
-    public void Remove(TreeItemId item) => NativeMethods.wxsharp_tree_delete(Handle, item.Value);
+    public void Remove(TreeItemId item)
+    {
+        // Drop the item's data with the item. wxWidgets is free to hand the same ID out again, so leaving
+        // it behind would both leak and let a new item inherit a deleted one's data.
+        _itemData?.Remove(item.Value);
+        NativeMethods.wxsharp_tree_delete(Handle, item.Value);
+    }
     /// <summary>Deletes every item, root included. <see cref="Root"/> becomes invalid until a new one is added.</summary>
-    public void Clear() => NativeMethods.wxsharp_tree_delete_all(Handle);
+    public void Clear()
+    {
+        _itemData?.Clear();
+        NativeMethods.wxsharp_tree_delete_all(Handle);
+    }
     public unsafe string GetText(TreeItemId item)
     {
         var length = NativeMethods.wxsharp_tree_get_text(Handle, item.Value, null, 0); if (length <= 0) return string.Empty;
@@ -402,9 +475,56 @@ public class TreeCtrl : Control
         return Utf8String.Decode(bytes, length);
     }
     public void SetText(TreeItemId item, string text) => NativeMethods.wxsharp_tree_set_text(Handle, item.Value, text);
+    public void SortChildren(TreeItemId item) => NativeMethods.wxsharp_tree_sort_children(Handle, item.Value);
+
+    /// <summary>Compares two children during <see cref="SortChildren"/>. Override to provide the ordering,
+    /// following Phoenix's <c>wxTreeCtrl.OnCompareItems</c>.</summary>
+    protected virtual int OnCompareItems(TreeItemId first, TreeItemId second)
+        => string.CompareOrdinal(GetText(first), GetText(second));
+
+    internal int CompareItems(TreeItemId first, TreeItemId second) => OnCompareItems(first, second);
     public void Expand(TreeItemId item, bool expand = true) => NativeMethods.wxsharp_tree_expand(Handle, item.Value, expand);
     public bool IsExpanded(TreeItemId item) => NativeMethods.wxsharp_tree_is_expanded(Handle, item.Value);
     public TreeItemId Selection { get => new(NativeMethods.wxsharp_tree_get_selection(Handle)); set => NativeMethods.wxsharp_tree_select(Handle, value.Value); }
+
+    /// <summary>How many items the tree holds, root included. Follows <c>wxTreeCtrl.GetCount</c>.</summary>
+    public int Count => NativeMethods.wxsharp_tree_get_count(Handle);
+
+    /// <summary>Expands every item. Follows <c>wxTreeCtrl.ExpandAll</c>.</summary>
+    public void ExpandAll() => NativeMethods.wxsharp_tree_expand_all(Handle);
+
+    /// <summary>Collapses every item. Follows <c>wxTreeCtrl.CollapseAll</c>.</summary>
+    public void CollapseAll() => NativeMethods.wxsharp_tree_collapse_all(Handle);
+
+    /// <summary>Whether an item has children, or has been marked as having them. Follows
+    /// <c>wxTreeCtrl.ItemHasChildren</c>, which is not the same question as
+    /// <see cref="GetChildCount"/> being non-zero: a tree filled on demand marks a branch as having
+    /// children before it has any, so the expander is drawn and the branch can be opened.</summary>
+    public bool ItemHasChildren(TreeItemId item) => NativeMethods.wxsharp_tree_item_has_children(Handle, item.Value);
+
+    // Item data is held here rather than in wxWidgets. wxTreeItemData is an owned native object, and
+    // handing a managed object's address to C++ to hold across a garbage collection is the kind of lifetime
+    // bug that only shows up under load. A dictionary keyed by the item's own ID gives the same API with
+    // none of that, and the tree's item IDs are stable for as long as the item exists.
+    private Dictionary<long, object?>? _itemData;
+
+    /// <summary>Attaches an arbitrary object to an item, following <c>wxTreeCtrl.SetItemData</c>. This is
+    /// how a tree row is tied to whatever it stands for - the page a settings tree shows, the record a
+    /// result row came from - without a parallel lookup table in the caller.</summary>
+    public void SetItemData(TreeItemId item, object? data)
+    {
+        Verify();
+        if (!item.IsValid) throw new ArgumentException("The item is not valid.", nameof(item));
+        (_itemData ??= [])[item.Value] = data;
+    }
+
+    /// <summary>The object attached to an item by <see cref="SetItemData"/>, or null. Follows
+    /// <c>wxTreeCtrl.GetItemData</c>.</summary>
+    public object? GetItemData(TreeItemId item)
+    {
+        Verify();
+        return _itemData is not null && _itemData.TryGetValue(item.Value, out var data) ? data : null;
+    }
 }
 
 public class Grid : Control
@@ -412,7 +532,9 @@ public class Grid : Control
     public Grid(Window parent, int rows = 0, int columns = 0, int id = WindowId.Any) : base(parent, id)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(rows); ArgumentOutOfRangeException.ThrowIfNegative(columns);
-        Initialize(NativeMethods.wxsharp_grid_create(parent.Handle, id, rows, columns, Token));
+        Initialize(GetType() == typeof(Grid)
+            ? NativeMethods.wxsharp_grid_create(parent.Handle, id, rows, columns, Token)
+            : NativeMethods.wxsharp_custom_grid_create(parent.Handle, id, rows, columns, Token));
     }
     public int RowCount => NativeMethods.wxsharp_grid_rows(Handle);
     public int ColumnCount => NativeMethods.wxsharp_grid_columns(Handle);
@@ -432,6 +554,41 @@ public class Grid : Control
     }
     public void SetRowLabel(int row, string value) => NativeMethods.wxsharp_grid_set_row_label(Handle, row, value);
     public void SetColumnLabel(int column, string value) => NativeMethods.wxsharp_grid_set_column_label(Handle, column, value);
+
+    // ---- Overridable wxGrid virtuals --------------------------------------------------------------------
+
+    /// <summary>The pen the line to the right of a column is drawn with. Overriding it is how a grid marks
+    /// one column differently from the rest. Follows <c>wxGrid.GetColGridLinePen</c>.</summary>
+    public virtual Pen GetColGridLinePen(int column) => PenFrom(CallBase(VirtualMember.GridColLinePen, column));
+
+    /// <summary>The pen the line below a row is drawn with. Follows
+    /// <c>wxGrid.GetRowGridLinePen</c>.</summary>
+    public virtual Pen GetRowGridLinePen(int row) => PenFrom(CallBase(VirtualMember.GridRowLinePen, row));
+
+    /// <summary>The pen every other grid line is drawn with. Follows
+    /// <c>wxGrid.GetDefaultGridLinePen</c>.</summary>
+    public virtual Pen GetDefaultGridLinePen() => PenFrom(CallBase(VirtualMember.GridDefaultLinePen));
+
+    private static Pen PenFrom(in NativeVirtualRequest request)
+        => new(Colour.FromArgb(request.UintValue), request.Result > 0 ? request.Result : 1);
+
+    internal override unsafe bool TryAnswerVirtual(ref NativeVirtualRequest request)
+    {
+        switch ((VirtualMember)request.Which)
+        {
+            case VirtualMember.GridColLinePen: return Answer(GetColGridLinePen(request.Args[0]), ref request);
+            case VirtualMember.GridRowLinePen: return Answer(GetRowGridLinePen(request.Args[0]), ref request);
+            case VirtualMember.GridDefaultLinePen: return Answer(GetDefaultGridLinePen(), ref request);
+            default: return base.TryAnswerVirtual(ref request);
+        }
+
+        static bool Answer(Pen pen, ref NativeVirtualRequest request)
+        {
+            request.UintValue = pen.Colour.ToArgb();
+            request.Result = pen.Width;
+            return true;
+        }
+    }
 }
 
 public class DataViewListCtrl : Control
@@ -442,7 +599,9 @@ public class DataViewListCtrl : Control
         remove => RemoveHandler(WxEvents.DataViewSelectionChanged, value);
     }
     public DataViewListCtrl(Window parent, int id = WindowId.Any) : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_dataviewlist_create(parent.Handle, id, Token));
+        => Initialize(GetType() == typeof(DataViewListCtrl)
+            ? NativeMethods.wxsharp_dataviewlist_create(parent.Handle, id, Token)
+            : NativeMethods.wxsharp_custom_dataviewlist_create(parent.Handle, id, Token));
     public int Count => NativeMethods.wxsharp_dataviewlist_count(Handle);
     public int SelectedIndex { get => NativeMethods.wxsharp_dataviewlist_get_selection(Handle); set => NativeMethods.wxsharp_dataviewlist_set_selection(Handle, value); }
     public void AddTextColumn(string label, int width = 120, bool editable = false)
@@ -485,7 +644,9 @@ public class DataViewTreeCtrl : Control
         remove => RemoveHandler(WxEvents.DataViewSelectionChanged, value);
     }
     public DataViewTreeCtrl(Window parent, int id = WindowId.Any) : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_dataviewtree_create(parent.Handle, id, Token));
+        => Initialize(GetType() == typeof(DataViewTreeCtrl)
+            ? NativeMethods.wxsharp_dataviewtree_create(parent.Handle, id, Token)
+            : NativeMethods.wxsharp_custom_dataviewtree_create(parent.Handle, id, Token));
     public DataViewItem AddContainer(DataViewItem parent, string text) => new(NativeMethods.wxsharp_dataviewtree_append_container(Handle, parent.Value, text));
     public DataViewItem AddItem(DataViewItem parent, string text) => new(NativeMethods.wxsharp_dataviewtree_append_item(Handle, parent.Value, text));
     public unsafe string GetText(DataViewItem item)

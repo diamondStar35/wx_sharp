@@ -66,6 +66,13 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage(
     "Naming",
     "CA1711:Identifiers should not have incorrect suffix",
+    Justification = "The public wxFontFlag enum name is retained to match wxWidgets and Phoenix.",
+    Scope = "type",
+    Target = "~T:WxSharp.FontFlag")]
+
+[assembly: SuppressMessage(
+    "Naming",
+    "CA1711:Identifiers should not have incorrect suffix",
     Justification = "A bit-flags enum over the wxSizerFlags button constants.",
     Scope = "type",
     Target = "~T:WxSharp.ButtonSizerFlags")]

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -8,9 +9,9 @@ using System.Threading;
 namespace WxSharp;
 
 /// <summary>Owns one wxWidgets application and its blocking native event loop.</summary>
-public class App : IDisposable
+public class App : EvtHandler, IDisposable
 {
-    private static readonly Dictionary<long, Window> Windows = new();
+    private static readonly Dictionary<long, EvtHandler> Handlers = new();
     private static readonly Dictionary<nint, Window> ByHandle = new();
     private static readonly Dictionary<long, Action> DeferredActions = new();
     private static long _nextToken;
@@ -32,7 +33,10 @@ public class App : IDisposable
         unsafe { NativeMethods.wxsharp_set_event_handler(&Dispatch); }
         unsafe { NativeMethods.wxsharp_set_accessible_handler(&Accessible.Dispatch); }
         unsafe { NativeMethods.wxsharp_set_virtual_list_handler(&DispatchVirtualList); }
+        unsafe { NativeMethods.wxsharp_set_virtual_handler(&DispatchVirtual); }
         Current = this;
+        // Registered like any other handler so an app-level event resolves back through the same token map.
+        Token = Register(this);
         NativeMethods.wxsharp_set_exit_on_frame_delete(true);
     }
 
@@ -119,24 +123,42 @@ public class App : IDisposable
             throw new InvalidOperationException("wxWidgets objects may only be used on the App UI thread. Use Wx.CallAfter from worker threads.");
     }
 
+    // ---- What EvtHandler needs from the application ----------------------------------------------------
+    // wxApp is a wxEvtHandler like any window, so the machinery is shared; only the bind target differs.
+    // The events that reach it - the application being activated, the session ending - are never sent to a
+    // window, which is why they need a target of their own.
+
+    internal override App OwnerApp => this;
+
+    private protected override bool BindNative(int eventId)
+        => NativeMethods.wxsharp_app_bind(eventId, Token);
+
+    private protected override void UnbindNative(int eventId)
+        => _ = NativeMethods.wxsharp_app_unbind(eventId);
+
+    private protected override bool IsDead => _disposed;
+
+    private protected override void Verify() { VerifyAccess(); ThrowIfDisposed(); }
+
     internal static App RequireCurrent()
     {
         var app = Current ?? throw new InvalidOperationException("Create an App before using wxWidgets.");
         app.VerifyAccess(); app.ThrowIfDisposed(); return app;
     }
 
-    internal static long Register(Window window)
+    internal static long Register(EvtHandler handler)
     {
         var app = Current ?? throw new InvalidOperationException("Create an App before creating windows or controls.");
         app.VerifyAccess(); app.ThrowIfDisposed();
         var token = ++_nextToken;
-        Windows.Add(token, window);
+        Handlers.Add(token, handler);
         return token;
     }
 
     internal static void Unregister(long token)
     {
-        if (Windows.Remove(token, out var window) && window.NativeHandleForLookup != 0)
+        if (Handlers.Remove(token, out var handler) && handler is Window window &&
+            window.NativeHandleForLookup != 0)
             ByHandle.Remove(window.NativeHandleForLookup);
     }
 
@@ -167,7 +189,7 @@ public class App : IDisposable
         }
     }
 
-    private void RecordCallbackException(Exception ex)
+    internal void RecordCallbackException(Exception ex)
     {
         _callbackException ??= ExceptionDispatchInfo.Capture(ex);
         NativeMethods.wxsharp_exit_main_loop();
@@ -179,7 +201,9 @@ public class App : IDisposable
     private static unsafe uint Dispatch(NativeEvent* native)
     {
         var app = Current;
-        if (app is null || native is null || native->Version != NativeEvent.ExpectedVersion) return 0;
+        if (app is null || native is null || native->Version != NativeEvent.ExpectedVersion ||
+            native->Size < (uint)sizeof(NativeEvent)) return 0;
+        uint result;
         try
         {
             if (native->Kind == EventId.CallAfter)
@@ -190,27 +214,48 @@ public class App : IDisposable
                 action?.Invoke();
                 return 0;
             }
-            if (!Windows.TryGetValue(native->Token, out var window)) return 0;
-            var result = window.Dispatch(in *native);
-            // Destruction is reported whether or not anything subscribed: it is what retires the managed
-            // wrapper, and it must happen after any handler has had its last look at the window.
-            if (native->Kind == EventId.Destroy) window.InvalidateFromNative();
-            return result;
+            if (!Handlers.TryGetValue(native->Token, out var handler)) return 0;
+            result = handler.Dispatch(in *native);
         }
-        catch (Exception ex) { app.RecordCallbackException(ex); return 1; }
+        catch (Exception ex) { app.RecordCallbackException(ex); result = 1; }
+
+        // Retire the wrapper even if its final Destroyed subscriber threw. The C++ object is going away
+        // regardless; leaving its old address mapped would turn the next property access into use-after-free.
+        if (native->Kind == EventId.Destroy && Handlers.TryGetValue(native->Token, out var destroyed) &&
+            destroyed is Window window)
+        {
+            try { window.InvalidateFromNative(); }
+            catch (Exception ex) { app.RecordCallbackException(ex); }
+        }
+        return result;
     }
 
-    // A virtual list control asking for a cell it is about to draw. Answered synchronously on the UI
-    // thread, so the handler must stay cheap - which is what wxListCtrl.OnGetItemText requires too.
+    // A list/tree item virtual asking for data it is about to draw or compare. Answered synchronously on
+    // the UI thread, so handlers must stay cheap.
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
     private static unsafe byte DispatchVirtualList(NativeVirtualListRequest* request)
     {
         var app = Current;
-        if (app is null || request is null || request->Version != 1) return 0;
+        if (app is null || request is null || request->Version != 1 ||
+            request->Size < (uint)sizeof(NativeVirtualListRequest)) return 0;
         try
         {
-            if (!Windows.TryGetValue(request->Token, out var window) || window is not ListCtrl list)
-                return 0;
+            if (!Handlers.TryGetValue(request->Token, out var window)) return 0;
+            if (request->Operation == 10 && window is TreeCtrl tree)
+            {
+                request->Result = tree.CompareItems(new TreeItemId(request->Item),
+                    new TreeItemId(request->OtherItem));
+                return 1;
+            }
+            if (window is not ListCtrl list) return 0;
+            switch (request->Operation)
+            {
+                case 2: request->Result = list.GetVirtualItemImage(request->Item); return 1;
+                case 3: request->Result = list.GetVirtualItemColumnImage(request->Item, request->Column); return 1;
+                case 4: request->Result = list.GetVirtualItemIsChecked(request->Item) ? 1 : 0; return 1;
+                case 1: break;
+                default: return 0;
+            }
             var text = list.GetVirtualItemText(request->Item, request->Column);
             var required = System.Text.Encoding.UTF8.GetByteCount(text);
             request->RequiredLength = required;
@@ -225,6 +270,25 @@ public class App : IDisposable
         catch (Exception ex) { app.RecordCallbackException(ex); return 0; }
     }
 
+    // Answers one wxWidgets virtual on behalf of a managed subclass. The managed base methods make
+    // qualified native base calls, so an unoverridden member and an override calling base both reach the
+    // same wxWidgets implementation without recursion. An exception cannot unwind into C++, so it is
+    // recorded and treated as "no opinion", leaving wxWidgets to run its own implementation.
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe void DispatchVirtual(NativeVirtualRequest* request)
+    {
+        var app = Current;
+        if (app is null || request is null || request->Version != 1 ||
+            request->Size < (uint)sizeof(NativeVirtualRequest)) return;
+        try
+        {
+            // Only windows have overridable virtuals; the App is registered in the same map but answers none.
+            if (!Handlers.TryGetValue(request->Token, out var handler) || handler is not Window window) return;
+            if (window.TryAnswerVirtual(ref *request)) request->Handled = 1;
+        }
+        catch (Exception ex) { app.RecordCallbackException(ex); }
+    }
+
     private void RunOnExit() { if (!_onExitCalled) { _onExitCalled = true; _ = OnExit(); } }
 
     private void Shutdown()
@@ -234,8 +298,8 @@ public class App : IDisposable
             if (_disposed) return;
             _disposed = true;
         }
-        foreach (var window in new List<Window>(Windows.Values)) window.InvalidateFromAppShutdown();
-        Windows.Clear();
+        foreach (var window in new List<Window>(Handlers.Values.OfType<Window>())) window.InvalidateFromAppShutdown();
+        Handlers.Clear();
         lock (DeferredActions) DeferredActions.Clear();
         Accessible.ClearRegistry();
         NativeMethods.wxsharp_shutdown();

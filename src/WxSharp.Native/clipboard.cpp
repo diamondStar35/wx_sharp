@@ -7,6 +7,7 @@
 #include <wx/clipbrd.h>
 #include <wx/dataobj.h>
 #include <wx/settings.h>
+#include <memory>
 
 namespace
 {
@@ -28,42 +29,26 @@ namespace
         }
     }
 
-    // Opens the clipboard only when the caller has not already done so, and reports whether this call is
-    // the one that has to close it again.
-    struct ScopedOpen
-    {
-        bool opened = false;
-        bool ok = false;
-
-        ScopedOpen()
-        {
-            if (wxTheClipboard->IsOpened()) { ok = true; return; }
-            ok = wxTheClipboard->Open();
-            opened = ok;
-        }
-
-        ~ScopedOpen() { if (opened) wxTheClipboard->Close(); }
-    };
 }
 
 bool wxsharp_clipboard_open() { return wxTheClipboard->Open(); }
-void wxsharp_clipboard_close() { if (wxTheClipboard->IsOpened()) wxTheClipboard->Close(); }
+void wxsharp_clipboard_close() { wxTheClipboard->Close(); }
 bool wxsharp_clipboard_is_opened() { return wxTheClipboard->IsOpened(); }
-
-// Hands ownership of the contents to the system so they survive this application exiting. Without it,
-// anything copied disappears when the process does.
 bool wxsharp_clipboard_flush() { return wxTheClipboard->Flush(); }
 
 void wxsharp_clipboard_clear()
 {
-    ScopedOpen open;
-    if (open.ok) wxTheClipboard->Clear();
+    wxTheClipboard->Clear();
 }
 
 bool wxsharp_clipboard_is_supported(int format)
 {
-    ScopedOpen open;
-    return open.ok && wxTheClipboard->IsSupported(FormatFor(format));
+    return wxTheClipboard->IsSupported(FormatFor(format));
+}
+
+bool wxsharp_clipboard_is_supported_async(wxsharp_handle sink)
+{
+    return wxTheClipboard->IsSupportedAsync(static_cast<wxEvtHandler*>(static_cast<wxWindow*>(sink)));
 }
 
 void wxsharp_clipboard_use_primary_selection(bool primary)
@@ -73,17 +58,18 @@ void wxsharp_clipboard_use_primary_selection(bool primary)
 
 // ---- Text -----------------------------------------------------------------------------------------------
 
-void wxsharp_clipboard_set_text(const char* text)
+bool wxsharp_clipboard_set_text(const char* text)
 {
-    ScopedOpen open;
-    if (open.ok) wxTheClipboard->SetData(new wxTextDataObject(Str(text)));
+    auto data = std::make_unique<wxTextDataObject>(Str(text));
+    if (!wxTheClipboard->SetData(data.get())) return false;
+    data.release();
+    return true;
 }
 
 int wxsharp_clipboard_get_text(char* buffer, int buffer_length)
 {
     wxString value;
-    ScopedOpen open;
-    if (open.ok && wxTheClipboard->IsSupported(wxDF_UNICODETEXT))
+    if (wxTheClipboard->IsSupported(wxDF_UNICODETEXT))
     {
         wxTextDataObject data;
         if (wxTheClipboard->GetData(data))
@@ -96,12 +82,12 @@ int wxsharp_clipboard_get_text(char* buffer, int buffer_length)
 
 bool wxsharp_clipboard_set_files(const char* const* paths, int count)
 {
-    ScopedOpen open;
-    if (!open.ok) return false;
-    auto* data = new wxFileDataObject();
+    auto data = std::make_unique<wxFileDataObject>();
     for (int i = 0; i < count; ++i)
         data->AddFile(Str(paths[i]));
-    return wxTheClipboard->SetData(data);
+    if (!wxTheClipboard->SetData(data.get())) return false;
+    data.release();
+    return true;
 }
 
 // Reads the file list and holds it until the next call, so each path can be fetched at its own length.
@@ -110,8 +96,7 @@ int wxsharp_clipboard_read_files()
     wxArrayString& paths = ClipboardFiles();
     paths.Clear();
 
-    ScopedOpen open;
-    if (open.ok && wxTheClipboard->IsSupported(wxDF_FILENAME))
+    if (wxTheClipboard->IsSupported(wxDF_FILENAME))
     {
         wxFileDataObject data;
         if (wxTheClipboard->GetData(data))
@@ -133,15 +118,16 @@ int wxsharp_clipboard_get_file(int index, char* buffer, int buffer_length)
 bool wxsharp_clipboard_set_bitmap(wxsharp_handle bitmap)
 {
     if (!bitmap) return false;
-    ScopedOpen open;
-    return open.ok && wxTheClipboard->SetData(new wxBitmapDataObject(*static_cast<wxBitmap*>(bitmap)));
+    auto data = std::make_unique<wxBitmapDataObject>(*static_cast<wxBitmap*>(bitmap));
+    if (!wxTheClipboard->SetData(data.get())) return false;
+    data.release();
+    return true;
 }
 
 // Returns a new bitmap the caller owns, or null when the clipboard holds no image.
 wxsharp_handle wxsharp_clipboard_get_bitmap()
 {
-    ScopedOpen open;
-    if (!open.ok || !wxTheClipboard->IsSupported(wxDF_BITMAP))
+    if (!wxTheClipboard->IsSupported(wxDF_BITMAP))
         return nullptr;
     wxBitmapDataObject data;
     if (!wxTheClipboard->GetData(data))

@@ -24,8 +24,11 @@ public class Dialog : Window
     {
         var p = position ?? new Point(-1, -1);
         var s = size ?? new Size(-1, -1);
-        Initialize(NativeMethods.wxsharp_dialog_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width, s.Height,
-            (int)style, Token));
+        Initialize(GetType() == typeof(Dialog)
+            ? NativeMethods.wxsharp_dialog_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width, s.Height,
+                (int)style, Token)
+            : NativeMethods.wxsharp_custom_dialog_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width,
+                s.Height, (int)style, Token));
     }
 
     /// <summary>Builds the platform's standard button row. wxWidgets decides the order, the spacing and which
@@ -58,4 +61,34 @@ public class Dialog : Window
 
     /// <summary>Closes a modal dialog, and makes <see cref="ShowModal"/> return <paramref name="result"/>.</summary>
     public void EndModal(int result) { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_dialog_end_modal(Handle, result); }
+
+    // ---- Overridable wxDialog virtuals ------------------------------------------------------------------
+
+    /// <summary>Whether this dialog still existing should keep the application alive. Follows
+    /// <c>wxTopLevelWindow.ShouldPreventAppExit</c>.</summary>
+    public virtual bool ShouldPreventAppExit() => BaseBool(VirtualMember.ShouldPreventAppExit);
+
+    /// <summary>The window a dialog's content and standard button row are added to. A dialog that wraps its
+    /// contents in a panel returns that panel, so wxWidgets puts things in the right place. Follows
+    /// <c>wxDialog.GetContentWindow</c>.</summary>
+    public virtual Window? GetContentWindow()
+    {
+        var request = CallBase(VirtualMember.GetContentWindow);
+        return App.Lookup((nint)request.Handle);
+    }
+
+    internal override bool TryAnswerVirtual(ref NativeVirtualRequest request)
+    {
+        switch ((VirtualMember)request.Which)
+        {
+            case VirtualMember.ShouldPreventAppExit:
+                request.Result = ShouldPreventAppExit() ? 1 : 0;
+                return true;
+            case VirtualMember.GetContentWindow:
+                request.Handle = GetContentWindow()?.NativeHandleForLookup ?? 0;
+                return true;
+            default:
+                return base.TryAnswerVirtual(ref request);
+        }
+    }
 }

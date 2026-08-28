@@ -99,13 +99,18 @@ public abstract class Accessible
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
     internal static unsafe int Dispatch(NativeAccessibleRequest* request)
     {
-        if (request is null || request->Version != 1 || !Registry.TryGetValue(request->Token, out var accessible))
+        if (request is null || request->Version != 1 || request->Size < (uint)sizeof(NativeAccessibleRequest) ||
+            !Registry.TryGetValue(request->Token, out var accessible))
             return (int)AccessibleStatus.NotImplemented;
         try
         {
             return (int)accessible.Handle(request);
         }
-        catch { return (int)AccessibleStatus.Fail; }
+        catch (Exception ex)
+        {
+            App.Current?.RecordCallbackException(ex);
+            return (int)AccessibleStatus.Fail;
+        }
     }
 
     private unsafe AccessibleStatus Handle(NativeAccessibleRequest* request)

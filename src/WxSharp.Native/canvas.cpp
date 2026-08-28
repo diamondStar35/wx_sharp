@@ -77,10 +77,9 @@ void wxsharp_canvas_set_text_colour(wxsharp_handle h, unsigned int argb)
     if (auto* dc = Dc(h)) dc->SetTextForeground(ColourFromArgb(argb));
 }
 
-void wxsharp_canvas_set_font(wxsharp_handle h, int point_size, int family, int weight, int style,
-                             bool underline, const char* face)
+void wxsharp_canvas_set_font(wxsharp_handle h, wxsharp_handle font)
 {
-    if (auto* dc = Dc(h)) dc->SetFont(MakeFont(point_size, family, weight, style, underline, face));
+    if (auto* dc = Dc(h)) dc->SetFont(*static_cast<wxFont*>(font));
 }
 
 void wxsharp_canvas_draw_rectangle(wxsharp_handle h, int x, int y, int width, int height)
@@ -113,11 +112,14 @@ void wxsharp_canvas_draw_text(wxsharp_handle h, const char* text, int x, int y)
     if (auto* dc = Dc(h)) dc->DrawText(Str(text), x, y);
 }
 
-// Measures text in the canvas's current (control) font - works at any time, so callers can lay out before a
-// paint. Set the control font via the generic control-font setter to keep measuring and drawing consistent.
+// Measures in whatever font will actually draw the text: the paint DC's while a paint is in progress, and
+// the control's otherwise, so a caller can lay out before its first paint. Measuring on the window while
+// drawing on the DC - which is what this used to do - reported the wrong extent for any text drawn in a
+// font set on the DC.
 void wxsharp_canvas_measure_text(wxsharp_handle h, const char* text, int* width, int* height)
 {
-    const wxSize s = static_cast<wxWindow*>(h)->GetTextExtent(Str(text));
+    const wxSize s = Dc(h) ? Dc(h)->GetTextExtent(Str(text))
+                           : static_cast<wxWindow*>(h)->GetTextExtent(Str(text));
     if (width) *width = s.x;
     if (height) *height = s.y;
 }

@@ -44,12 +44,13 @@ public class Canvas : Control
     /// <summary>Sets the colour for subsequent <see cref="DrawText"/> calls.</summary>
     public void SetTextColour(Colour color) => NativeMethods.wxsharp_canvas_set_text_colour(Handle, color.ToArgb());
 
-    /// <summary>Overrides the font for subsequent <see cref="DrawText"/> calls during this paint. For layout
-    /// that must match, set the control font with <see cref="Control.SetFont"/> as well - that is the font
-    /// <see cref="MeasureText"/> uses.</summary>
+    /// <summary>Sets the font for subsequent <see cref="DrawText"/> calls during this paint.
+    /// <see cref="MeasureText"/> measures in this same font, so laying out and drawing agree.</summary>
     public void SetTextFont(Font font)
-        => NativeMethods.wxsharp_canvas_set_font(Handle, font.PointSize, (int)font.Family, (int)font.Weight,
-            (int)font.Style, font.Underline, font.Face ?? string.Empty);
+    {
+        ArgumentNullException.ThrowIfNull(font);
+        NativeMethods.wxsharp_canvas_set_font(Handle, font.Handle);
+    }
 
     // ---- Primitives --------------------------------------------------------------------------------------
 
@@ -71,8 +72,9 @@ public class Canvas : Control
     public void DrawText(string text, int x, int y)
         => NativeMethods.wxsharp_canvas_draw_text(Handle, text, x, y);
 
-    /// <summary>Measures <paramref name="text"/> in the control's font (settable via
-    /// <see cref="Control.SetFont"/>). Works outside a paint, so callers can lay out first.</summary>
+    /// <summary>Measures <paramref name="text"/> in whatever font will actually draw it: the one set by
+    /// <see cref="SetTextFont"/> during a paint, and the control's otherwise - so this works outside a
+    /// paint too, and callers can lay out before the first one.</summary>
     public Size MeasureText(string text)
     {
         NativeMethods.wxsharp_canvas_measure_text(Handle, text, out var w, out var h);

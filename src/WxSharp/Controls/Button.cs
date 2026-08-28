@@ -13,7 +13,12 @@ public class Button : Control
 
     public Button(Window parent, int id = WindowId.Any, string label = "", Point? position = null, Size? size = null) : base(parent, id)
     {
-        Initialize(NativeMethods.wxsharp_button_create(parent.Handle, id, label, Token));
+        // A subclass may override the wxWidgets virtuals Window exposes, and C++ fixes a vtable at
+        // construction, so the class being constructed decides which native constructor runs. An exact
+        // Button pays nothing for a hook it cannot use.
+        Initialize(GetType() == typeof(Button)
+            ? NativeMethods.wxsharp_button_create(parent.Handle, id, label, Token)
+            : NativeMethods.wxsharp_custom_button_create(parent.Handle, id, label, Token));
         ApplyInitialGeometry(position, size);
     }
 

@@ -28,12 +28,6 @@
 
 namespace
 {
-    template<typename T> T* Common(T* control, long long token)
-    {
-        TrackWindow(control, token);
-        return control;
-    }
-
 }
 
 wxsharp_handle wxsharp_togglebutton_create(wxsharp_handle parent, int id, const char* label, long long token)
@@ -56,6 +50,23 @@ void wxsharp_gauge_set(wxsharp_handle ctrl, int value) { static_cast<wxGauge*>(c
 int wxsharp_gauge_get_range(wxsharp_handle ctrl) { return static_cast<wxGauge*>(ctrl)->GetRange(); }
 void wxsharp_gauge_set_range(wxsharp_handle ctrl, int range) { static_cast<wxGauge*>(ctrl)->SetRange(range); }
 void wxsharp_gauge_pulse(wxsharp_handle ctrl) { static_cast<wxGauge*>(ctrl)->Pulse(); }
+bool wxsharp_gauge_is_vertical(wxsharp_handle ctrl) { return static_cast<wxGauge*>(ctrl)->IsVertical(); }
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4996)
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+int wxsharp_gauge_get_bezel_face(wxsharp_handle ctrl) { return static_cast<wxGauge*>(ctrl)->GetBezelFace(); }
+void wxsharp_gauge_set_bezel_face(wxsharp_handle ctrl, int width) { static_cast<wxGauge*>(ctrl)->SetBezelFace(width); }
+int wxsharp_gauge_get_shadow_width(wxsharp_handle ctrl) { return static_cast<wxGauge*>(ctrl)->GetShadowWidth(); }
+void wxsharp_gauge_set_shadow_width(wxsharp_handle ctrl, int width) { static_cast<wxGauge*>(ctrl)->SetShadowWidth(width); }
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 wxsharp_handle wxsharp_spinctrl_create(wxsharp_handle parent, int id, int minValue, int maxValue, int value, long long token)
 {
@@ -66,6 +77,24 @@ wxsharp_handle wxsharp_spinctrl_create(wxsharp_handle parent, int id, int minVal
 int wxsharp_spinctrl_get(wxsharp_handle ctrl) { return static_cast<wxSpinCtrl*>(ctrl)->GetValue(); }
 void wxsharp_spinctrl_set(wxsharp_handle ctrl, int value) { static_cast<wxSpinCtrl*>(ctrl)->SetValue(value); }
 void wxsharp_spinctrl_set_range(wxsharp_handle ctrl, int minValue, int maxValue) { static_cast<wxSpinCtrl*>(ctrl)->SetRange(minValue, maxValue); }
+int wxsharp_spinctrl_get_min(wxsharp_handle ctrl) { return static_cast<wxSpinCtrl*>(ctrl)->GetMin(); }
+int wxsharp_spinctrl_get_max(wxsharp_handle ctrl) { return static_cast<wxSpinCtrl*>(ctrl)->GetMax(); }
+int wxsharp_spinctrl_get_increment(wxsharp_handle ctrl) { return static_cast<wxSpinCtrl*>(ctrl)->GetIncrement(); }
+void wxsharp_spinctrl_set_increment(wxsharp_handle ctrl, int increment) { static_cast<wxSpinCtrl*>(ctrl)->SetIncrement(increment); }
+int wxsharp_spinctrl_get_base(wxsharp_handle ctrl) { return static_cast<wxSpinCtrl*>(ctrl)->GetBase(); }
+bool wxsharp_spinctrl_set_base(wxsharp_handle ctrl, int base) { return static_cast<wxSpinCtrl*>(ctrl)->SetBase(base); }
+int wxsharp_spinctrl_get_text_value(wxsharp_handle ctrl, char* buffer, int length)
+{
+    return CopyToBuffer(static_cast<wxSpinCtrl*>(ctrl)->GetTextValue(), buffer, length);
+}
+void wxsharp_spinctrl_set_text_value(wxsharp_handle ctrl, const char* value)
+{
+    static_cast<wxSpinCtrl*>(ctrl)->SetValue(Str(value));
+}
+void wxsharp_spinctrl_set_selection(wxsharp_handle ctrl, int from, int to)
+{
+    static_cast<wxSpinCtrl*>(ctrl)->SetSelection(from, to);
+}
 
 wxsharp_handle wxsharp_combobox_create(wxsharp_handle parent, int id, const char* value, bool readOnly, long long token)
 {
@@ -95,6 +124,36 @@ int wxsharp_searchctrl_get_value(wxsharp_handle ctrl, char* buffer, int length) 
 void wxsharp_searchctrl_set_value(wxsharp_handle ctrl, const char* value) { static_cast<wxSearchCtrl*>(ctrl)->SetValue(Str(value)); }
 void wxsharp_searchctrl_show_cancel(wxsharp_handle ctrl, bool show) { static_cast<wxSearchCtrl*>(ctrl)->ShowCancelButton(show); }
 void wxsharp_searchctrl_show_search(wxsharp_handle ctrl, bool show) { static_cast<wxSearchCtrl*>(ctrl)->ShowSearchButton(show); }
+bool wxsharp_searchctrl_is_cancel_visible(wxsharp_handle ctrl) { return static_cast<wxSearchCtrl*>(ctrl)->IsCancelButtonVisible(); }
+bool wxsharp_searchctrl_is_search_visible(wxsharp_handle ctrl) { return static_cast<wxSearchCtrl*>(ctrl)->IsSearchButtonVisible(); }
+int wxsharp_searchctrl_get_descriptive_text(wxsharp_handle ctrl, char* buffer, int length)
+{
+    return CopyToBuffer(static_cast<wxSearchCtrl*>(ctrl)->GetDescriptiveText(), buffer, length);
+}
+void wxsharp_searchctrl_set_descriptive_text(wxsharp_handle ctrl, const char* text)
+{
+    static_cast<wxSearchCtrl*>(ctrl)->SetDescriptiveText(Str(text));
+}
+wxsharp_handle wxsharp_searchctrl_get_menu(wxsharp_handle ctrl)
+{
+    return static_cast<wxSearchCtrl*>(ctrl)->GetMenu();
+}
+void wxsharp_searchctrl_set_menu(wxsharp_handle ctrl, wxsharp_handle menu)
+{
+    static_cast<wxSearchCtrl*>(ctrl)->SetMenu(static_cast<wxMenu*>(menu));
+}
+void wxsharp_searchctrl_set_search_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap)
+{
+    static_cast<wxSearchCtrl*>(ctrl)->SetSearchBitmap(*static_cast<wxBitmap*>(bitmap));
+}
+void wxsharp_searchctrl_set_search_menu_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap)
+{
+    static_cast<wxSearchCtrl*>(ctrl)->SetSearchMenuBitmap(*static_cast<wxBitmap*>(bitmap));
+}
+void wxsharp_searchctrl_set_cancel_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap)
+{
+    static_cast<wxSearchCtrl*>(ctrl)->SetCancelBitmap(*static_cast<wxBitmap*>(bitmap));
+}
 
 wxsharp_handle wxsharp_checklistbox_create(wxsharp_handle parent, int id, long long token)
 {
@@ -120,6 +179,9 @@ void wxsharp_radiobox_set_selection(wxsharp_handle ctrl, int selection) { static
 
 wxsharp_handle wxsharp_staticbox_create(wxsharp_handle parent, int id, const char* label, long long token) { return Common(new wxStaticBox(static_cast<wxWindow*>(parent), id, Str(label)), token); }
 wxsharp_handle wxsharp_staticline_create(wxsharp_handle parent, int id, bool vertical, long long token) { return Common(new wxStaticLine(static_cast<wxWindow*>(parent), id, wxDefaultPosition, wxDefaultSize, vertical ? wxLI_VERTICAL : wxLI_HORIZONTAL), token); }
+void wxsharp_staticbox_get_borders(wxsharp_handle ctrl, int* top, int* other) { static_cast<wxStaticBox*>(ctrl)->GetBordersForSizer(top, other); }
+bool wxsharp_staticline_is_vertical(wxsharp_handle ctrl) { return static_cast<wxStaticLine*>(ctrl)->IsVertical(); }
+int wxsharp_staticline_default_size() { return wxStaticLine::GetDefaultSize(); }
 wxsharp_handle wxsharp_activity_create(wxsharp_handle parent, int id, long long token) { return Common(new wxActivityIndicator(static_cast<wxWindow*>(parent), id), token); }
 void wxsharp_activity_start(wxsharp_handle ctrl) { static_cast<wxActivityIndicator*>(ctrl)->Start(); }
 void wxsharp_activity_stop(wxsharp_handle ctrl) { static_cast<wxActivityIndicator*>(ctrl)->Stop(); }
@@ -134,6 +196,24 @@ wxsharp_handle wxsharp_spinctrldouble_create(wxsharp_handle parent, int id, doub
 }
 double wxsharp_spinctrldouble_get(wxsharp_handle ctrl) { return static_cast<wxSpinCtrlDouble*>(ctrl)->GetValue(); }
 void wxsharp_spinctrldouble_set(wxsharp_handle ctrl, double value) { static_cast<wxSpinCtrlDouble*>(ctrl)->SetValue(value); }
+double wxsharp_spinctrldouble_get_min(wxsharp_handle ctrl) { return static_cast<wxSpinCtrlDouble*>(ctrl)->GetMin(); }
+double wxsharp_spinctrldouble_get_max(wxsharp_handle ctrl) { return static_cast<wxSpinCtrlDouble*>(ctrl)->GetMax(); }
+double wxsharp_spinctrldouble_get_increment(wxsharp_handle ctrl) { return static_cast<wxSpinCtrlDouble*>(ctrl)->GetIncrement(); }
+void wxsharp_spinctrldouble_set_increment(wxsharp_handle ctrl, double increment) { static_cast<wxSpinCtrlDouble*>(ctrl)->SetIncrement(increment); }
+unsigned int wxsharp_spinctrldouble_get_digits(wxsharp_handle ctrl) { return static_cast<wxSpinCtrlDouble*>(ctrl)->GetDigits(); }
+void wxsharp_spinctrldouble_set_digits(wxsharp_handle ctrl, unsigned int digits) { static_cast<wxSpinCtrlDouble*>(ctrl)->SetDigits(digits); }
+void wxsharp_spinctrldouble_set_range(wxsharp_handle ctrl, double minValue, double maxValue)
+{
+    static_cast<wxSpinCtrlDouble*>(ctrl)->SetRange(minValue, maxValue);
+}
+int wxsharp_spinctrldouble_get_text_value(wxsharp_handle ctrl, char* buffer, int length)
+{
+    return CopyToBuffer(static_cast<wxSpinCtrlDouble*>(ctrl)->GetTextValue(), buffer, length);
+}
+void wxsharp_spinctrldouble_set_text_value(wxsharp_handle ctrl, const char* value)
+{
+    static_cast<wxSpinCtrlDouble*>(ctrl)->SetValue(Str(value));
+}
 wxsharp_handle wxsharp_scrollbar_create(wxsharp_handle parent, int id, bool vertical, long long token)
 {
     auto* control = Common(new wxScrollBar(static_cast<wxWindow*>(parent), id, wxDefaultPosition,
@@ -142,6 +222,15 @@ wxsharp_handle wxsharp_scrollbar_create(wxsharp_handle parent, int id, bool vert
 }
 void wxsharp_scrollbar_set(wxsharp_handle ctrl, int position, int thumbSize, int range, int pageSize) { static_cast<wxScrollBar*>(ctrl)->SetScrollbar(position, thumbSize, range, pageSize); }
 int wxsharp_scrollbar_get_position(wxsharp_handle ctrl) { return static_cast<wxScrollBar*>(ctrl)->GetThumbPosition(); }
+void wxsharp_scrollbar_set_ex(wxsharp_handle ctrl, int position, int thumbSize, int range, int pageSize, bool refresh)
+{
+    static_cast<wxScrollBar*>(ctrl)->SetScrollbar(position, thumbSize, range, pageSize, refresh);
+}
+void wxsharp_scrollbar_set_position(wxsharp_handle ctrl, int position) { static_cast<wxScrollBar*>(ctrl)->SetThumbPosition(position); }
+int wxsharp_scrollbar_get_thumb_size(wxsharp_handle ctrl) { return static_cast<wxScrollBar*>(ctrl)->GetThumbSize(); }
+int wxsharp_scrollbar_get_range(wxsharp_handle ctrl) { return static_cast<wxScrollBar*>(ctrl)->GetRange(); }
+int wxsharp_scrollbar_get_page_size(wxsharp_handle ctrl) { return static_cast<wxScrollBar*>(ctrl)->GetPageSize(); }
+bool wxsharp_scrollbar_is_vertical(wxsharp_handle ctrl) { return static_cast<wxScrollBar*>(ctrl)->IsVertical(); }
 wxsharp_handle wxsharp_hyperlink_create(wxsharp_handle parent, int id, const char* label, const char* url, long long token)
 {
     auto* control = Common(new wxHyperlinkCtrl(static_cast<wxWindow*>(parent), id, Str(label), Str(url)), token);
@@ -149,6 +238,14 @@ wxsharp_handle wxsharp_hyperlink_create(wxsharp_handle parent, int id, const cha
 }
 int wxsharp_hyperlink_get_url(wxsharp_handle ctrl, char* buffer, int length) { return CopyToBuffer(static_cast<wxHyperlinkCtrl*>(ctrl)->GetURL(), buffer, length); }
 void wxsharp_hyperlink_set_url(wxsharp_handle ctrl, const char* url) { static_cast<wxHyperlinkCtrl*>(ctrl)->SetURL(Str(url)); }
+bool wxsharp_hyperlink_get_visited(wxsharp_handle ctrl) { return static_cast<wxHyperlinkCtrl*>(ctrl)->GetVisited(); }
+void wxsharp_hyperlink_set_visited(wxsharp_handle ctrl, bool visited) { static_cast<wxHyperlinkCtrl*>(ctrl)->SetVisited(visited); }
+unsigned int wxsharp_hyperlink_get_normal_colour(wxsharp_handle ctrl) { return ArgbFromColour(static_cast<wxHyperlinkCtrl*>(ctrl)->GetNormalColour()); }
+void wxsharp_hyperlink_set_normal_colour(wxsharp_handle ctrl, unsigned int colour) { static_cast<wxHyperlinkCtrl*>(ctrl)->SetNormalColour(ColourFromArgb(colour)); }
+unsigned int wxsharp_hyperlink_get_hover_colour(wxsharp_handle ctrl) { return ArgbFromColour(static_cast<wxHyperlinkCtrl*>(ctrl)->GetHoverColour()); }
+void wxsharp_hyperlink_set_hover_colour(wxsharp_handle ctrl, unsigned int colour) { static_cast<wxHyperlinkCtrl*>(ctrl)->SetHoverColour(ColourFromArgb(colour)); }
+unsigned int wxsharp_hyperlink_get_visited_colour(wxsharp_handle ctrl) { return ArgbFromColour(static_cast<wxHyperlinkCtrl*>(ctrl)->GetVisitedColour()); }
+void wxsharp_hyperlink_set_visited_colour(wxsharp_handle ctrl, unsigned int colour) { static_cast<wxHyperlinkCtrl*>(ctrl)->SetVisitedColour(ColourFromArgb(colour)); }
 wxsharp_handle wxsharp_datepicker_create(wxsharp_handle parent, int id, long long token)
 {
     auto* control = Common(new wxDatePickerCtrl(static_cast<wxWindow*>(parent), id), token);
@@ -175,6 +272,24 @@ void wxsharp_datetime_set(wxsharp_handle ctrl, int year, int month, int day, int
     if (auto* date = dynamic_cast<wxDatePickerCtrl*>(static_cast<wxWindow*>(ctrl))) date->SetValue(value);
     else static_cast<wxTimePickerCtrl*>(ctrl)->SetValue(value);
 }
+bool wxsharp_datepicker_get_range(wxsharp_handle ctrl, int* y1, int* m1, int* d1, int* y2, int* m2, int* d2)
+{
+    wxDateTime lower, upper;
+    if (!static_cast<wxDatePickerCtrl*>(ctrl)->GetRange(&lower, &upper)) return false;
+    *y1 = lower.GetYear(); *m1 = static_cast<int>(lower.GetMonth()) + 1; *d1 = lower.GetDay();
+    *y2 = upper.GetYear(); *m2 = static_cast<int>(upper.GetMonth()) + 1; *d2 = upper.GetDay();
+    return true;
+}
+void wxsharp_datepicker_set_range(wxsharp_handle ctrl, int y1, int m1, int d1, int y2, int m2, int d2)
+{
+    const wxDateTime lower(static_cast<wxDateTime::wxDateTime_t>(d1), static_cast<wxDateTime::Month>(m1 - 1), y1);
+    const wxDateTime upper(static_cast<wxDateTime::wxDateTime_t>(d2), static_cast<wxDateTime::Month>(m2 - 1), y2);
+    static_cast<wxDatePickerCtrl*>(ctrl)->SetRange(lower, upper);
+}
+void wxsharp_datepicker_set_null_text(wxsharp_handle ctrl, const char* text)
+{
+    static_cast<wxDatePickerCtrl*>(ctrl)->SetNullText(Str(text));
+}
 
 wxsharp_handle wxsharp_scrolled_create(wxsharp_handle parent, int id, int style, long long token)
 {
@@ -184,6 +299,38 @@ wxsharp_handle wxsharp_scrolled_create(wxsharp_handle parent, int id, int style,
 void wxsharp_scrolled_set_rate(wxsharp_handle ctrl, int x, int y) { static_cast<wxScrolledWindow*>(ctrl)->SetScrollRate(x, y); }
 void wxsharp_scrolled_scroll(wxsharp_handle ctrl, int x, int y) { static_cast<wxScrolledWindow*>(ctrl)->Scroll(x, y); }
 void wxsharp_scrolled_get_view_start(wxsharp_handle ctrl, int* x, int* y) { static_cast<wxScrolledWindow*>(ctrl)->GetViewStart(x, y); }
+void wxsharp_scrolled_set_scrollbars(wxsharp_handle ctrl, int pixels_x, int pixels_y, int units_x,
+                                     int units_y, int pos_x, int pos_y, bool no_refresh)
+{
+    static_cast<wxScrolledWindow*>(ctrl)->SetScrollbars(pixels_x, pixels_y, units_x, units_y, pos_x, pos_y,
+                                                        no_refresh);
+}
+void wxsharp_scrolled_enable_scrolling(wxsharp_handle ctrl, bool x, bool y) { static_cast<wxScrolledWindow*>(ctrl)->EnableScrolling(x, y); }
+namespace
+{
+    // The managed enums are semantic; the wx flags they mean are resolved here, so no wxWidgets constant
+    // has to be transcribed into managed code where it could drift from the header.
+    wxScrollbarVisibility ScrollbarVisibility(int v)
+    {
+        switch (v)
+        {
+            case 0:  return wxSHOW_SB_NEVER;
+            case 2:  return wxSHOW_SB_ALWAYS;
+            default: return wxSHOW_SB_DEFAULT;
+        }
+    }
+
+    int ScrollOrientation(int v) { return v == 1 ? wxVERTICAL : wxHORIZONTAL; }
+}
+
+void wxsharp_scrolled_show_scrollbars(wxsharp_handle ctrl, int x, int y)
+{
+    static_cast<wxScrolledWindow*>(ctrl)->ShowScrollbars(ScrollbarVisibility(x), ScrollbarVisibility(y));
+}
+void wxsharp_scrolled_get_pixels_per_unit(wxsharp_handle ctrl, int* x, int* y) { static_cast<wxScrolledWindow*>(ctrl)->GetScrollPixelsPerUnit(x, y); }
+void wxsharp_scrolled_set_target_window(wxsharp_handle ctrl, wxsharp_handle target) { static_cast<wxScrolledWindow*>(ctrl)->SetTargetWindow(static_cast<wxWindow*>(target)); }
+void wxsharp_scrolled_set_scroll_page_size(wxsharp_handle ctrl, int orientation, int size) { static_cast<wxScrolledWindow*>(ctrl)->SetScrollPageSize(ScrollOrientation(orientation), size); }
+int  wxsharp_scrolled_get_scroll_page_size(wxsharp_handle ctrl, int orientation) { return static_cast<wxScrolledWindow*>(ctrl)->GetScrollPageSize(ScrollOrientation(orientation)); }
 
 wxsharp_handle wxsharp_splitter_create(wxsharp_handle parent, int id, bool vertical, long long token)
 {
@@ -220,10 +367,10 @@ wxsharp_handle wxsharp_simplebook_create(wxsharp_handle parent, int id, long lon
     return control;
 }
 
+wxsharp_virtual_list_cb g_virtual_list_cb = nullptr;
+
 namespace
 {
-    wxsharp_virtual_list_cb g_virtual_list_cb = nullptr;
-
     // Only wxLC_VIRTUAL makes wxWidgets ask these questions; for an ordinary list the override never runs.
     class WxSharpListCtrl : public wxListCtrl
     {
@@ -245,6 +392,7 @@ namespace
             request.token = m_token;
             request.item = item;
             request.column = static_cast<int>(column);
+            request.operation = 1;
             request.buffer = stack;
             request.buffer_length = static_cast<int>(sizeof(stack));
             if (!g_virtual_list_cb(&request))
@@ -260,7 +408,37 @@ namespace
             return wxString::FromUTF8(heap.data());
         }
 
+        int OnGetItemImage(long item) const override
+        {
+            return AskInteger(2, item, 0, -1);
+        }
+
+        int OnGetItemColumnImage(long item, long column) const override
+        {
+            return AskInteger(3, item, column, -1);
+        }
+
+        bool OnGetItemIsChecked(long item) const override
+        {
+            return AskInteger(4, item, 0, 0) != 0;
+        }
+
     private:
+        int AskInteger(int operation, long item, long column, int fallback) const
+        {
+            if (!g_virtual_list_cb)
+                return fallback;
+            wxsharp_virtual_list_request request = {};
+            request.size = sizeof(request);
+            request.version = 1;
+            request.token = m_token;
+            request.item = item;
+            request.column = static_cast<int>(column);
+            request.operation = operation;
+            request.result = fallback;
+            return g_virtual_list_cb(&request) ? request.result : fallback;
+        }
+
         long long m_token;
     };
 }
@@ -270,6 +448,17 @@ void wxsharp_set_virtual_list_handler(wxsharp_virtual_list_cb cb) { g_virtual_li
 wxsharp_handle wxsharp_listctrl_create(wxsharp_handle parent, int id, int style, long long token)
 {
     return Common(new WxSharpListCtrl(static_cast<wxWindow*>(parent), id, MapListCtrlStyle(style), token),
+                  token);
+}
+
+// wxLC_VIRTUAL asks its control for cell text, so the overridable list control has to build on the subclass
+// that answers that rather than on wxListCtrl - otherwise a virtual list that is also subclassed would lose
+// its rows. Its constructor takes the token last, where Overridable takes it first, so it is passed twice:
+// once to route the virtuals and once for the cell-text callback.
+wxsharp_handle wxsharp_custom_listctrl_create(wxsharp_handle parent, int id, int style, long long token)
+{
+    return Common(new Overridable<WxSharpListCtrl>(token, static_cast<wxWindow*>(parent), id,
+                                                   MapListCtrlStyle(style), token),
                   token);
 }
 
@@ -364,6 +553,7 @@ long long wxsharp_tree_get_next_sibling(wxsharp_handle ctrl, long long item) { r
 long long wxsharp_tree_get_prev_sibling(wxsharp_handle ctrl, long long item) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetPrevSibling(TreeId(item))); }
 int wxsharp_tree_child_count(wxsharp_handle ctrl, long long item, bool recursive) { return static_cast<int>(static_cast<wxTreeCtrl*>(ctrl)->GetChildrenCount(TreeId(item), recursive)); }
 void wxsharp_tree_ensure_visible(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->EnsureVisible(TreeId(item)); }
+void wxsharp_tree_sort_children(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->SortChildren(TreeId(item)); }
 long long wxsharp_tree_insert(wxsharp_handle ctrl, long long parent, int position, const char* text) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->InsertItem(TreeId(parent), static_cast<size_t>(position), Str(text))); }
 long long wxsharp_tree_add_root(wxsharp_handle ctrl, const char* text) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->AddRoot(Str(text))); }
 long long wxsharp_tree_append(wxsharp_handle ctrl, long long parent, const char* text) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->AppendItem(TreeId(parent), Str(text))); }
@@ -375,6 +565,13 @@ void wxsharp_tree_expand(wxsharp_handle ctrl, long long item, bool expand) { if 
 bool wxsharp_tree_is_expanded(wxsharp_handle ctrl, long long item) { return static_cast<wxTreeCtrl*>(ctrl)->IsExpanded(TreeId(item)); }
 void wxsharp_tree_select(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->SelectItem(TreeId(item)); }
 long long wxsharp_tree_get_selection(wxsharp_handle ctrl) { return TreeValue(static_cast<wxTreeCtrl*>(ctrl)->GetSelection()); }
+int wxsharp_tree_get_count(wxsharp_handle ctrl) { return static_cast<int>(static_cast<wxTreeCtrl*>(ctrl)->GetCount()); }
+void wxsharp_tree_expand_all(wxsharp_handle ctrl) { static_cast<wxTreeCtrl*>(ctrl)->ExpandAll(); }
+void wxsharp_tree_collapse_all(wxsharp_handle ctrl) { static_cast<wxTreeCtrl*>(ctrl)->CollapseAll(); }
+bool wxsharp_tree_item_has_children(wxsharp_handle ctrl, long long item)
+{
+    return static_cast<wxTreeCtrl*>(ctrl)->ItemHasChildren(TreeId(item));
+}
 
 wxsharp_handle wxsharp_grid_create(wxsharp_handle parent, int id, int rows, int columns, long long token)
 {
@@ -449,21 +646,44 @@ void wxsharp_dataviewtree_set_selection(wxsharp_handle ctrl, long long item) { s
 
 namespace
 {
+    // A timer's owner is any wxEvtHandler, which is why a null window handle here means the application:
+    // wxApp is an event handler too, and an application-owned timer has no window to hang from.
+    wxEvtHandler* TimerOwner(wxsharp_handle owner)
+    {
+        return owner ? static_cast<wxEvtHandler*>(static_cast<wxWindow*>(owner))
+                     : static_cast<wxEvtHandler*>(wxTheApp);
+    }
+
     class WxSharpTimer final : public wxTimer
     {
     public:
-        WxSharpTimer(int id, long long token) : wxTimer(nullptr, id), m_token(token) {}
+        WxSharpTimer(wxEvtHandler* owner, int id, long long token) : wxTimer(owner, id), m_token(token) {}
         void Notify() override { Fire(m_token, WXSHARP_EV_TIMER, GetId()); }
+        void SetManagedOwner(wxEvtHandler* owner, int id, long long token)
+        {
+            SetOwner(owner, id);
+            m_token = token;
+        }
     private:
         long long m_token;
     };
 }
-wxsharp_handle wxsharp_timer_create(int id, long long ownerToken) { return new WxSharpTimer(id, ownerToken); }
+wxsharp_handle wxsharp_timer_create(wxsharp_handle owner, int id, long long ownerToken)
+{
+    return new WxSharpTimer(TimerOwner(owner), id, ownerToken);
+}
 void wxsharp_timer_destroy(wxsharp_handle timer) { delete static_cast<WxSharpTimer*>(timer); }
 bool wxsharp_timer_start(wxsharp_handle timer, int milliseconds, bool oneShot) { return static_cast<WxSharpTimer*>(timer)->Start(milliseconds, oneShot); }
+bool wxsharp_timer_start_once(wxsharp_handle timer, int milliseconds) { return static_cast<WxSharpTimer*>(timer)->StartOnce(milliseconds); }
 void wxsharp_timer_stop(wxsharp_handle timer) { static_cast<WxSharpTimer*>(timer)->Stop(); }
 bool wxsharp_timer_is_running(wxsharp_handle timer) { return static_cast<WxSharpTimer*>(timer)->IsRunning(); }
+bool wxsharp_timer_is_one_shot(wxsharp_handle timer) { return static_cast<WxSharpTimer*>(timer)->IsOneShot(); }
 int wxsharp_timer_get_interval(wxsharp_handle timer) { return static_cast<WxSharpTimer*>(timer)->GetInterval(); }
+void wxsharp_timer_notify(wxsharp_handle timer) { static_cast<WxSharpTimer*>(timer)->Notify(); }
+void wxsharp_timer_set_owner(wxsharp_handle timer, wxsharp_handle owner, int id, long long ownerToken)
+{
+    static_cast<WxSharpTimer*>(timer)->SetManagedOwner(TimerOwner(owner), id, ownerToken);
+}
 
 wxsharp_handle wxsharp_image_load(const char* path)
 {
@@ -486,11 +706,23 @@ wxsharp_handle wxsharp_staticbitmap_create(wxsharp_handle parent, int id, wxshar
     return Common(new wxStaticBitmap(static_cast<wxWindow*>(parent), id, *static_cast<wxBitmap*>(bitmap)), token);
 }
 void wxsharp_staticbitmap_set(wxsharp_handle ctrl, wxsharp_handle bitmap) { static_cast<wxStaticBitmap*>(ctrl)->SetBitmap(*static_cast<wxBitmap*>(bitmap)); }
+wxsharp_handle wxsharp_staticbitmap_get(wxsharp_handle ctrl) { return new wxBitmap(static_cast<wxStaticBitmap*>(ctrl)->GetBitmap()); }
+void wxsharp_staticbitmap_set_icon(wxsharp_handle ctrl, wxsharp_handle icon) { static_cast<wxStaticBitmap*>(ctrl)->SetIcon(*static_cast<wxIcon*>(icon)); }
+wxsharp_handle wxsharp_staticbitmap_get_icon(wxsharp_handle ctrl) { return new wxIcon(static_cast<wxStaticBitmap*>(ctrl)->GetIcon()); }
+void wxsharp_staticbitmap_set_scale_mode(wxsharp_handle ctrl, int mode) { static_cast<wxStaticBitmap*>(ctrl)->SetScaleMode(static_cast<wxStaticBitmap::ScaleMode>(mode)); }
+int wxsharp_staticbitmap_get_scale_mode(wxsharp_handle ctrl) { return static_cast<int>(static_cast<wxStaticBitmap*>(ctrl)->GetScaleMode()); }
 wxsharp_handle wxsharp_bitmapbutton_create(wxsharp_handle parent, int id, wxsharp_handle bitmap, long long token)
 {
     auto* control = Common(new wxBitmapButton(static_cast<wxWindow*>(parent), id, *static_cast<wxBitmap*>(bitmap)), token);
     return control;
 }
+wxsharp_handle wxsharp_bitmapbutton_new_close(wxsharp_handle parent, int id, const char* name, long long token)
+{
+    return Common(wxBitmapButton::NewCloseButton(static_cast<wxWindow*>(parent), id, Str(name)), token);
+}
+void wxsharp_bitmapbutton_set_margins(wxsharp_handle ctrl, int x, int y) { static_cast<wxBitmapButton*>(ctrl)->SetMargins(x, y); }
+int wxsharp_bitmapbutton_get_margin_x(wxsharp_handle ctrl) { return static_cast<wxBitmapButton*>(ctrl)->GetMarginX(); }
+int wxsharp_bitmapbutton_get_margin_y(wxsharp_handle ctrl) { return static_cast<wxBitmapButton*>(ctrl)->GetMarginY(); }
 wxsharp_handle wxsharp_icon_load(const char* path)
 {
     auto* icon = new wxIcon(Str(path), wxBITMAP_TYPE_ANY); if (!icon->IsOk()) { delete icon; return nullptr; } return icon;
@@ -499,10 +731,13 @@ void wxsharp_icon_destroy(wxsharp_handle icon) { delete static_cast<wxIcon*>(ico
 void wxsharp_frame_set_icon(wxsharp_handle frame, wxsharp_handle icon) { static_cast<wxFrame*>(frame)->SetIcon(*static_cast<wxIcon*>(icon)); }
 void wxsharp_begin_busy_cursor() { wxBeginBusyCursor(); }
 void wxsharp_end_busy_cursor() { if (wxIsBusy()) wxEndBusyCursor(); }
-wxsharp_handle wxsharp_progress_create(wxsharp_handle parent, const char* title, const char* message, int maximum)
+wxsharp_handle wxsharp_progress_create(wxsharp_handle parent, const char* title, const char* message,
+                                       int maximum, int style, long long token)
 {
-    return new wxProgressDialog(Str(title), Str(message), maximum, static_cast<wxWindow*>(parent),
-        wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_ELAPSED_TIME | wxPD_REMAINING_TIME);
+    auto* dlg = new wxProgressDialog(Str(title), Str(message), maximum, static_cast<wxWindow*>(parent),
+                                     MapProgressStyle(style));
+    TrackWindow(dlg, token);
+    return dlg;
 }
 bool wxsharp_progress_update(wxsharp_handle progress, int value, const char* message, bool* continueRunning)
 {
@@ -512,4 +747,18 @@ bool wxsharp_progress_pulse(wxsharp_handle progress, const char* message, bool* 
 {
     bool skip = false; *continueRunning = static_cast<wxProgressDialog*>(progress)->Pulse(Str(message), &skip); return skip;
 }
+bool wxsharp_progress_was_cancelled(wxsharp_handle progress) { return static_cast<wxProgressDialog*>(progress)->WasCancelled(); }
+bool wxsharp_progress_was_skipped(wxsharp_handle progress) { return static_cast<wxProgressDialog*>(progress)->WasSkipped(); }
+void wxsharp_progress_resume(wxsharp_handle progress) { static_cast<wxProgressDialog*>(progress)->Resume(); }
+int wxsharp_progress_get_value(wxsharp_handle progress) { return static_cast<wxProgressDialog*>(progress)->GetValue(); }
+int wxsharp_progress_get_range(wxsharp_handle progress) { return static_cast<wxProgressDialog*>(progress)->GetRange(); }
+void wxsharp_progress_set_range(wxsharp_handle progress, int range) { static_cast<wxProgressDialog*>(progress)->SetRange(range); }
+
+// Destroyed at once rather than scheduled. An app-modal progress dialog holds a wxWindowDisabler for as long
+// as it exists, so deferring the deletion to the next idle cycle leaves the rest of the application disabled
+// until then - a caller that has finished with the dialog finds its own windows dead with no way to say why.
 void wxsharp_progress_destroy(wxsharp_handle progress) { delete static_cast<wxProgressDialog*>(progress); }
+// Destroyed at once rather than scheduled. An app-modal progress dialog holds a wxWindowDisabler for as
+// long as it exists, so deferring its deletion to the next idle cycle would leave the rest of the
+// application disabled until then - a caller that has finished with the dialog would find its own windows
+// dead with no way to say why.

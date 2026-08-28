@@ -14,7 +14,9 @@ public class Choice : Control
     public Choice(Window parent, int id = WindowId.Any, ChoiceStyle style = ChoiceStyle.Unsorted,
         Point? position = null, Size? size = null) : base(parent, id)
     {
-        Initialize(NativeMethods.wxsharp_choice_create(parent.Handle, id, (int)style, Token));
+        Initialize(GetType() == typeof(Choice)
+            ? NativeMethods.wxsharp_choice_create(parent.Handle, id, (int)style, Token)
+            : NativeMethods.wxsharp_custom_choice_create(parent.Handle, id, (int)style, Token));
         ApplyInitialGeometry(position, size);
     }
 

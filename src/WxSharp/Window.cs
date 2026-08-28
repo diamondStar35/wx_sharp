@@ -18,18 +18,18 @@ public static class WindowId { public const int Any = -1; }
 /// <see cref="WxEvents.ButtonClicked"/> on a frame catches its buttons, exactly as in Phoenix. The wrapper
 /// does not re-dispatch events to parents itself, and treats every event the same way.
 /// </remarks>
-public abstract partial class Window : IDisposable
+public abstract partial class Window : EvtHandler, IDisposable
 {
     private readonly List<Window> _children = new();
-    private readonly Dictionary<int, List<Subscription>> _subscriptions = new();
-    private readonly Dictionary<int, EventArgsFactory> _factories = new();
-    private long _nextBindingToken;
+    [ThreadStatic] private static VirtualMember _dispatchingVirtual;
+    [ThreadStatic] private static nint _dispatchingWindowHandle;
+    [ThreadStatic] private static bool _mainWindowBaseCalled;
+    [ThreadStatic] private static nint _mainWindowBaseHandle;
     private protected nint _handle;
     private bool _destroyed;
     private Accessible? _accessible;
     private Sizer? _sizer;
-    internal long Token { get; }
-    internal App OwnerApp { get; }
+    internal override App OwnerApp { get; }
     public int Id { get; private set; }
     public Window? Parent { get; }
 
@@ -187,145 +187,19 @@ public abstract partial class Window : IDisposable
         remove => RemoveHandler(WxEvents.HotKey, value);
     }
 
-    // ---- Binding -------------------------------------------------------------------------------------
+    // ---- What EvtHandler needs from a window -----------------------------------------------------------
 
-    /// <summary>Subscribes to <paramref name="eventType"/> on this window, optionally filtered to one command
-    /// ID or an inclusive ID range. Dispose the returned binding to unsubscribe.</summary>
-    public EventBinding Bind<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs> handler,
-        int id = WindowId.Any, int lastId = WindowId.Any) where TEventArgs : WxEventArgs
+    private protected override bool BindNative(int eventId)
+        => NativeMethods.wxsharp_window_bind(_handle, eventId, Token);
+
+    private protected override void UnbindNative(int eventId)
     {
-        ArgumentNullException.ThrowIfNull(eventType);
-        ArgumentNullException.ThrowIfNull(handler);
-        Verify();
-        if (lastId != WindowId.Any && id == WindowId.Any)
-            throw new ArgumentException("An ID range requires a starting ID.", nameof(id));
-        if (lastId != WindowId.Any && lastId < id)
-            throw new ArgumentOutOfRangeException(nameof(lastId));
-
-        var token = ++_nextBindingToken;
-        Subscribe(eventType.EventId, eventType.Factory,
-            new Subscription(token, id, lastId, handler, args => handler(args.Source, (TEventArgs)args)));
-        return new EventBinding(this, eventType.EventId, token);
+        if (_handle != 0) _ = NativeMethods.wxsharp_window_unbind(_handle, eventId);
     }
 
-    /// <summary>Removes a subscription added by <see cref="Bind{TEventArgs}"/> with the same event type,
-    /// handler and ID filter. Returns false when no such subscription exists.</summary>
-    public bool Unbind<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs>? handler = null,
-        int id = WindowId.Any, int lastId = WindowId.Any) where TEventArgs : WxEventArgs
-    {
-        ArgumentNullException.ThrowIfNull(eventType);
-        Verify();
-        if (!_subscriptions.TryGetValue(eventType.EventId, out var list)) return false;
-        var index = list.FindIndex(entry => entry.Id == id && entry.LastId == lastId &&
-            (handler is null || entry.Original.Equals(handler)));
-        if (index < 0) return false;
-        list.RemoveAt(index);
-        ReleaseIfUnused(eventType.EventId, list);
-        return true;
-    }
+    private protected override bool IsDead => _destroyed || _handle == 0;
 
-    /// <summary>Backs a typed <c>event</c> accessor. Subscriptions added this way are removed by handler
-    /// identity, which is what <c>-=</c> gives us.</summary>
-    private protected void AddHandler<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs> handler)
-        where TEventArgs : WxEventArgs
-    {
-        ArgumentNullException.ThrowIfNull(handler);
-        Verify();
-        Subscribe(eventType.EventId, eventType.Factory,
-            new Subscription(++_nextBindingToken, WindowId.Any, WindowId.Any, handler,
-                args => handler(args.Source, (TEventArgs)args)));
-    }
-
-    private protected void RemoveHandler<TEventArgs>(EventType<TEventArgs> eventType, EventHandler<TEventArgs> handler)
-        where TEventArgs : WxEventArgs
-    {
-        if (_destroyed || handler is null) return;
-        if (!_subscriptions.TryGetValue(eventType.EventId, out var list)) return;
-        var index = list.FindIndex(entry => entry.Original.Equals(handler));
-        if (index < 0) return;
-        list.RemoveAt(index);
-        ReleaseIfUnused(eventType.EventId, list);
-    }
-
-    private void Subscribe(int eventId, EventArgsFactory factory, Subscription subscription)
-    {
-        if (!_subscriptions.TryGetValue(eventId, out var list))
-        {
-            list = new List<Subscription>();
-            _subscriptions[eventId] = list;
-            _factories[eventId] = factory;
-            // The first subscriber is what hooks the event natively. A few events are reported whether or
-            // not anyone asked, so they need no hook.
-            if (!EventId.IsAlwaysReported(eventId) &&
-                !NativeMethods.wxsharp_window_bind(_handle, eventId, Token))
-            {
-                _subscriptions.Remove(eventId);
-                _factories.Remove(eventId);
-                throw new NotSupportedException(
-                    $"This window cannot report event {eventId}. Text-entry events, for example, require a " +
-                    "control created with TextCtrlStyle.ProcessEnter.");
-            }
-        }
-        list.Add(subscription);
-    }
-
-    private void ReleaseIfUnused(int eventId, List<Subscription> list)
-    {
-        if (list.Count != 0) return;
-        _subscriptions.Remove(eventId);
-        _factories.Remove(eventId);
-        if (!EventId.IsAlwaysReported(eventId) && !_destroyed && _handle != 0)
-            _ = NativeMethods.wxsharp_window_unbind(_handle, eventId);
-    }
-
-    internal void RemoveBinding(int eventId, long token)
-    {
-        if (_destroyed) return;
-        OwnerApp.VerifyAccess();
-        if (!_subscriptions.TryGetValue(eventId, out var list)) return;
-        list.RemoveAll(entry => entry.Token == token);
-        ReleaseIfUnused(eventId, list);
-    }
-
-    /// <summary>Delivers one native event to this window's subscribers. Returns the ABI result flags:
-    /// bit 0 asks wxWidgets to skip the event, bit 1 vetoes it.</summary>
-    internal uint Dispatch(in NativeEvent e)
-    {
-        // Nothing listening is the same as every handler skipping.
-        if (!_subscriptions.TryGetValue(e.Kind, out var list) || list.Count == 0) return SkipResult;
-
-        var args = _factories[e.Kind](this, in e);
-        var skipped = true;
-        // Copied so a handler may unsubscribe, or subscribe, while the event is being delivered.
-        foreach (var subscription in list.ToArray())
-        {
-            if (!subscription.Matches(e.Id)) continue;
-            // Each handler decides for itself, exactly as separate wxWidgets bindings would: the next one
-            // runs only if this one skipped.
-            args.ResetSkipped();
-            subscription.Invoke(args);
-            skipped = args.Skipped;
-            if (!skipped) break;
-        }
-        return Result(args, skipped);
-    }
-
-    private const uint SkipResult = 1;
-    private const uint VetoResult = 2;
-
-    /// <summary>Delivers a synthesised event to this window's own subscribers without involving wxWidgets.
-    /// For controls that must announce a change the native control stays silent about - a programmatic value
-    /// change a screen reader still needs to hear, for instance.</summary>
-    private protected uint RaiseLocal(in NativeEvent e) => Dispatch(in e);
-
-    private static uint Result(WxEventArgs args, bool skipped)
-    {
-        var result = skipped ? SkipResult : 0u;
-        if (args is NotifyEventArgs { IsAllowed: false } ||
-            args is CloseEventArgs { Vetoed: true, CanVeto: true })
-            result |= VetoResult;
-        return result;
-    }
+    private protected override void Verify() { OwnerApp.VerifyAccess(); EnsureAlive(); }
 
     // ---- Construction and lifetime -------------------------------------------------------------------
 
@@ -348,7 +222,12 @@ public abstract partial class Window : IDisposable
 
     protected void Initialize(nint handle)
     {
-        if (handle == 0) { App.Unregister(Token); throw new InvalidOperationException("wxWidgets failed to create the window."); }
+        if (handle == 0)
+        {
+            Parent?._children.Remove(this);
+            App.Unregister(Token);
+            throw new InvalidOperationException("wxWidgets failed to create the window.");
+        }
         _handle = handle;
         App.MapHandle(handle, this);
         Id = NativeMethods.wxsharp_control_get_id(handle);
@@ -407,6 +286,7 @@ public abstract partial class Window : IDisposable
         set { Verify(); NativeMethods.wxsharp_control_show(_handle, value); }
     }
     public bool HasFocus { get { Verify(); return NativeMethods.wxsharp_control_has_focus(_handle); } }
+    public bool HasFlag(int flag) { Verify(); return NativeMethods.wxsharp_control_has_flag(_handle, flag); }
     public void Show(bool show = true) { Verify(); NativeMethods.wxsharp_control_show(_handle, show); }
     public void Hide() => Show(false);
     public void Focus() { Verify(); NativeMethods.wxsharp_control_focus(_handle); }
@@ -451,8 +331,391 @@ public abstract partial class Window : IDisposable
     public Border Border { set { Verify(); NativeMethods.wxsharp_control_set_border(_handle, (int)value); } }
     public void SetFont(Font font)
     {
-        Verify(); NativeMethods.wxsharp_control_set_font(_handle, font.PointSize, (int)font.Family, (int)font.Weight,
-            (int)font.Style, font.Underline, font.Face ?? string.Empty);
+        ArgumentNullException.ThrowIfNull(font);
+        Verify();
+        NativeMethods.wxsharp_control_set_font(_handle, font.Handle);
+    }
+
+    /// <summary>The font this window draws its text in, following <c>wxWindow.Font</c>. Reading it is what
+    /// makes the usual adjustment possible - take the window's own font, embolden or resize it, and put it
+    /// back - so a heading follows the user's chosen font and size rather than replacing them with a
+    /// hard-coded one.</summary>
+    public Font Font
+    {
+        get
+        {
+            Verify();
+            // wxWidgets hands back a copy, so the caller owns it and should dispose it like any other font.
+            return Font.Attach(NativeMethods.wxsharp_control_get_font(_handle));
+        }
+        set => SetFont(value);
+    }
+
+    // ---- Overridable wxWidgets virtuals ---------------------------------------------------------------
+
+    // wxWidgets asks a window these questions by calling virtual members, and the answers decide real
+    // behaviour: whether Tab stops here, how big a sizer makes this, where the client area starts, whether
+    // a dialog may close. Each is overridable, and each base implementation is wxWidgets' own answer - so
+    // overriding and calling base behave exactly as they do in C++.
+    //
+    // The set is the one wxPython supports (etgtools/tweaker_tools.py, addWindowVirtuals) rather than every
+    // C++ virtual: wrapping all of them would cost code size for members no application overrides, and both
+    // projects settled on the same subset. The few wxPython lists that are absent here need a type the
+    // wrapper does not have yet, and are recorded in docs/phoenix-parity.md with the reason.
+    //
+    // Only a window whose most-derived type is a subclass is built with these hooks installed, so an exact
+    // Button or Panel pays nothing.
+
+    /// <summary>Whether this window can take the keyboard focus at all. Follows
+    /// <c>wxWindow.AcceptsFocus</c>.</summary>
+    public virtual bool AcceptsFocus() => BaseBool(VirtualMember.AcceptsFocus);
+
+    /// <summary>Whether Tab should stop on this window. A control reachable another way - a transport
+    /// button with a menu equivalent and a shortcut, say - can return false and stay clickable, which keeps
+    /// it out of the tab order without hiding it. Follows <c>wxWindow.AcceptsFocusFromKeyboard</c>.</summary>
+    public virtual bool AcceptsFocusFromKeyboard() => BaseBool(VirtualMember.AcceptsFocusFromKeyboard);
+
+    /// <summary>Whether this window or any of its children can take focus. Follows
+    /// <c>wxWindow.AcceptsFocusRecursively</c>.</summary>
+    public virtual bool AcceptsFocusRecursively() => BaseBool(VirtualMember.AcceptsFocusRecursively);
+
+    /// <summary>Validates this window's contents, as <c>wxWindow.Validate</c> does. wxWidgets calls it on a
+    /// dialog before it closes with an affirmative result, and returning false keeps the dialog open.</summary>
+    public virtual bool Validate() => BaseBool(VirtualMember.Validate);
+
+    /// <summary>Moves data into this window's controls, as <c>wxWindow.TransferDataToWindow</c> does.
+    /// wxWidgets calls it when a dialog is shown.</summary>
+    public virtual bool TransferDataToWindow() => BaseBool(VirtualMember.TransferDataToWindow);
+
+    /// <summary>Reads data back out of this window's controls, as
+    /// <c>wxWindow.TransferDataFromWindow</c> does. wxWidgets calls it when a dialog closes.</summary>
+    public virtual bool TransferDataFromWindow() => BaseBool(VirtualMember.TransferDataFromWindow);
+
+    /// <summary>Prepares a dialog for display, which by default transfers data into its controls. Follows
+    /// <c>wxWindow.InitDialog</c>.</summary>
+    public virtual void InitDialog() => BaseVoid(VirtualMember.InitDialog);
+
+    /// <summary>Where this window's client area starts, relative to its top-left corner. Non-zero for a
+    /// window with decoration of its own. Follows <c>wxWindow.GetClientAreaOrigin</c>.</summary>
+    public virtual Point GetClientAreaOrigin()
+    {
+        var request = CallBase(VirtualMember.ClientAreaOrigin);
+        return new Point(request.X, request.Y);
+    }
+
+    /// <summary>Called when a child window is added. The child may be null when wxWidgets created it
+    /// without the wrapper knowing. Follows <c>wxWindow.AddChild</c>.</summary>
+    public virtual void AddChild(Window? child) => BaseWithWindow(VirtualMember.AddChild, child);
+
+    /// <summary>Called when a child window is removed. Follows <c>wxWindow.RemoveChild</c>.</summary>
+    public virtual void RemoveChild(Window? child) => BaseWithWindow(VirtualMember.RemoveChild, child);
+
+    /// <summary>Applies the parent's font and colours to this window where it has none of its own. Follows
+    /// <c>wxWindow.InheritAttributes</c>.</summary>
+    public virtual void InheritAttributes() => BaseVoid(VirtualMember.InheritAttributes);
+
+    /// <summary>Whether this window takes its colours from its parent. A control that paints itself
+    /// returns false so a themed parent does not tint it. Follows
+    /// <c>wxWindow.ShouldInheritColours</c>.</summary>
+    public virtual bool ShouldInheritColours() => BaseBool(VirtualMember.ShouldInheritColours);
+
+    /// <summary>Runs when the event queue is empty, before idle events. Follows
+    /// <c>wxWindow.OnInternalIdle</c>; keep it cheap, because it runs often.</summary>
+    public virtual void OnInternalIdle() => BaseVoid(VirtualMember.OnInternalIdle);
+
+    /// <summary>For a control built out of several windows, the one that stands for the whole. Follows
+    /// <c>wxWindow.GetMainWindowOfCompositeControl</c>.</summary>
+    public virtual Window? GetMainWindowOfCompositeControl()
+    {
+        var request = CallBase(VirtualMember.MainWindowOfCompositeControl);
+        if (_dispatchingVirtual == VirtualMember.MainWindowOfCompositeControl)
+        {
+            _mainWindowBaseCalled = true;
+            _mainWindowBaseHandle = (nint)request.Handle;
+        }
+        return App.Lookup((nint)request.Handle);
+    }
+
+    /// <summary>Tells the window how much room there is on one axis before the other is decided, so a
+    /// control whose height depends on its width can answer sensibly. Follows
+    /// <c>wxWindow.InformFirstDirection</c>.</summary>
+    public virtual bool InformFirstDirection(int direction, int size, int availableOtherDirection)
+        => CallBase(VirtualMember.InformFirstDirection, direction, size, availableOtherDirection).Result != 0;
+
+    /// <summary>Called by wxWidgets to record whether this window may hold focus. Follows
+    /// <c>wxWindow.SetCanFocus</c>.</summary>
+    public virtual void SetCanFocus(bool canFocus)
+        => CallBase(VirtualMember.SetCanFocus, canFocus ? 1 : 0);
+
+    /// <summary>Whether the window draws a visible focus indicator. Follows
+    /// <c>wxWindow.EnableVisibleFocus</c>.</summary>
+    public virtual void EnableVisibleFocus(bool enabled)
+        => CallBase(VirtualMember.EnableVisibleFocus, enabled ? 1 : 0);
+
+    /// <summary>The implementation behind <see cref="Enabled"/>. Follows <c>wxWindow.DoEnable</c>.</summary>
+    protected virtual void DoEnable(bool enable) => CallBase(VirtualMember.DoEnable, enable ? 1 : 0);
+
+    /// <summary>The implementation behind <see cref="Position"/>. Follows
+    /// <c>wxWindow.DoGetPosition</c>.</summary>
+    protected virtual Point DoGetPosition() => PointFrom(VirtualMember.DoGetPosition);
+
+    /// <summary>The implementation behind <see cref="Size"/>. Follows <c>wxWindow.DoGetSize</c>.</summary>
+    protected virtual Size DoGetSize() => SizeFrom(VirtualMember.DoGetSize);
+
+    /// <summary>The implementation behind <see cref="ClientSize"/>. Follows
+    /// <c>wxWindow.DoGetClientSize</c>.</summary>
+    protected virtual Size DoGetClientSize() => SizeFrom(VirtualMember.DoGetClientSize);
+
+    /// <summary>The size this window would like to be, which is what a sizer uses as its minimum. Follows
+    /// <c>wxWindow.DoGetBestSize</c>; override it in a custom-drawn control that knows its own extent.</summary>
+    protected virtual Size DoGetBestSize() => SizeFrom(VirtualMember.BestSize);
+
+    /// <summary>The best size of the client area, without borders or scrollbars. Follows
+    /// <c>wxWindow.DoGetBestClientSize</c>; overriding this rather than <see cref="DoGetBestSize"/> lets
+    /// wxWidgets add the decoration for you.</summary>
+    protected virtual Size DoGetBestClientSize() => SizeFrom(VirtualMember.BestClientSize);
+
+    /// <summary>The implementation behind every resize. Follows <c>wxWindow.DoSetSize</c>.</summary>
+    protected virtual void DoSetSize(int x, int y, int width, int height, int sizeFlags)
+        => CallBase(VirtualMember.DoSetSize, x, y, width, height, sizeFlags);
+
+    /// <summary>The implementation behind <see cref="ClientSize"/> being assigned. Follows
+    /// <c>wxWindow.DoSetClientSize</c>.</summary>
+    protected virtual void DoSetClientSize(int width, int height)
+        => CallBase(VirtualMember.DoSetClientSize, width, height);
+
+    /// <summary>The implementation behind the size hints. Follows
+    /// <c>wxWindow.DoSetSizeHints</c>.</summary>
+    protected virtual void DoSetSizeHints(int minWidth, int minHeight, int maxWidth, int maxHeight,
+        int incrementWidth, int incrementHeight)
+        => CallBase(VirtualMember.DoSetSizeHints, minWidth, minHeight, maxWidth, maxHeight, incrementWidth,
+            incrementHeight);
+
+    /// <summary>Moves and resizes the native window. Follows <c>wxWindow.DoMoveWindow</c>.</summary>
+    protected virtual void DoMoveWindow(int x, int y, int width, int height)
+        => CallBase(VirtualMember.DoMoveWindow, x, y, width, height);
+
+    /// <summary>The implementation behind <see cref="Variant"/>. Follows
+    /// <c>wxWindow.DoSetWindowVariant</c>.</summary>
+    protected virtual void DoSetWindowVariant(WindowVariant variant)
+        => CallBase(VirtualMember.DoSetWindowVariant, (int)variant);
+
+    /// <summary>The border this window uses when none was asked for. Follows
+    /// <c>wxWindow.GetDefaultBorder</c>.</summary>
+    protected virtual Border GetDefaultBorder() => (Border)CallBase(VirtualMember.DefaultBorder).Result;
+
+    /// <summary>The implementation behind <see cref="Freeze"/>. Follows <c>wxWindow.DoFreeze</c>.</summary>
+    protected virtual void DoFreeze() => BaseVoid(VirtualMember.DoFreeze);
+
+    /// <summary>The implementation behind <see cref="Thaw"/>. Follows <c>wxWindow.DoThaw</c>.</summary>
+    protected virtual void DoThaw() => BaseVoid(VirtualMember.DoThaw);
+
+    /// <summary>Whether the window's background shows what is behind it, which decides whether wxWidgets
+    /// erases it. Follows <c>wxWindow.HasTransparentBackground</c>.</summary>
+    protected virtual bool HasTransparentBackground()
+        => BaseBool(VirtualMember.HasTransparentBackground);
+
+    // ---- Reaching wxWidgets' own implementation --------------------------------------------------------
+
+    private protected bool BaseBool(VirtualMember member) => CallBase(member).Result != 0;
+
+    private protected void BaseVoid(VirtualMember member) => CallBase(member);
+
+    private void BaseWithWindow(VirtualMember member, Window? window)
+        => _ = CallBaseWithWindow(member, window);
+
+    /// <summary>Runs wxWidgets' own implementation of a member that takes a window, and reports back.</summary>
+    private protected unsafe NativeVirtualRequest CallBaseWithWindow(VirtualMember member, Window? window)
+    {
+        Verify();
+        var request = NewRequest(member);
+        request.Handle = window?.NativeHandleForLookup ?? 0;
+        NativeMethods.wxsharp_window_call_base(_handle, &request);
+        return request;
+    }
+
+    private Point PointFrom(VirtualMember member)
+    {
+        var request = CallBase(member);
+        return new Point(request.X, request.Y);
+    }
+
+    private Size SizeFrom(VirtualMember member)
+    {
+        var request = CallBase(member);
+        return new Size(request.X, request.Y);
+    }
+
+    // Runs wxWidgets' own implementation of one member. It never dispatches back to managed code, so an
+    // override calling its base cannot re-enter itself - which going through the ordinary accessor would do,
+    // because that accessor lands on the very virtual that is asking.
+    private protected unsafe NativeVirtualRequest CallBase(VirtualMember member, params ReadOnlySpan<int> args)
+    {
+        Verify();
+        var request = NewRequest(member);
+        for (var i = 0; i < args.Length && i < 6; i++) request.Args[i] = args[i];
+        NativeMethods.wxsharp_window_call_base(_handle, &request);
+        return request;
+    }
+
+    /// <summary>Runs wxWidgets' own implementation of a member that takes a string.</summary>
+    private protected unsafe NativeVirtualRequest CallBaseWithText(VirtualMember member, string text,
+        params ReadOnlySpan<int> args)
+    {
+        Verify();
+        var request = NewRequest(member);
+        for (var i = 0; i < args.Length && i < 6; i++) request.Args[i] = args[i];
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text + " ");
+        fixed (byte* buffer = bytes)
+        {
+            request.Text = buffer;
+            NativeMethods.wxsharp_window_call_base(_handle, &request);
+        }
+        return request;
+    }
+
+    /// <summary>Reads a string argument the native side passed in. Valid only during the callback.</summary>
+    private protected static unsafe string ReadText(in NativeVirtualRequest request)
+        => request.Text is null ? string.Empty : Utf8String.DecodeNullTerminated(request.Text);
+
+    private NativeVirtualRequest NewRequest(VirtualMember member)
+    {
+        unsafe
+        {
+            return new NativeVirtualRequest
+            {
+                Size = (uint)sizeof(NativeVirtualRequest),
+                Version = 1,
+                Token = Token,
+                Which = (int)member,
+            };
+        }
+    }
+
+    // Answers one question from the native side.
+    internal virtual bool TryAnswerVirtual(ref NativeVirtualRequest request)
+    {
+        // Nothing is answerable before Initialize() has run: the native window is still inside its own
+        // constructor, so this managed object's constructor has not finished either and an override could
+        // read a field it has not been given yet. Declining leaves wxWidgets to answer, which is right.
+        if (_handle == 0) return false;
+
+        var previousMember = _dispatchingVirtual;
+        var previousHandle = _dispatchingWindowHandle;
+        var previousMainCalled = _mainWindowBaseCalled;
+        var previousMainHandle = _mainWindowBaseHandle;
+        _dispatchingVirtual = (VirtualMember)request.Which;
+        _dispatchingWindowHandle = (nint)request.Handle;
+        _mainWindowBaseCalled = false;
+        _mainWindowBaseHandle = 0;
+
+        try
+        {
+            unsafe
+            {
+                switch ((VirtualMember)request.Which)
+                {
+                case VirtualMember.AcceptsFocus: request.Result = AcceptsFocus() ? 1 : 0; return true;
+                case VirtualMember.AcceptsFocusFromKeyboard: request.Result = AcceptsFocusFromKeyboard() ? 1 : 0; return true;
+                case VirtualMember.AcceptsFocusRecursively: request.Result = AcceptsFocusRecursively() ? 1 : 0; return true;
+                case VirtualMember.Validate: request.Result = Validate() ? 1 : 0; return true;
+                case VirtualMember.TransferDataToWindow: request.Result = TransferDataToWindow() ? 1 : 0; return true;
+                case VirtualMember.TransferDataFromWindow: request.Result = TransferDataFromWindow() ? 1 : 0; return true;
+                case VirtualMember.ShouldInheritColours: request.Result = ShouldInheritColours() ? 1 : 0; return true;
+                case VirtualMember.HasTransparentBackground: request.Result = HasTransparentBackground() ? 1 : 0; return true;
+                case VirtualMember.DefaultBorder: request.Result = (int)GetDefaultBorder(); return true;
+                case VirtualMember.Destroy: request.Result = Destroy() ? 1 : 0; return true;
+
+                case VirtualMember.InitDialog: InitDialog(); return true;
+                case VirtualMember.InheritAttributes: InheritAttributes(); return true;
+                case VirtualMember.OnInternalIdle: OnInternalIdle(); return true;
+                case VirtualMember.DoFreeze: DoFreeze(); return true;
+                case VirtualMember.DoThaw: DoThaw(); return true;
+
+                case VirtualMember.ClientAreaOrigin:
+                {
+                    var origin = GetClientAreaOrigin();
+                    return Fill(ref request, origin.X, origin.Y);
+                }
+                case VirtualMember.DoGetPosition:
+                {
+                    var position = DoGetPosition();
+                    return Fill(ref request, position.X, position.Y);
+                }
+                case VirtualMember.DoGetSize:
+                {
+                    var size = DoGetSize();
+                    return Fill(ref request, size.Width, size.Height);
+                }
+                case VirtualMember.DoGetClientSize:
+                {
+                    var size = DoGetClientSize();
+                    return Fill(ref request, size.Width, size.Height);
+                }
+                case VirtualMember.BestSize:
+                {
+                    var size = DoGetBestSize();
+                    return Fill(ref request, size.Width, size.Height);
+                }
+                case VirtualMember.BestClientSize:
+                {
+                    var size = DoGetBestClientSize();
+                    return Fill(ref request, size.Width, size.Height);
+                }
+
+                case VirtualMember.AddChild:
+                    AddChild(App.Lookup((nint)request.Handle));
+                    return true;
+                case VirtualMember.RemoveChild:
+                    RemoveChild(App.Lookup((nint)request.Handle));
+                    return true;
+                case VirtualMember.MainWindowOfCompositeControl:
+                {
+                    var main = GetMainWindowOfCompositeControl();
+                    request.Handle = main?.NativeHandleForLookup ??
+                        (_mainWindowBaseCalled ? _mainWindowBaseHandle : 0);
+                    return true;
+                }
+
+                case VirtualMember.InformFirstDirection:
+                    request.Result = InformFirstDirection(request.Args[0], request.Args[1], request.Args[2]) ? 1 : 0;
+                    return true;
+                case VirtualMember.SetCanFocus: SetCanFocus(request.Args[0] != 0); return true;
+                case VirtualMember.EnableVisibleFocus: EnableVisibleFocus(request.Args[0] != 0); return true;
+                case VirtualMember.DoEnable: DoEnable(request.Args[0] != 0); return true;
+                case VirtualMember.DoSetClientSize: DoSetClientSize(request.Args[0], request.Args[1]); return true;
+                case VirtualMember.DoMoveWindow:
+                    DoMoveWindow(request.Args[0], request.Args[1], request.Args[2], request.Args[3]);
+                    return true;
+                case VirtualMember.DoSetSize:
+                    DoSetSize(request.Args[0], request.Args[1], request.Args[2], request.Args[3], request.Args[4]);
+                    return true;
+                case VirtualMember.DoSetSizeHints:
+                    DoSetSizeHints(request.Args[0], request.Args[1], request.Args[2], request.Args[3],
+                        request.Args[4], request.Args[5]);
+                    return true;
+                case VirtualMember.DoSetWindowVariant:
+                    DoSetWindowVariant((WindowVariant)request.Args[0]);
+                    return true;
+
+                    default: return false;
+                }
+            }
+        }
+        finally
+        {
+            _dispatchingVirtual = previousMember;
+            _dispatchingWindowHandle = previousHandle;
+            _mainWindowBaseCalled = previousMainCalled;
+            _mainWindowBaseHandle = previousMainHandle;
+        }
+
+        static bool Fill(ref NativeVirtualRequest request, int x, int y)
+        {
+            request.X = x;
+            request.Y = y;
+            return true;
+        }
     }
 
     // ---- Update UI ---------------------------------------------------------------------------------
@@ -598,19 +861,23 @@ public abstract partial class Window : IDisposable
         return handle == 0 ? null : Sizer.Attach(handle);
     }
 
-    public virtual void Destroy()
+    /// <summary>Schedules this window for deletion and reports whether wxWidgets accepted the request.
+    /// This is virtual in wxWidgets and Phoenix, and native calls are forwarded to an override too.</summary>
+    public virtual bool Destroy()
     {
-        if (_destroyed) return;
-        Verify(); NativeMethods.wxsharp_control_destroy(_handle); Invalidate();
+        if (_destroyed) return false;
+        var request = CallBase(VirtualMember.Destroy);
+        if (request.Result == 0) return false;
+        Invalidate();
+        return true;
     }
-    public void Dispose() { Destroy(); GC.SuppressFinalize(this); }
+    public void Dispose() { _ = Destroy(); GC.SuppressFinalize(this); }
 
     internal void InvalidateFromAppShutdown() => Invalidate();
     internal nint NativeHandleForLookup => _handle;
 
     internal void InvalidateFromNative() => Invalidate();
     internal void EnsureAlive() => ObjectDisposedException.ThrowIf(_destroyed || _handle == 0, this);
-    private protected void Verify() { OwnerApp.VerifyAccess(); EnsureAlive(); }
 
     private void Invalidate()
     {
@@ -619,7 +886,7 @@ public abstract partial class Window : IDisposable
         _children.Clear(); Parent?._children.Remove(this); App.Unregister(Token);
         // The native side releases its own event sinks when the window is destroyed; this only drops the
         // managed subscriber lists.
-        _subscriptions.Clear(); _factories.Clear();
+        ClearSubscriptions();
         _accessible?.Detach(this); _accessible = null;
         _sizer = null;
         Invalidated?.Invoke(); Invalidated = null;
@@ -634,11 +901,6 @@ public abstract partial class Window : IDisposable
             throw new NotImplementedException("wxWidgets was built without accessibility support on this platform.");
     }
 
-    private sealed record Subscription(long Token, int Id, int LastId, Delegate Original, Action<WxEventArgs> Invoke)
-    {
-        internal bool Matches(int eventId) => Id == WindowId.Any || eventId == Id ||
-            (LastId != WindowId.Any && eventId >= Id && eventId <= LastId);
-    }
 }
 
 /// <summary>Base class for standard controls.</summary>

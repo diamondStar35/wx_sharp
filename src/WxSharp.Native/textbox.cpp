@@ -83,39 +83,6 @@ namespace
 {
     wxTextCtrl* Tc(wxsharp_handle h) { return static_cast<wxTextCtrl*>(h); }
 
-    // MakeFont takes the wrapper's own compact family/weight/style codes rather than wxWidgets' numbering,
-    // so reading a font back has to map the other way for the values to round-trip.
-    int FamilyCode(wxFontFamily family)
-    {
-        switch (family)
-        {
-            case wxFONTFAMILY_ROMAN:    return 1;
-            case wxFONTFAMILY_SCRIPT:   return 2;
-            case wxFONTFAMILY_SWISS:    return 3;
-            case wxFONTFAMILY_MODERN:   return 4;
-            case wxFONTFAMILY_TELETYPE: return 5;
-            default:                    return 0;
-        }
-    }
-
-    int WeightCode(wxFontWeight weight)
-    {
-        if (weight <= wxFONTWEIGHT_INVALID) return 0;
-        if (weight < wxFONTWEIGHT_NORMAL)   return 1;
-        if (weight > wxFONTWEIGHT_NORMAL)   return 2;
-        return 0;
-    }
-
-    int StyleCode(wxFontStyle style)
-    {
-        switch (style)
-        {
-            case wxFONTSTYLE_ITALIC: return 1;
-            case wxFONTSTYLE_SLANT:  return 2;
-            default:                 return 0;
-        }
-    }
-
     // Turns the flat struct that crosses the ABI into a real wxTextAttr, setting only what the caller marked
     // as present so wxWidgets' own "unset means inherit" behaviour survives the trip.
     wxTextAttr ToTextAttr(const wxsharp_text_attr* a)
@@ -134,10 +101,8 @@ namespace
             attr.SetLeftIndent(a->left_indent, a->left_sub_indent);
         if (a->flags & wxTEXT_ATTR_RIGHT_INDENT)
             attr.SetRightIndent(a->right_indent);
-        if (a->flags & wxTEXT_ATTR_FONT)
-            attr.SetFont(MakeFont(a->font_point_size, a->font_family, a->font_weight, a->font_style,
-                                  a->font_underline != 0, a->font_face),
-                         a->flags & wxTEXT_ATTR_FONT);
+        if ((a->flags & wxTEXT_ATTR_FONT) && a->font)
+            attr.SetFont(*static_cast<wxFont*>(a->font), a->flags & wxTEXT_ATTR_FONT);
         return attr;
     }
 
@@ -154,19 +119,10 @@ namespace
         out->left_sub_indent = attr.GetLeftSubIndent();
         out->right_indent = attr.GetRightIndent();
 
-        if (attr.HasFont())
-        {
-            const wxFont font = attr.GetFont();
-            if (font.IsOk())
-            {
-                out->font_point_size = font.GetPointSize();
-                out->font_family = FamilyCode(font.GetFamily());
-                out->font_weight = WeightCode(font.GetWeight());
-                out->font_style = StyleCode(font.GetStyle());
-                out->font_underline = font.GetUnderlined() ? 1 : 0;
-                CopyToBuffer(font.GetFaceName(), out->font_face, sizeof(out->font_face));
-            }
-        }
+        // The font comes back as a handle the managed side owns and disposes. Handing out a copy rather
+        // than a pointer into the attribute keeps it valid after wxTextAttr goes out of scope.
+        if (attr.HasFont() && attr.GetFont().IsOk())
+            out->font = new wxFont(attr.GetFont());
     }
 }
 

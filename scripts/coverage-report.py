@@ -161,6 +161,10 @@ SKIP = {
     'GetCaret', 'SetCaret', 'GetCursor', 'SetCursor', 'GetCursorBundle', 'SetCursorBundle',
     'GetDropTarget', 'SetDropTarget', 'GetPalette', 'SetPalette', 'HasCustomPalette',
     'GetAncestorWithCustomPalette', 'GetAcceleratorTable',
+    # Protected platform hooks which Doxygen places in a public-looking section but Phoenix doesn't expose.
+    'CreateLboxItem', 'CreateCloseButton', 'GetNormalState', 'EmulateKeyPress',
+    # Parser noise from ownership annotations, not an API member.
+    'Free',
     # Layout direction, physical-pixel conversion and touch are platform plumbing.
     'GetLayoutDirection', 'SetLayoutDirection', 'FromPhys', 'ToPhys', 'MakeDPIFromScaleFactor',
     'EnableTouchEvents', 'CanScroll', 'IsExposed', 'GetClientAreaOrigin', 'GetBestHeight',
@@ -234,10 +238,55 @@ def is_api(member, wx_name, bases):
 # wx name can mean different things on different controls.
 # Managed base classes whose members a derived wrapper inherits, where the derivation mirrors wxWidgets'.
 MANAGED_BASES = {
-    'SearchCtrl': ('TextCtrl',),
+    'CheckListBox': ('ListBox',),
+    'ProgressDialog': ('Window',),
+    'ScrolledWindow': ('Window',),
+    'DatePickerCtrl': ('DateTimePickerBase',),
+    'TimePickerCtrl': ('DateTimePickerBase',),
+}
+
+# Public-looking declarations from platform headers which Phoenix's Doxygen/ETG interface does not expose
+# for this particular type. These cannot be global skips because another control may legitimately expose
+# a member with the same name.
+PER_TYPE_SKIP = {
+    'Font': {'IsFree', 'RealizeResource', 'GetResourceHandle', 'FreeResource', 'GetHFONT',
+             'ConvertFromLegacyWeightIfNecessary'},
+    'SpinCtrl': {'ContainsHWND', 'GetBuddyWndProc', 'GetSpinForTextCtrl', 'ProcessTextCommand',
+                 'GetSnapToTicks', 'SetSnapToTicks'},
+    'SpinCtrlDouble': {'GetBase', 'SetBase'},
+    'ScrollBar': {'IsNeeded', 'SetPageSize', 'SetRange', 'SetThumbSize'},
+    'HyperlinkCtrl': {'SendEvent'},
 }
 
 PER_TYPE = {
+    'Font': {'GetPointSize': 'PointSize', 'SetPointSize': 'PointSize',
+             'GetFractionalPointSize': 'FractionalPointSize', 'SetFractionalPointSize': 'FractionalPointSize',
+             'GetPixelSize': 'PixelSize', 'SetPixelSize': 'PixelSize',
+             'GetFamily': 'Family', 'SetFamily': 'Family',
+             'GetStyle': 'Style', 'SetStyle': 'Style',
+             'GetNumericWeight': 'NumericWeight', 'SetNumericWeight': 'NumericWeight',
+             'GetWeight': 'Weight', 'SetWeight': 'Weight',
+             'GetUnderlined': 'IsUnderlined', 'SetUnderlined': 'IsUnderlined',
+             'GetStrikethrough': 'IsStrikethrough', 'SetStrikethrough': 'IsStrikethrough',
+             'GetEncoding': 'Encoding', 'SetEncoding': 'Encoding',
+             'GetFaceName': 'FaceName', 'SetFaceName': 'TrySetFaceName',
+             'GetNativeFontInfoDesc': 'NativeFontInfo', 'SetNativeFontInfo': 'NativeFontInfo',
+             'GetNativeFontInfo': 'NativeFontInfo',
+             'GetNativeFontInfoUserDesc': 'NativeFontInfoUserDesc',
+             'SetNativeFontInfoUserDesc': 'NativeFontInfoUserDesc',
+             'GetFamilyString': 'FamilyString', 'GetStyleString': 'StyleString',
+             'GetWeightString': 'WeightString',
+             'GetDefaultEncoding': 'DefaultEncoding', 'SetDefaultEncoding': 'DefaultEncoding',
+             'IsUsingSizeInPixels': 'IsUsingSizeInPixels', 'IsFixedWidth': 'IsFixedWidth',
+             'SetSymbolicSize': 'SetSymbolicSize', 'SetSymbolicSizeRelativeTo': 'SetSymbolicSizeRelativeTo'},
+    'ProgressDialog': {'GetRange': 'Range', 'SetRange': 'Range', 'GetValue': 'Value',
+                       'GetMessage': 'Update'},
+    'ScrolledWindow': {'GetScrollPixelsPerUnit': 'ScrollPixelsPerUnit', 'GetViewStart': 'ViewStart',
+                       'SetScrollRate': 'SetScrollRate'},
+    'ListBox': {'SetString': 'SetString', 'GetString': 'GetString'},
+    'TreeCtrl': {'GetItemText': 'GetText', 'SetItemText': 'SetText', 'GetCount': 'Count',
+                 'GetSelection': 'Selection', 'SelectItem': 'Selection'},
+    'ListCtrl': {'ClearAll': 'ClearAll', 'GetItemData': 'GetItemData', 'SetItemData': 'SetItemData'},
     'Window': {'GetRect': 'Rect', 'GetClientRect': 'ClientRect', 'GetScreenRect': 'ScreenRect',
                'GetScreenPosition': 'ScreenPosition', 'GetVirtualSize': 'VirtualSize',
                'SetVirtualSize': 'VirtualSize', 'GetBestVirtualSize': 'BestVirtualSize',
@@ -283,16 +332,20 @@ PER_TYPE = {
                  'RemoveSelection': 'RemoveSelection',
                  'GetString': 'this[]', 'SetString': 'this[]', 'FindString': 'IndexOf'},
     'SearchCtrl': {'ShowCancelButton': 'ShowCancelButton', 'IsCancelButtonVisible': 'ShowCancelButton',
-                   'ShowSearchButton': 'ShowSearchButton', 'IsSearchButtonVisible': 'ShowSearchButton'},
+                   'ShowSearchButton': 'ShowSearchButton', 'IsSearchButtonVisible': 'ShowSearchButton',
+                   'GetInsertionPoint': 'InsertionPoint', 'SetInsertionPoint': 'InsertionPoint',
+                   'GetLastPosition': 'LastPosition'},
     'Colour': {'Set': 'Parse', 'FromString': 'Parse', 'GetAsString': 'ToName',
                'Red': 'R', 'GetRed': 'R', 'Green': 'G', 'GetGreen': 'G',
                'Blue': 'B', 'GetBlue': 'B', 'Alpha': 'A', 'GetAlpha': 'A',
                'GetRGB': 'ToArgb', 'GetRGBA': 'ToArgb', 'SetRGB': 'FromArgb', 'SetRGBA': 'FromArgb',
                'InitRGBA': 'FromArgb', 'GetLuminance': 'Luminance'},
-    'Clipboard': {'Open': 'Open', 'Close': 'Close', 'IsOpened': 'IsOpen', 'Flush': 'Flush',
+    'Clipboard': {'Get': 'Open', 'Open': 'Open', 'Close': 'Close', 'IsOpened': 'IsOpen', 'Flush': 'Flush',
                   'Clear': 'Clear', 'IsSupported': 'IsSupported',
                   'UsePrimarySelection': 'UsePrimarySelection', 'IsUsingPrimarySelection': 'UsePrimarySelection',
-                  'SetData': 'SetText', 'GetData': 'GetText', 'AddData': 'SetText'},
+                  # SetData/GetData/AddData intentionally have no aliases here: Phoenix accepts any
+                  # wxDataObject and transfers ownership, while the current typed helpers do not.
+                  },
     'Frame': {'Iconize': 'Iconize', 'IsIconized': 'IsIconized', 'Maximize': 'Maximize',
               'IsMaximized': 'IsMaximized', 'IsAlwaysMaximized': 'IsAlwaysMaximized', 'Restore': 'Restore',
               'IsActive': 'IsActive', 'IsVisible': 'Visible',
@@ -482,11 +535,11 @@ def managed_members():
             if not name.endswith('.cs'):
                 continue
             text = io.open(os.path.join(dirpath, name), encoding='utf-8').read()
-            for m in re.finditer(r'public\s+(?:sealed\s+|abstract\s+|static\s+|partial\s+)*'
+            for m in re.finditer(r'public\s+(?:sealed\s+|abstract\s+|static\s+|partial\s+|unsafe\s+)*'
                                  r'(?:class|record struct|readonly record struct|struct|enum)\s+(\w+)', text):
                 cls = m.group(1)
                 start = m.end()
-                nxt = re.search(r'\npublic\s+(?:sealed\s+|abstract\s+|static\s+|partial\s+)*'
+                nxt = re.search(r'\npublic\s+(?:sealed\s+|abstract\s+|static\s+|partial\s+|unsafe\s+)*'
                                 r'(?:class|record struct|readonly record struct|struct|enum)\s+\w+', text[start:])
                 body = text[start:start + nxt.start()] if nxt else text[start:]
                 members = {hit.group(1) for hit in CS_MEMBER_RE.finditer(body)}
@@ -530,6 +583,7 @@ def main():
         for name in [wx_name] + bases:
             wx_members |= public_members(name)
         wx_members = {m for m in wx_members if is_api(m, wx_name, bases)}
+        wx_members -= PER_TYPE_SKIP.get(cs_name, set())
 
         have = set(managed.get(cs_name, set()))
         for managed_base in MANAGED_BASES.get(cs_name, ()):

@@ -58,6 +58,17 @@ bool wxsharp_listbox_is_selected(wxsharp_handle ctrl, int index)
     return static_cast<wxListBox*>(ctrl)->IsSelected(index);
 }
 
+void wxsharp_listbox_deselect_all(wxsharp_handle ctrl)
+{
+    auto* box = static_cast<wxListBox*>(ctrl);
+    // wxListBox::DeselectAll only exists on a multi-selection box; on a single-selection one clearing the
+    // selection is SetSelection(wxNOT_FOUND), and calling the wrong one asserts.
+    if (box->HasMultipleSelection())
+        box->DeselectAll();
+    else
+        box->SetSelection(wxNOT_FOUND);
+}
+
 void wxsharp_listbox_ensure_visible(wxsharp_handle ctrl, int index)
 {
     static_cast<wxListBox*>(ctrl)->EnsureVisible(index);

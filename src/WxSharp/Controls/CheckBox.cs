@@ -14,7 +14,9 @@ public class CheckBox : Control
     public CheckBox(Window parent, int id = WindowId.Any, string label = "", CheckBoxStyle style = CheckBoxStyle.TwoState,
         Point? position = null, Size? size = null) : base(parent, id)
     {
-        Initialize(NativeMethods.wxsharp_checkbox_create(parent.Handle, id, label, (int)style, Token));
+        Initialize(GetType() == typeof(CheckBox)
+            ? NativeMethods.wxsharp_checkbox_create(parent.Handle, id, label, (int)style, Token)
+            : NativeMethods.wxsharp_custom_checkbox_create(parent.Handle, id, label, (int)style, Token));
         ApplyInitialGeometry(position, size);
     }
 
@@ -40,4 +42,10 @@ public class CheckBox : Control
 
     /// <summary>Whether the user can reach the indeterminate state, as opposed to only code.</summary>
     public bool IsThirdStateAllowedForUser => NativeMethods.wxsharp_checkbox_is_3rd_state_allowed_for_user(Handle);
+    public CheckBoxState Get3StateValue() => State;
+    public void Set3StateValue(CheckBoxState state) => State = state;
+    public bool Is3State() => IsThreeState;
+    public bool Is3rdStateAllowedForUser() => IsThirdStateAllowedForUser;
+    public void SetTransparentPartColour(Colour colour)
+        => NativeMethods.wxsharp_checkbox_set_transparent_part_colour(Handle, colour.ToArgb());
 }
