@@ -901,6 +901,82 @@ public abstract partial class Window : EvtHandler, IDisposable
             throw new NotImplementedException("wxWidgets was built without accessibility support on this platform.");
     }
 
+
+    /// <summary>The mouse cursor shown over this window, following <c>wxWindow.SetCursor</c> and
+    /// <c>GetCursor</c>. Assigning null puts the parent's cursor back.</summary>
+    ///
+    /// <remarks>
+    /// A cursor is a hint about what a control does, and a useful one - but it says nothing to a screen
+    /// reader and nothing at all to someone using the keyboard, so it should never carry information on its
+    /// own.
+    /// </remarks>
+    public Cursor? Cursor
+    {
+        get { Verify(); return Cursor.Attach(NativeMethods.wxsharp_control_get_cursor(_handle)); }
+        set { Verify(); NativeMethods.wxsharp_control_set_cursor(_handle, value?.Handle ?? 0); }
+    }
+
+    /// <summary>Gives this window a caret of the given size, or removes it when either measurement is zero.
+    /// Follows <c>wxWindow.SetCaret</c>.</summary>
+    ///
+    /// <remarks>
+    /// A caret matters beyond the blinking line: the platform's own input methods follow it, and so does
+    /// assistive technology trying to report where typing will go. A custom-drawn control that accepts text
+    /// should keep one and move it with <see cref="MoveCaret"/>.
+    /// </remarks>
+    public void SetCaret(Size size)
+    {
+        Verify();
+        NativeMethods.wxsharp_control_set_caret(_handle, size.Width, size.Height);
+    }
+
+    /// <summary>Whether this window has a caret.</summary>
+    public bool HasCaret { get { Verify(); return NativeMethods.wxsharp_control_has_caret(_handle); } }
+
+    /// <summary>Moves the caret, in client coordinates.</summary>
+    public void MoveCaret(Point position)
+    {
+        Verify();
+        NativeMethods.wxsharp_caret_move(_handle, position.X, position.Y);
+    }
+
+    /// <summary>Where the caret is, in client coordinates.</summary>
+    public Point CaretPosition
+    {
+        get { Verify(); NativeMethods.wxsharp_caret_position(_handle, out var x, out var y); return new Point(x, y); }
+    }
+
+    /// <summary>Shows or hides the caret without removing it.</summary>
+    public void ShowCaret(bool show = true)
+    {
+        Verify();
+        NativeMethods.wxsharp_caret_show(_handle, show);
+    }
+
+    /// <summary>Whether the caret is currently shown.</summary>
+    public bool IsCaretVisible { get { Verify(); return NativeMethods.wxsharp_caret_is_visible(_handle); } }
+
+    /// <summary>How fast carets blink, in milliseconds, for the whole application. This is the user's own
+    /// setting - including "not at all", which some people need - so read it rather than choosing one.</summary>
+    public static int CaretBlinkTime
+    {
+        get { _ = App.RequireCurrent(); return NativeMethods.wxsharp_caret_get_blink_time(); }
+        set { _ = App.RequireCurrent(); NativeMethods.wxsharp_caret_set_blink_time(value); }
+    }
+
+    /// <summary>Shows a tooltip with a title and more than one line, following <c>wxRichToolTip</c>. This is
+    /// what a validation message wants; <see cref="ToolTip"/> allows only a single line and no title.</summary>
+    /// <param name="timeoutMilliseconds">How long it stays up; 0 leaves it to the platform.</param>
+    /// <param name="delayMilliseconds">How long before it appears; 0 shows it at once.</param>
+    public void ShowRichToolTip(string title, string message, RichToolTipIcon icon = RichToolTipIcon.None,
+        int timeoutMilliseconds = 0, int delayMilliseconds = 0)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        ArgumentNullException.ThrowIfNull(message);
+        Verify();
+        NativeMethods.wxsharp_rich_tooltip_show(_handle, title, message, (int)icon, timeoutMilliseconds,
+            delayMilliseconds);
+    }
 }
 
 /// <summary>Base class for standard controls.</summary>

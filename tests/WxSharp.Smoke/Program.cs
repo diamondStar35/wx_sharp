@@ -368,6 +368,107 @@ using (var app = new SmokeApp())
     if (SystemSettings.GetColour(SystemColour.Window).A == 0)
         throw new InvalidOperationException("The window colour became unreadable after the appearance request.");
 
+    // Where the platform keeps things. These are the paths an application gets wrong from memory, and on
+    // Windows getting them wrong means writing somewhere the user cannot back up.
+    if (string.IsNullOrEmpty(StandardPaths.ExecutablePath))
+        throw new InvalidOperationException("StandardPaths reported no executable path.");
+    if (string.IsNullOrEmpty(StandardPaths.UserConfigDirectory) ||
+        string.IsNullOrEmpty(StandardPaths.UserDataDirectory) ||
+        string.IsNullOrEmpty(StandardPaths.UserLocalDataDirectory) ||
+        string.IsNullOrEmpty(StandardPaths.TempDirectory))
+        throw new InvalidOperationException("StandardPaths left a user directory empty.");
+    // Roaming and local are different places, which is the distinction the whole type exists for.
+    if (StandardPaths.UserDataDirectory == StandardPaths.UserLocalDataDirectory)
+        throw new InvalidOperationException("Roaming and local data resolved to the same directory.");
+    if (string.IsNullOrEmpty(StandardPaths.GetUserDirectory(UserDirectory.Documents)))
+        throw new InvalidOperationException("StandardPaths reported no documents directory.");
+
+    // Displays. A saved window position has to be checked against these before it is restored, because the
+    // screen it was on may not be attached now.
+    if (Display.Count == 0)
+        throw new InvalidOperationException("No displays were reported.");
+    var primary = Display.Primary;
+    if (!primary.IsPrimary || primary.Geometry.Width <= 0 || primary.ClientArea.Width <= 0)
+        throw new InvalidOperationException("The primary display reported an unusable geometry.");
+    if (primary.ClientArea.Width > primary.Geometry.Width)
+        throw new InvalidOperationException("A display client area was larger than the display.");
+    if (primary.ScaleFactor <= 0 || primary.Ppi.Width <= 0)
+        throw new InvalidOperationException("The primary display reported no scale or resolution.");
+    if (Display.GetAll().Length != Display.Count)
+        throw new InvalidOperationException("GetAll did not return every display.");
+    // A point far off every screen belongs to none of them, which is the check that matters.
+    if (Display.GetFromPoint(new Point(-100000, -100000)) is not null)
+        throw new InvalidOperationException("A point off every screen was claimed by a display.");
+    if (Display.GetFromWindow(frame) is null)
+        throw new InvalidOperationException("A visible frame was on no display.");
+
+    // The platform's own icons, which is what makes a toolbar look native and stay legible in high contrast.
+    using (var art = ArtProvider.GetBitmap(ArtId.FileOpen, ArtClient.Toolbar))
+    {
+        if (art is null || art.Width <= 0)
+            throw new InvalidOperationException("The platform supplied no open-file icon.");
+    }
+    if (ArtProvider.GetNativeSizeHint(ArtClient.Toolbar).Width <= 0)
+        throw new InvalidOperationException("The platform suggested no toolbar art size.");
+
+    // Cursors. A window keeps whatever it is given, and null puts the parent's back.
+    using (var busy = new Cursor(StockCursor.Wait))
+    {
+        if (!busy.IsOk) throw new InvalidOperationException("The stock wait cursor did not load.");
+        panel.Cursor = busy;
+        using var applied = panel.Cursor;
+        if (applied is null || !applied.IsOk)
+            throw new InvalidOperationException("A window did not keep the cursor it was given.");
+        panel.Cursor = null;
+    }
+
+    // Image lists are how wxWidgets gives list and tree items their icons - by index into a list the
+    // control holds, rather than a bitmap per item.
+    var icons = new ImageList(16, 16);
+    using (var openIcon = ArtProvider.GetBitmap(ArtId.Folder, ArtClient.List, new Size(16, 16)))
+    {
+        if (openIcon is not null && icons.Add(openIcon) != 0)
+            throw new InvalidOperationException("The first image added did not take index 0.");
+    }
+    if (icons.Count > 0)
+    {
+        if (icons.GetSize(0) != new Size(16, 16))
+            throw new InvalidOperationException("An image list did not keep its fixed size.");
+        // The control takes ownership here, so the list must not be disposed afterwards.
+        tree.SetImageList(icons);
+        tree.SetItemImage(child, 0);
+        if (tree.GetItemImage(child) != 0)
+            throw new InvalidOperationException("A tree item did not keep the image it was given.");
+    }
+    else
+    {
+        icons.Dispose();
+    }
+
+    // A caret is what the platform's input methods and assistive technology follow to find where typing
+    // will go, so a custom-drawn control that takes text needs one.
+    var caretHost = new Canvas(panel);
+    caretHost.SetCaret(new Size(2, 16));
+    if (!caretHost.HasCaret)
+        throw new InvalidOperationException("A window did not keep the caret it was given.");
+    caretHost.MoveCaret(new Point(4, 8));
+    if (caretHost.CaretPosition != new Point(4, 8))
+        throw new InvalidOperationException("A caret did not move where it was put.");
+    caretHost.ShowCaret();
+    if (Window.CaretBlinkTime < 0)
+        throw new InvalidOperationException("The caret blink rate was reported as negative.");
+    caretHost.SetCaret(new Size(0, 0));
+    if (caretHost.HasCaret)
+        throw new InvalidOperationException("Sizing a caret to nothing did not remove it.");
+
+    // Sound is deliberately small - one format, no position or volume - so this checks the refusal path,
+    // which is the one an application actually has to handle.
+    // Windows hands the path to the system without checking it, so neither loading nor playing a missing
+    // file reports failure - which is why Sound documents that success is not proof the file exists.
+    // What does hold is that both calls are safe to make and that stopping is always allowed.
+    _ = Sound.Play("no such file.wav");
+    Sound.Stop();
+
     // Listing the faces the platform has - the only way to know a face exists before asking for it, since
     // assigning a missing one leaves the font unchanged.
     var faces = FontEnumerator.GetFacenames();

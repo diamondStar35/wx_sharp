@@ -1746,6 +1746,91 @@ extern "C" {
     WXSHARP_API void wxsharp_font_invalidate_enumeration_cache();
     WXSHARP_API bool wxsharp_font_can_use_private();
 
+
+    // ---- Platform services ----------------------------------------------------------------------------
+    // Where the platform keeps files, the sounds and stock art it provides, the displays attached, and the
+    // window furniture other classes hang off.
+
+    WXSHARP_API int wxsharp_stdpaths_executable(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_config_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_user_config_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_data_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_local_data_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_user_data_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_user_local_data_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_plugins_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_resources_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_documents_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_temp_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_app_documents_dir(char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_user_dir(int which, char* buffer, int length);
+    WXSHARP_API int wxsharp_stdpaths_localized_resources_dir(const char* language, int category,
+                                                            char* buffer, int length);
+
+    WXSHARP_API wxsharp_handle wxsharp_sound_create(const char* path);
+    WXSHARP_API void wxsharp_sound_destroy(wxsharp_handle sound);
+    WXSHARP_API bool wxsharp_sound_is_ok(wxsharp_handle sound);
+    WXSHARP_API bool wxsharp_sound_play(wxsharp_handle sound, unsigned int flags);
+    WXSHARP_API bool wxsharp_sound_play_file(const char* path, unsigned int flags);
+    WXSHARP_API void wxsharp_sound_stop();
+
+    WXSHARP_API unsigned int wxsharp_display_count();
+    WXSHARP_API int  wxsharp_display_from_point(int x, int y);
+    WXSHARP_API int  wxsharp_display_from_window(wxsharp_handle window);
+    WXSHARP_API void wxsharp_display_geometry(unsigned int index, int* x, int* y, int* width, int* height);
+    WXSHARP_API void wxsharp_display_client_area(unsigned int index, int* x, int* y, int* width, int* height);
+    WXSHARP_API bool wxsharp_display_is_primary(unsigned int index);
+    WXSHARP_API int  wxsharp_display_name(unsigned int index, char* buffer, int length);
+    WXSHARP_API double wxsharp_display_scale_factor(unsigned int index);
+    WXSHARP_API void wxsharp_display_ppi(unsigned int index, int* x, int* y);
+
+    WXSHARP_API wxsharp_handle wxsharp_art_bitmap(const char* id, const char* client, int width, int height);
+    WXSHARP_API wxsharp_handle wxsharp_art_icon(const char* id, const char* client, int width, int height);
+    WXSHARP_API void wxsharp_art_native_size(const char* client, wxsharp_handle window, int* width, int* height);
+
+    WXSHARP_API wxsharp_handle wxsharp_cursor_create_stock(int id);
+    WXSHARP_API wxsharp_handle wxsharp_cursor_create_from_file(const char* path, int type,
+                                                              int hotspot_x, int hotspot_y);
+    WXSHARP_API void wxsharp_cursor_destroy(wxsharp_handle cursor);
+    WXSHARP_API bool wxsharp_cursor_is_ok(wxsharp_handle cursor);
+    WXSHARP_API void wxsharp_control_set_cursor(wxsharp_handle ctrl, wxsharp_handle cursor);
+    WXSHARP_API wxsharp_handle wxsharp_control_get_cursor(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_cursor_set_global(wxsharp_handle cursor);
+
+    WXSHARP_API wxsharp_handle wxsharp_imagelist_create(int width, int height, bool mask, int initial_count);
+    WXSHARP_API void wxsharp_imagelist_destroy(wxsharp_handle list);
+    WXSHARP_API int  wxsharp_imagelist_count(wxsharp_handle list);
+    WXSHARP_API bool wxsharp_imagelist_remove(wxsharp_handle list, int index);
+    WXSHARP_API bool wxsharp_imagelist_remove_all(wxsharp_handle list);
+    WXSHARP_API int  wxsharp_imagelist_add_bitmap(wxsharp_handle list, wxsharp_handle bitmap);
+    WXSHARP_API int  wxsharp_imagelist_add_icon(wxsharp_handle list, wxsharp_handle icon);
+    WXSHARP_API bool wxsharp_imagelist_replace(wxsharp_handle list, int index, wxsharp_handle bitmap);
+    WXSHARP_API void wxsharp_imagelist_size(wxsharp_handle list, int index, int* width, int* height);
+    WXSHARP_API wxsharp_handle wxsharp_imagelist_get_bitmap(wxsharp_handle list, int index);
+    WXSHARP_API void wxsharp_listctrl_set_image_list(wxsharp_handle ctrl, wxsharp_handle list, int which,
+                                                     bool transfer);
+    WXSHARP_API void wxsharp_treectrl_set_image_list(wxsharp_handle ctrl, wxsharp_handle list, bool transfer);
+    WXSHARP_API void wxsharp_listctrl_set_item_image(wxsharp_handle ctrl, long long item, int image);
+    WXSHARP_API void wxsharp_treectrl_set_item_image(wxsharp_handle ctrl, long long item, int image, int which);
+    WXSHARP_API int  wxsharp_treectrl_get_item_image(wxsharp_handle ctrl, long long item, int which);
+
+    WXSHARP_API void wxsharp_control_set_caret(wxsharp_handle ctrl, int width, int height);
+    WXSHARP_API bool wxsharp_control_has_caret(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_caret_move(wxsharp_handle ctrl, int x, int y);
+    WXSHARP_API void wxsharp_caret_show(wxsharp_handle ctrl, bool show);
+    WXSHARP_API bool wxsharp_caret_is_visible(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_caret_position(wxsharp_handle ctrl, int* x, int* y);
+    WXSHARP_API int  wxsharp_caret_get_blink_time();
+    WXSHARP_API void wxsharp_caret_set_blink_time(int milliseconds);
+
+    WXSHARP_API void wxsharp_about_box(const char* name, const char* version, const char* description,
+                                       const char* copyright, const char* website,
+                                       const char* website_label, const char* const* developers,
+                                       int developer_count, wxsharp_handle parent);
+
+    WXSHARP_API void wxsharp_rich_tooltip_show(wxsharp_handle window, const char* title, const char* message,
+                                               int icon, int timeout_ms, int show_delay_ms);
+
     // ---- Services ------------------------------------------------------------------------------------
     // Shows a native open/save file dialog; returns true and writes the chosen path if confirmed.
     // Shows an open or save dialog and keeps the chosen paths until the next call, so a multiple selection

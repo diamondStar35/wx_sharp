@@ -63,6 +63,107 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_app_enable_dark_mode(int flags);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_app_supports_dark_mode();
 
+    // ---- Platform services -------------------------------------------------------------------------
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_executable(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_config_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_user_config_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_data_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_local_data_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_user_data_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_user_local_data_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_plugins_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_resources_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_documents_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_temp_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_app_documents_dir(byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_user_dir(int which, byte* buffer, int length);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int wxsharp_stdpaths_localized_resources_dir(string language, int category, byte* buffer, int length);
+
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_sound_create(string path);
+    [LibraryImport(Library)] internal static partial void wxsharp_sound_destroy(nint sound);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sound_is_ok(nint sound);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sound_play(nint sound, uint flags);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_sound_play_file(string path, uint flags);
+    [LibraryImport(Library)] internal static partial void wxsharp_sound_stop();
+
+    [LibraryImport(Library)] internal static partial uint wxsharp_display_count();
+    [LibraryImport(Library)] internal static partial int wxsharp_display_from_point(int x, int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_display_from_window(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_display_geometry(uint index, out int x, out int y, out int width, out int height);
+    [LibraryImport(Library)] internal static partial void wxsharp_display_client_area(uint index, out int x, out int y, out int width, out int height);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_display_is_primary(uint index);
+    [LibraryImport(Library)] internal static partial int wxsharp_display_name(uint index, byte* buffer, int length);
+    [LibraryImport(Library)] internal static partial double wxsharp_display_scale_factor(uint index);
+    [LibraryImport(Library)] internal static partial void wxsharp_display_ppi(uint index, out int x, out int y);
+
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_art_bitmap(string id, string client, int width, int height);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_art_icon(string id, string client, int width, int height);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_art_native_size(string client, nint window, out int width, out int height);
+
+    [LibraryImport(Library)] internal static partial nint wxsharp_cursor_create_stock(int id);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_cursor_create_from_file(string path, int type, int hotspotX, int hotspotY);
+    [LibraryImport(Library)] internal static partial void wxsharp_cursor_destroy(nint cursor);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_cursor_is_ok(nint cursor);
+    [LibraryImport(Library)] internal static partial void wxsharp_control_set_cursor(nint ctrl, nint cursor);
+    [LibraryImport(Library)] internal static partial nint wxsharp_control_get_cursor(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_cursor_set_global(nint cursor);
+
+    [LibraryImport(Library)] internal static partial nint wxsharp_imagelist_create(int width, int height, [MarshalAs(UnmanagedType.U1)] bool mask, int initialCount);
+    [LibraryImport(Library)] internal static partial void wxsharp_imagelist_destroy(nint list);
+    [LibraryImport(Library)] internal static partial int wxsharp_imagelist_count(nint list);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_imagelist_remove(nint list, int index);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_imagelist_remove_all(nint list);
+    [LibraryImport(Library)] internal static partial int wxsharp_imagelist_add_bitmap(nint list, nint bitmap);
+    [LibraryImport(Library)] internal static partial int wxsharp_imagelist_add_icon(nint list, nint icon);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_imagelist_replace(nint list, int index, nint bitmap);
+    [LibraryImport(Library)] internal static partial void wxsharp_imagelist_size(nint list, int index, out int width, out int height);
+    [LibraryImport(Library)] internal static partial nint wxsharp_imagelist_get_bitmap(nint list, int index);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_set_image_list(nint ctrl, nint list, int which, [MarshalAs(UnmanagedType.U1)] bool transfer);
+    [LibraryImport(Library)] internal static partial void wxsharp_treectrl_set_image_list(nint ctrl, nint list, [MarshalAs(UnmanagedType.U1)] bool transfer);
+    [LibraryImport(Library)] internal static partial void wxsharp_listctrl_set_item_image(nint ctrl, long item, int image);
+    [LibraryImport(Library)] internal static partial void wxsharp_treectrl_set_item_image(nint ctrl, long item, int image, int which);
+    [LibraryImport(Library)] internal static partial int wxsharp_treectrl_get_item_image(nint ctrl, long item, int which);
+
+    [LibraryImport(Library)] internal static partial void wxsharp_control_set_caret(nint ctrl, int width, int height);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_control_has_caret(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_caret_move(nint ctrl, int x, int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_caret_show(nint ctrl, [MarshalAs(UnmanagedType.U1)] bool show);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_caret_is_visible(nint ctrl);
+    [LibraryImport(Library)] internal static partial void wxsharp_caret_position(nint ctrl, out int x, out int y);
+    [LibraryImport(Library)] internal static partial int wxsharp_caret_get_blink_time();
+    [LibraryImport(Library)] internal static partial void wxsharp_caret_set_blink_time(int milliseconds);
+
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_about_box(string name, string version, string description, string copyright, string website, string websiteLabel, byte** developers, int developerCount, nint parent);
+
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_rich_tooltip_show(nint window, string title, string message, int icon, int timeoutMs, int showDelayMs);
+
+    // The developer list is the only array of strings this ABI carries, so it is marshalled by hand rather
+    // than teaching the generator a shape used once.
+    internal static unsafe void ShowAboutBox(AboutInfo info, Window? parent)
+    {
+        var developers = info.Developers;
+        var handles = new System.Runtime.InteropServices.GCHandle[developers.Length];
+        var pointers = stackalloc byte*[developers.Length == 0 ? 1 : developers.Length];
+        try
+        {
+            for (var i = 0; i < developers.Length; i++)
+            {
+                var utf8 = System.Text.Encoding.UTF8.GetBytes((developers[i] ?? string.Empty) + "\0");
+                handles[i] = System.Runtime.InteropServices.GCHandle.Alloc(
+                    utf8, System.Runtime.InteropServices.GCHandleType.Pinned);
+                pointers[i] = (byte*)handles[i].AddrOfPinnedObject();
+            }
+            wxsharp_about_box(info.Name, info.Version, info.Description, info.Copyright, info.WebSite,
+                info.WebSiteLabel, pointers, developers.Length, parent?.Handle ?? 0);
+        }
+        finally
+        {
+            foreach (var handle in handles)
+                if (handle.IsAllocated) handle.Free();
+        }
+    }
+
+
     [LibraryImport(Library)]
     internal static partial void wxsharp_call_after(long token);
 
