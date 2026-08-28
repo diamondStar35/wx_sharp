@@ -9,6 +9,39 @@ using System.Threading;
 namespace WxSharp;
 
 /// <summary>Owns one wxWidgets application and its blocking native event loop.</summary>
+/// <summary>Which interface appearance an application asks the platform for, following
+/// <c>wxApp.Appearance</c>.</summary>
+public enum Appearance
+{
+    /// <summary>Follow whatever the user has chosen.</summary>
+    System = 0,
+    Light = 1,
+    Dark = 2,
+}
+
+/// <summary>What the platform did with a request for an appearance, following
+/// <c>wxApp.AppearanceResult</c>. The two failures are worth telling apart: one means the platform cannot
+/// do it at all, the other that it is too late to ask.</summary>
+public enum AppearanceResult
+{
+    /// <summary>The platform does not support choosing an appearance.</summary>
+    Failure = 0,
+    /// <summary>The appearance was applied.</summary>
+    Ok = 1,
+    /// <summary>Supported, but not once the application has started - ask before creating a window.</summary>
+    CannotChange = 2,
+}
+
+/// <summary>How far <see cref="App.EnableDarkMode"/> should go, following the <c>wxApp.DarkMode_</c>
+/// flags.</summary>
+public enum DarkMode
+{
+    /// <summary>Use dark mode when the system is using it.</summary>
+    Auto = 0,
+    /// <summary>Use dark mode whatever the system setting says.</summary>
+    Always = 1,
+}
+
 public class App : EvtHandler, IDisposable
 {
     private static readonly Dictionary<long, EvtHandler> Handlers = new();
@@ -58,6 +91,55 @@ public class App : EvtHandler, IDisposable
         get => _exitOnFrameDelete;
         set { VerifyAccess(); ThrowIfDisposed(); _exitOnFrameDelete = value; NativeMethods.wxsharp_set_exit_on_frame_delete(value); }
     }
+
+
+    // ---- Appearance -------------------------------------------------------------------------------------
+
+    /// <summary>Asks for a light or dark interface, following <c>wxApp.SetAppearance</c>. This is the
+    /// portable request: it tells the platform which appearance the application wants, and the platform
+    /// decides how far that reaches.</summary>
+    ///
+    /// <remarks>
+    /// Ask before creating any window. Several platforms only honour the request while the application is
+    /// starting and answer <see cref="AppearanceResult.CannotChange"/> afterwards, which is a different
+    /// answer from <see cref="AppearanceResult.Failure"/> and worth acting on differently: the first means
+    /// "too late", the second means "not supported here".
+    ///
+    /// On Windows this themes the window frame but leaves the controls wxWidgets draws itself alone; see
+    /// <see cref="EnableDarkMode"/> for the fuller treatment.
+    /// </remarks>
+    public AppearanceResult SetAppearance(Appearance appearance)
+    {
+        VerifyAccess();
+        ThrowIfDisposed();
+        return (AppearanceResult)NativeMethods.wxsharp_app_set_appearance((int)appearance);
+    }
+
+    /// <summary>Turns on Windows' own dark mode, following <c>wxApp.MSWEnableDarkMode</c>. It goes further
+    /// than <see cref="SetAppearance"/>: the controls wxWidgets draws itself are themed too, not just the
+    /// window frame.</summary>
+    ///
+    /// <remarks>
+    /// Call it before creating any window. Returns false where it could not be enabled, and where the
+    /// platform has no such thing - everywhere but Windows, which <see cref="SupportsDarkMode"/> reports
+    /// separately so a caller can tell the two apart.
+    ///
+    /// wxWidgets still calls this experimental, so treat a false as normal rather than as an error, and
+    /// leave the interface working either way. Reading <see cref="SystemSettings.IsDarkAppearance"/> is how
+    /// to find out what the user actually ended up with; the colours an interface draws with should come
+    /// from <see cref="SystemSettings.GetColour"/> rather than being chosen for a mode.
+    /// </remarks>
+    /// <param name="mode">Whether to follow the system setting or force dark regardless.</param>
+    public bool EnableDarkMode(DarkMode mode = DarkMode.Auto)
+    {
+        VerifyAccess();
+        ThrowIfDisposed();
+        return NativeMethods.wxsharp_app_enable_dark_mode((int)mode);
+    }
+
+    /// <summary>Whether this platform has the dark mode <see cref="EnableDarkMode"/> turns on. True on
+    /// Windows only, which is what wxWidgets implements it for.</summary>
+    public static bool SupportsDarkMode => NativeMethods.wxsharp_app_supports_dark_mode();
 
     public Window? TopWindow
     {

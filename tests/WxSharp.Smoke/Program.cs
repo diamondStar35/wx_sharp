@@ -350,6 +350,24 @@ using (var app = new SmokeApp())
             throw new InvalidOperationException("An App-owned timer did not deliver its tick.");
     }
 
+    // Appearance. wxWidgets answers whether it could apply the request, and the two failures mean
+    // different things - unsupported here, versus too late to ask - so both are exercised for shape rather
+    // than for a particular answer, which depends on the machine's own setting.
+    var appearance = app.SetAppearance(Appearance.System);
+    if (!Enum.IsDefined(appearance))
+        throw new InvalidOperationException($"SetAppearance answered with {(int)appearance}, which is not a result.");
+
+    // MSW dark mode is Windows-only and wxWidgets calls it experimental, so a false is an ordinary answer.
+    // What must hold is that the platform's own claim and the call agree with each other.
+    var darkEnabled = app.EnableDarkMode();
+    if (darkEnabled && !App.SupportsDarkMode)
+        throw new InvalidOperationException("Dark mode turned on where the platform claims not to have it.");
+    if (!App.SupportsDarkMode && darkEnabled)
+        throw new InvalidOperationException("A platform without dark mode reported enabling it.");
+    // Whatever happened, the interface still has to answer for its own colours.
+    if (SystemSettings.GetColour(SystemColour.Window).A == 0)
+        throw new InvalidOperationException("The window colour became unreadable after the appearance request.");
+
     // Listing the faces the platform has - the only way to know a face exists before asking for it, since
     // assigning a missing one leaves the font unchanged.
     var faces = FontEnumerator.GetFacenames();
