@@ -368,6 +368,71 @@ using (var app = new SmokeApp())
     if (SystemSettings.GetColour(SystemColour.Window).A == 0)
         throw new InvalidOperationException("The window colour became unreadable after the appearance request.");
 
+    // The common dialogs are real windows now, so each can be configured before it is shown and read back
+    // afterwards - which a one-shot helper could not do. None is shown here; what is checked is that the
+    // properties round-trip, which is the whole point of them being classes.
+    using (var open = new FileDialog(frame, "Choose audio", wildcard: "Audio|*.mp3;*.wav|All files|*.*"))
+    {
+        open.Directory = StandardPaths.TempDirectory;
+        open.FileName = "track.mp3";
+        if (open.FileName != "track.mp3")
+            throw new InvalidOperationException("FileDialog did not keep the file name it was given.");
+        if (!open.Wildcard.Contains("*.mp3", StringComparison.Ordinal))
+            throw new InvalidOperationException("FileDialog did not keep its wildcard.");
+        open.FilterIndex = 1;
+        if (open.FilterIndex != 1)
+            throw new InvalidOperationException("FileDialog did not keep its filter index.");
+        open.Message = "Pick one";
+        if (open.Message != "Pick one")
+            throw new InvalidOperationException("FileDialog did not keep its message.");
+        // A dialog is a window, so everything Window offers applies to it.
+        if (open.Title.Length == 0 && open.Message.Length == 0)
+            throw new InvalidOperationException("A file dialog carried neither title nor message.");
+    }
+
+    using (var folder = new DirDialog(frame, "Choose a folder", StandardPaths.TempDirectory))
+    {
+        folder.Path = StandardPaths.TempDirectory;
+        if (folder.Path != StandardPaths.TempDirectory)
+            throw new InvalidOperationException("DirDialog did not keep the path it was given.");
+    }
+
+    using (var text = new TextEntryDialog(frame, "Name?", "Rename", "before"))
+    {
+        if (text.Value != "before")
+            throw new InvalidOperationException("TextEntryDialog did not take its initial value.");
+        text.Value = "after";
+        if (text.Value != "after")
+            throw new InvalidOperationException("TextEntryDialog did not keep an assigned value.");
+        text.SetMaxLength(32);
+    }
+
+    using (var number = new NumberEntryDialog(frame, "Pick", "Value", "Number", 7, 1, 10))
+    {
+        if (number.Value != 7)
+            throw new InvalidOperationException("NumberEntryDialog did not take its initial value.");
+    }
+
+    using (var colour = new ColourDialog(frame, Colour.Red))
+    {
+        if (colour.Colour != Colour.Red)
+            throw new InvalidOperationException("ColourDialog did not take its initial colour.");
+        // The custom palette is what an application has to carry between invocations.
+        colour.SetCustomColour(0, Colour.Blue);
+        if (colour.GetCustomColour(0) != Colour.Blue)
+            throw new InvalidOperationException("ColourDialog did not keep a custom colour.");
+    }
+
+    using (var chosenFont = SystemSettings.GetFont(SystemFont.DefaultGui))
+    using (var fontPicker = new FontDialog(frame, chosenFont))
+    {
+        fontPicker.EnableEffects(true);
+        fontPicker.SetSizeRange(6, 72);
+        fontPicker.Colour = Colour.Black;
+        if (fontPicker.Colour != Colour.Black)
+            throw new InvalidOperationException("FontDialog did not keep its colour.");
+    }
+
     // Where the platform keeps things. These are the paths an application gets wrong from memory, and on
     // Windows getting them wrong means writing somewhere the user cannot back up.
     if (string.IsNullOrEmpty(StandardPaths.ExecutablePath))

@@ -18,6 +18,22 @@ public static class WindowId { public const int Any = -1; }
 /// <see cref="WxEvents.ButtonClicked"/> on a frame catches its buttons, exactly as in Phoenix. The wrapper
 /// does not re-dispatch events to parents itself, and treats every event the same way.
 /// </remarks>
+/// <summary>How a window animates as it appears or disappears, following <c>wxShowEffect</c>.</summary>
+public enum ShowEffect
+{
+    None = 0,
+    RollToLeft = 1,
+    RollToRight = 2,
+    RollToTop = 3,
+    RollToBottom = 4,
+    SlideToLeft = 5,
+    SlideToRight = 6,
+    SlideToTop = 7,
+    SlideToBottom = 8,
+    Blend = 9,
+    Expand = 10,
+}
+
 public abstract partial class Window : EvtHandler, IDisposable
 {
     private readonly List<Window> _children = new();
@@ -977,6 +993,352 @@ public abstract partial class Window : EvtHandler, IDisposable
         NativeMethods.wxsharp_rich_tooltip_show(_handle, title, message, (int)icon, timeoutMilliseconds,
             delayMilliseconds);
     }
+
+    // ---- Finding windows and focus ---------------------------------------------------------------------
+
+    /// <summary>The window that currently has the keyboard focus, or null when nothing does or when
+    /// wxWidgets created it without the wrapper knowing. Follows <c>wxWindow.FindFocus</c>.</summary>
+    ///
+    /// <remarks>
+    /// This is how context-sensitive help works: the application asks what has focus and describes it. There
+    /// is no other way to answer that question without subscribing to focus on every control.
+    /// </remarks>
+    public static Window? FindFocus()
+    {
+        _ = App.RequireCurrent();
+        return App.Lookup(NativeMethods.wxsharp_window_find_focus());
+    }
+
+    /// <summary>Finds a window by command ID, optionally limited to one parent's descendants. Follows
+    /// <c>wxWindow.FindWindowById</c>.</summary>
+    public static Window? FindWindowById(int id, Window? parent = null)
+    {
+        _ = App.RequireCurrent();
+        return App.Lookup(NativeMethods.wxsharp_window_find_by_id(id, parent?.Handle ?? 0));
+    }
+
+    /// <summary>The window that has captured the mouse, or null. Follows
+    /// <c>wxWindow.GetCapture</c>.</summary>
+    public static Window? GetCapture()
+    {
+        _ = App.RequireCurrent();
+        return App.Lookup(NativeMethods.wxsharp_window_get_capture());
+    }
+
+    /// <summary>Finds a descendant of this window by command ID.</summary>
+    public Window? FindWindow(int id)
+    {
+        Verify();
+        return App.Lookup(NativeMethods.wxsharp_window_find_child_by_id(_handle, id));
+    }
+
+    /// <summary>Finds a descendant of this window by name.</summary>
+    public Window? FindWindow(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        Verify();
+        return App.Lookup(NativeMethods.wxsharp_window_find_child_by_name(_handle, name));
+    }
+
+    /// <summary>Reserves a control ID that will not clash with wxWidgets' own or with another reservation.
+    /// Follows <c>wxWindow.NewControlId</c>; see <see cref="IdManager"/> for the same idea.</summary>
+    public static int NewControlId(int count = 1)
+    {
+        _ = App.RequireCurrent();
+        return NativeMethods.wxsharp_window_new_control_id(count);
+    }
+
+    /// <summary>Gives a reserved ID range back.</summary>
+    public static void UnreserveControlId(int id, int count = 1)
+    {
+        _ = App.RequireCurrent();
+        NativeMethods.wxsharp_window_unreserve_control_id(id, count);
+    }
+
+    // ---- Family ----------------------------------------------------------------------------------------
+
+    /// <summary>The frame or dialog this window sits in, which is what a control needs to reach the status
+    /// bar or the window it must be modal to.</summary>
+    public Window? TopLevelParent
+    {
+        get { Verify(); return App.Lookup(NativeMethods.wxsharp_window_top_level_parent(_handle)); }
+    }
+
+    /// <summary>This window's parent's parent, or null.</summary>
+    public Window? GrandParent
+    {
+        get { Verify(); return App.Lookup(NativeMethods.wxsharp_window_grand_parent(_handle)); }
+    }
+
+    /// <summary>The next sibling in the parent's child list - which is also the tab order.</summary>
+    public Window? NextSibling
+    {
+        get { Verify(); return App.Lookup(NativeMethods.wxsharp_window_next_sibling(_handle)); }
+    }
+
+    /// <summary>The previous sibling in the parent's child list.</summary>
+    public Window? PreviousSibling
+    {
+        get { Verify(); return App.Lookup(NativeMethods.wxsharp_window_prev_sibling(_handle)); }
+    }
+
+    /// <summary>How many child windows this one has, counting those wxWidgets made itself.</summary>
+    public int ChildCount { get { Verify(); return NativeMethods.wxsharp_window_child_count(_handle); } }
+
+    /// <summary>This window's children, in wxWidgets' own order - which is the tab order. Entries are null
+    /// where wxWidgets created a child the wrapper does not own, such as a control's internal parts.</summary>
+    public Window?[] GetChildren()
+    {
+        Verify();
+        var count = NativeMethods.wxsharp_window_child_count(_handle);
+        var children = new Window?[count];
+        for (var i = 0; i < count; i++)
+            children[i] = App.Lookup(NativeMethods.wxsharp_window_child_at(_handle, i));
+        return children;
+    }
+
+    /// <summary>Moves this window to a different parent. Follows <c>wxWindow.Reparent</c>.</summary>
+    public bool Reparent(Window newParent)
+    {
+        ArgumentNullException.ThrowIfNull(newParent);
+        Verify();
+        return NativeMethods.wxsharp_window_reparent(_handle, newParent.Handle);
+    }
+
+    /// <summary>Destroys every child window, leaving this one.</summary>
+    public void DestroyChildren() { Verify(); NativeMethods.wxsharp_window_destroy_children(_handle); }
+
+    // ---- Tab order -------------------------------------------------------------------------------------
+
+    /// <summary>Puts this window immediately before another in the tab order. Following
+    /// <c>wxWindow.MoveBeforeInTabOrder</c> - and worth getting right, because the tab order is the order a
+    /// keyboard user meets the interface in, whatever the visual layout says.</summary>
+    public void MoveBeforeInTabOrder(Window other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        Verify();
+        NativeMethods.wxsharp_window_move_before_in_tab_order(_handle, other.Handle);
+    }
+
+    /// <summary>Puts this window immediately after another in the tab order.</summary>
+    public void MoveAfterInTabOrder(Window other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        Verify();
+        NativeMethods.wxsharp_window_move_after_in_tab_order(_handle, other.Handle);
+    }
+
+    // ---- Focus, as it actually is ----------------------------------------------------------------------
+    // AcceptsFocus is what the window says about itself; these also account for it being hidden or disabled,
+    // which is the difference between "would take focus" and "can be given it right now".
+
+    /// <summary>Whether this window could actually take focus now - it accepts focus and is shown and
+    /// enabled. Follows <c>wxWindow.CanAcceptFocus</c>.</summary>
+    public bool CanAcceptFocus() { Verify(); return NativeMethods.wxsharp_window_can_accept_focus(_handle); }
+
+    /// <summary>Whether Tab could actually reach this window now. Follows
+    /// <c>wxWindow.CanAcceptFocusFromKeyboard</c>.</summary>
+    public bool CanAcceptFocusFromKeyboard()
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_can_accept_focus_from_keyboard(_handle);
+    }
+
+    /// <summary>Whether this window or a child could take focus. Follows
+    /// <c>wxWindow.CanBeFocused</c>.</summary>
+    public bool CanBeFocused() { Verify(); return NativeMethods.wxsharp_window_can_be_focused(_handle); }
+
+    /// <summary>Whether this window is focusable at all, ignoring whether it is shown. Follows
+    /// <c>wxWindow.IsFocusable</c>.</summary>
+    public bool IsFocusable() { Verify(); return NativeMethods.wxsharp_window_is_focusable(_handle); }
+
+    /// <summary>Takes this window out of the tab order while leaving it clickable. The declarative form of
+    /// overriding <see cref="AcceptsFocusFromKeyboard"/>, for a control you did not subclass. Follows
+    /// <c>wxWindow.DisableFocusFromKeyboard</c>.</summary>
+    public void DisableFocusFromKeyboard()
+    {
+        Verify();
+        NativeMethods.wxsharp_window_disable_focus_from_keyboard(_handle);
+    }
+
+    // ---- The event handler chain -----------------------------------------------------------------------
+
+    /// <summary>Puts another handler in front of this window, so it sees events first. This is how a modal
+    /// filter or an input recorder intercepts events without subclassing anything. Follows
+    /// <c>wxWindow.PushEventHandler</c>.</summary>
+    public void PushEventHandler(Window handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        Verify();
+        NativeMethods.wxsharp_window_push_event_handler(_handle, handler.Handle);
+    }
+
+    /// <summary>Removes the handler most recently pushed, and returns it. Follows
+    /// <c>wxWindow.PopEventHandler</c>.</summary>
+    /// <param name="destroy">Whether wxWidgets should delete the handler as well as unhook it.</param>
+    public Window? PopEventHandler(bool destroy = false)
+    {
+        Verify();
+        return App.Lookup(NativeMethods.wxsharp_window_pop_event_handler(_handle, destroy));
+    }
+
+    /// <summary>Unhooks one handler from anywhere in the chain, without deleting it.</summary>
+    public bool RemoveEventHandler(Window handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        Verify();
+        return NativeMethods.wxsharp_window_remove_event_handler(_handle, handler.Handle);
+    }
+
+    // ---- Styles ----------------------------------------------------------------------------------------
+
+    /// <summary>The extra style bits, which unlike the creation style can be changed afterwards. Follows
+    /// <c>wxWindow.GetExtraStyle</c> / <c>SetExtraStyle</c>.</summary>
+    public int ExtraStyle
+    {
+        get { Verify(); return NativeMethods.wxsharp_window_get_extra_style(_handle); }
+        set { Verify(); NativeMethods.wxsharp_window_set_extra_style(_handle, value); }
+    }
+
+    /// <summary>Whether one extra style bit is set.</summary>
+    public bool HasExtraStyle(int flag) { Verify(); return NativeMethods.wxsharp_window_has_extra_style(_handle, flag); }
+
+    /// <summary>Flips one creation style bit. Follows <c>wxWindow.ToggleWindowStyle</c>.</summary>
+    public void ToggleWindowStyle(int flag) { Verify(); NativeMethods.wxsharp_window_toggle_style(_handle, flag); }
+
+    /// <summary>Whether the platform's theme paints this window. Turning it off is how a control takes over
+    /// its own appearance - at the cost of no longer following the user's theme, so it is rarely right.</summary>
+    public bool ThemeEnabled
+    {
+        get { Verify(); return NativeMethods.wxsharp_window_get_theme_enabled(_handle); }
+        set { Verify(); NativeMethods.wxsharp_window_set_theme_enabled(_handle, value); }
+    }
+
+    /// <summary>Whether the window is backed by a bitmap it repaints from.</summary>
+    public bool IsRetained { get { Verify(); return NativeMethods.wxsharp_window_is_retained(_handle); } }
+
+    /// <summary>Whether this window is enabled in its own right, ignoring whether a parent has disabled it.
+    /// <see cref="Enabled"/> answers the question that includes the parents. Follows
+    /// <c>wxWindow.IsThisEnabled</c>.</summary>
+    public bool IsThisEnabled { get { Verify(); return NativeMethods.wxsharp_window_is_this_enabled(_handle); } }
+
+    // ---- Sizing and DPI --------------------------------------------------------------------------------
+
+    /// <summary>Sets the size and remembers it as the minimum, which is what a control's constructor does.
+    /// Follows <c>wxWindow.SetInitialSize</c>.</summary>
+    public void SetInitialSize(Size size)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_set_initial_size(_handle, size.Width, size.Height);
+    }
+
+    /// <summary>Forgets the cached best size, so the next layout asks for it again. Needed after changing
+    /// something that affects it - a label, or a font.</summary>
+    public void InvalidateBestSize() { Verify(); NativeMethods.wxsharp_window_invalidate_best_size(_handle); }
+
+    /// <summary>The height this window wants at a given width, for content that reflows.</summary>
+    public int GetBestHeight(int width) { Verify(); return NativeMethods.wxsharp_window_get_best_height(_handle, width); }
+
+    /// <summary>The width this window wants at a given height.</summary>
+    public int GetBestWidth(int height) { Verify(); return NativeMethods.wxsharp_window_get_best_width(_handle, height); }
+
+    /// <summary>How much the platform scales this window's content.</summary>
+    public double ContentScaleFactor { get { Verify(); return NativeMethods.wxsharp_window_content_scale_factor(_handle); } }
+
+    /// <summary>The DPI scale this window is drawn at, which is what <see cref="FromDip"/> converts by.</summary>
+    public double DpiScaleFactor { get { Verify(); return NativeMethods.wxsharp_window_dpi_scale_factor(_handle); } }
+
+    /// <summary>The window size that yields a given client size - the client size plus borders, title bar
+    /// and scrollbars.</summary>
+    public Size ClientToWindowSize(Size clientSize)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_client_to_window_size(_handle, clientSize.Width, clientSize.Height,
+            out var w, out var h);
+        return new Size(w, h);
+    }
+
+    /// <summary>The client size a given window size leaves.</summary>
+    public Size WindowToClientSize(Size windowSize)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_window_to_client_size(_handle, windowSize.Width, windowSize.Height,
+            out var w, out var h);
+        return new Size(w, h);
+    }
+
+    /// <summary>Converts from physical pixels - what the display actually has - to the logical units this
+    /// window is laid out in. Distinct from <see cref="FromDip"/>, which converts from DPI-independent
+    /// units. Follows <c>wxWindow.FromPhys</c>.</summary>
+    public Size FromPhysical(Size size)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_from_phys(_handle, size.Width, size.Height, out var w, out var h);
+        return new Size(w, h);
+    }
+
+    /// <summary>Converts logical units to physical pixels. Follows <c>wxWindow.ToPhys</c>.</summary>
+    public Size ToPhysical(Size size)
+    {
+        Verify();
+        NativeMethods.wxsharp_window_to_phys(_handle, size.Width, size.Height, out var w, out var h);
+        return new Size(w, h);
+    }
+
+    // ---- Painting and scrolling ------------------------------------------------------------------------
+
+    /// <summary>Whether this window can scroll on an axis.</summary>
+    public bool CanScroll(Orientation orientation)
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_can_scroll(_handle, orientation == Orientation.Vertical ? 1 : 0);
+    }
+
+    /// <summary>Whether a rectangle is inside the region being repainted. Checking this in a paint handler
+    /// is what keeps a large custom control from redrawing everything for a small change.</summary>
+    public bool IsExposed(Rect area)
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_is_exposed(_handle, area.X, area.Y, area.Width, area.Height);
+    }
+
+    /// <summary>The area being repainted, in client coordinates. Only meaningful during a paint.</summary>
+    public Rect UpdateClientRect
+    {
+        get
+        {
+            Verify();
+            NativeMethods.wxsharp_window_update_client_rect(_handle, out var x, out var y, out var w, out var h);
+            return new Rect(x, y, w, h);
+        }
+    }
+
+    // ---- Effects ---------------------------------------------------------------------------------------
+
+    /// <summary>Shows the window with an animation, following <c>wxWindow.ShowWithEffect</c>. Returns false
+    /// where the platform will not animate.</summary>
+    ///
+    /// <remarks>
+    /// Consider whether to use one at all: the platform's reduced-motion setting is not consulted here, and
+    /// an animation that cannot be turned off is a problem for people who need motion kept still. Prefer a
+    /// plain <see cref="Show"/> unless the animation carries meaning.
+    /// </remarks>
+    public bool ShowWithEffect(ShowEffect effect, uint milliseconds = 0)
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_show_with_effect(_handle, (int)effect, milliseconds);
+    }
+
+    /// <summary>Hides the window with an animation. See <see cref="ShowWithEffect"/>.</summary>
+    public bool HideWithEffect(ShowEffect effect, uint milliseconds = 0)
+    {
+        Verify();
+        return NativeMethods.wxsharp_window_hide_with_effect(_handle, (int)effect, milliseconds);
+    }
+
+    /// <summary>Asks for touch and gesture events on this window. wxWidgets does not send them unless they
+    /// are asked for, because tracking them costs. Follows <c>wxWindow.EnableTouchEvents</c>.</summary>
+    public void EnableTouchEvents(int events) { Verify(); NativeMethods.wxsharp_window_enable_touch_events(_handle, events); }
 }
 
 /// <summary>Base class for standard controls.</summary>
