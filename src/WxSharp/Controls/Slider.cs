@@ -25,7 +25,9 @@ public class Slider : Control
     public Slider(Window parent, int id = WindowId.Any, int value = 0, int minValue = 0, int maxValue = 100,
         SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null) : base(parent, id)
     {
-        Initialize(NativeMethods.wxsharp_slider_create(parent.Handle, id, minValue, maxValue, value, (int)style, Token));
+        Initialize(GetType() == typeof(Slider)
+            ? NativeMethods.wxsharp_slider_create(parent.Handle, id, minValue, maxValue, value, (int)style, Token)
+            : NativeMethods.wxsharp_custom_slider_create(parent.Handle, id, minValue, maxValue, value, (int)style, Token));
         ApplyInitialGeometry(position, size);
     }
 

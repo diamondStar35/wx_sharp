@@ -2,14 +2,108 @@ using System;
 
 namespace WxSharp;
 
+/// <summary>When a scrolled window shows a scrollbar, following wxWidgets' <c>wxScrollbarVisibility</c>.
+/// </summary>
+public enum ScrollbarVisibility
+{
+    /// <summary>Never shown, and the axis cannot be scrolled with it.</summary>
+    Never = 0,
+    /// <summary>Shown only when the content does not fit, which is wxWidgets' default.</summary>
+    Automatic = 1,
+    /// <summary>Always shown, so the layout does not shift when the content grows.</summary>
+    Always = 2,
+}
+
 public class ScrolledWindow : Window
 {
     public ScrolledWindow(Window parent, int id = WindowId.Any, ScrolledStyle style = ScrolledStyle.Default)
         : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_scrolled_create(parent.Handle, id, (int)style, Token));
+        => Initialize(GetType() == typeof(ScrolledWindow)
+            ? NativeMethods.wxsharp_scrolled_create(parent.Handle, id, (int)style, Token)
+            : NativeMethods.wxsharp_custom_scrolled_create(parent.Handle, id, (int)style, Token));
     public Point ViewStart { get { NativeMethods.wxsharp_scrolled_get_view_start(Handle, out var x, out var y); return new Point(x, y); } }
     public void SetScrollRate(int xStep, int yStep) => NativeMethods.wxsharp_scrolled_set_rate(Handle, xStep, yStep);
     public void Scroll(int x, int y) => NativeMethods.wxsharp_scrolled_scroll(Handle, x, y);
+
+    /// <summary>Sets the scroll step and the extent to scroll over in one call, following
+    /// <c>wxScrolled.SetScrollbars</c>. The scrollable area is <paramref name="unitsX"/> by
+    /// <paramref name="unitsY"/> steps, each of the given pixel size.</summary>
+    public void SetScrollbars(int pixelsPerUnitX, int pixelsPerUnitY, int unitsX, int unitsY,
+        int positionX = 0, int positionY = 0, bool noRefresh = false)
+        => NativeMethods.wxsharp_scrolled_set_scrollbars(Handle, pixelsPerUnitX, pixelsPerUnitY, unitsX,
+            unitsY, positionX, positionY, noRefresh);
+
+    /// <summary>Whether the window scrolls physically on each axis, following
+    /// <c>wxScrolled.EnableScrolling</c>. Turning an axis off leaves its scrollbar working but stops the
+    /// window blitting, which is what a window whose children move themselves wants.</summary>
+    public void EnableScrolling(bool x, bool y) => NativeMethods.wxsharp_scrolled_enable_scrolling(Handle, x, y);
+
+    /// <summary>When each scrollbar is shown, following <c>wxScrolled.ShowScrollbars</c>.</summary>
+    public void ShowScrollbars(ScrollbarVisibility horizontal, ScrollbarVisibility vertical)
+        => NativeMethods.wxsharp_scrolled_show_scrollbars(Handle, (int)horizontal, (int)vertical);
+
+    /// <summary>The pixel size of one scroll step on each axis. Follows
+    /// <c>wxScrolled.GetScrollPixelsPerUnit</c>.</summary>
+    public Size ScrollPixelsPerUnit
+    {
+        get { NativeMethods.wxsharp_scrolled_get_pixels_per_unit(Handle, out var x, out var y); return new Size(x, y); }
+    }
+
+    /// <summary>Scrolls a different window than this one, following <c>wxScrolled.SetTargetWindow</c>.
+    /// Used when the scrolled window is a frame around a separate content panel.</summary>
+    public void SetTargetWindow(Window target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        NativeMethods.wxsharp_scrolled_set_target_window(Handle, target.Handle);
+    }
+
+    /// <summary>How far Page Up and Page Down move on one axis, in scroll units. Follows
+    /// <c>wxScrolled.SetScrollPageSize</c> / <c>GetScrollPageSize</c>.</summary>
+    public int GetScrollPageSize(Orientation orientation)
+        => NativeMethods.wxsharp_scrolled_get_scroll_page_size(Handle, OrientationFlag(orientation));
+
+    /// <summary>See <see cref="GetScrollPageSize"/>.</summary>
+    public void SetScrollPageSize(Orientation orientation, int size)
+        => NativeMethods.wxsharp_scrolled_set_scroll_page_size(Handle, OrientationFlag(orientation), size);
+
+    private static int OrientationFlag(Orientation orientation)
+        => orientation == Orientation.Vertical ? 1 : 0;
+
+    // ---- Overridable wxScrolled virtuals ----------------------------------------------------------------
+
+    /// <summary>Whether the window should scroll itself to bring a newly focused child into view. A window
+    /// that manages its own scrolling answers false so wxWidgets does not fight it - which is what stops a
+    /// scrolled settings page jumping about as a screen reader user tabs through it. Follows
+    /// <c>wxScrolled.ShouldScrollToChildOnFocus</c>.</summary>
+    public virtual bool ShouldScrollToChildOnFocus(Window? child)
+        => CallBaseWithWindow(VirtualMember.ShouldScrollToChildOnFocus, child).Result != 0;
+
+    /// <summary>How much room the scrolled content may use, given the window's size. Follows
+    /// <c>wxScrolled.GetSizeAvailableForScrollTarget</c>.</summary>
+    public virtual Size GetSizeAvailableForScrollTarget(Size size)
+    {
+        var request = CallBase(VirtualMember.SizeAvailableForScrollTarget, size.Width, size.Height);
+        return new Size(request.X, request.Y);
+    }
+
+    internal override unsafe bool TryAnswerVirtual(ref NativeVirtualRequest request)
+    {
+        switch ((VirtualMember)request.Which)
+        {
+            case VirtualMember.ShouldScrollToChildOnFocus:
+                request.Result = ShouldScrollToChildOnFocus(App.Lookup((nint)request.Handle)) ? 1 : 0;
+                return true;
+            case VirtualMember.SizeAvailableForScrollTarget:
+            {
+                var available = GetSizeAvailableForScrollTarget(new Size(request.Args[0], request.Args[1]));
+                request.X = available.Width;
+                request.Y = available.Height;
+                return true;
+            }
+            default:
+                return base.TryAnswerVirtual(ref request);
+        }
+    }
 }
 
 public class SplitterWindow : Window
@@ -46,7 +140,9 @@ public class SplitterWindow : Window
     public SplitterWindow(Window parent, Orientation orientation = Orientation.Vertical, int id = WindowId.Any) : base(parent, id)
     {
         Orientation = orientation;
-        Initialize(NativeMethods.wxsharp_splitter_create(parent.Handle, id, orientation == Orientation.Vertical, Token));
+        Initialize(GetType() == typeof(SplitterWindow)
+            ? NativeMethods.wxsharp_splitter_create(parent.Handle, id, orientation == Orientation.Vertical, Token)
+            : NativeMethods.wxsharp_custom_splitter_create(parent.Handle, id, orientation == Orientation.Vertical, Token));
     }
     public int SashPosition { get => NativeMethods.wxsharp_splitter_get_position(Handle); set => NativeMethods.wxsharp_splitter_set_position(Handle, value); }
     public bool Split(Window first, Window second, int position = 0)
@@ -75,7 +171,9 @@ public class Notebook : Control
     }
 
     public Notebook(Window parent, int id = WindowId.Any) : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_notebook_create(parent.Handle, id, Token));
+        => Initialize(GetType() == typeof(Notebook)
+            ? NativeMethods.wxsharp_notebook_create(parent.Handle, id, Token)
+            : NativeMethods.wxsharp_custom_notebook_create(parent.Handle, id, Token));
     public int Count => NativeMethods.wxsharp_notebook_count(Handle);
     public int SelectedIndex
     {
@@ -108,7 +206,9 @@ public class SimpleBook : Control
     }
 
     public SimpleBook(Window parent, int id = WindowId.Any) : base(parent, id)
-        => Initialize(NativeMethods.wxsharp_simplebook_create(parent.Handle, id, Token));
+        => Initialize(GetType() == typeof(SimpleBook)
+            ? NativeMethods.wxsharp_simplebook_create(parent.Handle, id, Token)
+            : NativeMethods.wxsharp_custom_simplebook_create(parent.Handle, id, Token));
     public int Count => NativeMethods.wxsharp_notebook_count(Handle);
     public int SelectedIndex
     {

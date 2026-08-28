@@ -12,3 +12,7 @@ wxsharp_handle wxsharp_radio_create(wxsharp_handle parent, int id, const char* l
 
 bool wxsharp_radio_get(wxsharp_handle ctrl) { return static_cast<wxRadioButton*>(ctrl)->GetValue(); }
 void wxsharp_radio_set(wxsharp_handle ctrl, bool value) { static_cast<wxRadioButton*>(ctrl)->SetValue(value); }
+wxsharp_handle wxsharp_radio_get_first(wxsharp_handle ctrl) { return static_cast<wxRadioButton*>(ctrl)->GetFirstInGroup(); }
+wxsharp_handle wxsharp_radio_get_last(wxsharp_handle ctrl) { return static_cast<wxRadioButton*>(ctrl)->GetLastInGroup(); }
+wxsharp_handle wxsharp_radio_get_previous(wxsharp_handle ctrl) { return static_cast<wxRadioButton*>(ctrl)->GetPreviousInGroup(); }
+wxsharp_handle wxsharp_radio_get_next(wxsharp_handle ctrl) { return static_cast<wxRadioButton*>(ctrl)->GetNextInGroup(); }

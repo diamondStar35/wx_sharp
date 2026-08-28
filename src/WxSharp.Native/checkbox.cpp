@@ -18,11 +18,7 @@ int wxsharp_checkbox_get_3state(wxsharp_handle ctrl)
 
 void wxsharp_checkbox_set_3state(wxsharp_handle ctrl, int state)
 {
-    auto* box = static_cast<wxCheckBox*>(ctrl);
-    // wxWidgets asserts when a two-state box is asked to become undetermined; refuse it here instead.
-    if (state == wxCHK_UNDETERMINED && !box->Is3State())
-        return;
-    box->Set3StateValue(static_cast<wxCheckBoxState>(state));
+    static_cast<wxCheckBox*>(ctrl)->Set3StateValue(static_cast<wxCheckBoxState>(state));
 }
 
 bool wxsharp_checkbox_is_3state(wxsharp_handle ctrl) { return static_cast<wxCheckBox*>(ctrl)->Is3State(); }
@@ -32,3 +28,7 @@ bool wxsharp_checkbox_is_3rd_state_allowed_for_user(wxsharp_handle ctrl)
     return static_cast<wxCheckBox*>(ctrl)->Is3rdStateAllowedForUser();
 }
 void wxsharp_checkbox_set(wxsharp_handle ctrl, bool value) { static_cast<wxCheckBox*>(ctrl)->SetValue(value); }
+void wxsharp_checkbox_set_transparent_part_colour(wxsharp_handle ctrl, unsigned int argb)
+{
+    static_cast<wxCheckBox*>(ctrl)->SetTransparentPartColour(ColourFromArgb(argb));
+}

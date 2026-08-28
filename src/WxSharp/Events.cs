@@ -167,6 +167,7 @@ internal static class EventId
     internal const int TextCopy = 201;
     internal const int TextCut = 202;
     internal const int TextPaste = 203;
+    internal const int ClipboardChanged = 204;
 
     internal const int CallAfter = 1001;
 
@@ -212,15 +213,96 @@ internal unsafe struct NativeVirtualListRequest
     internal uint Size, Version;
     internal long Token;
     internal long Item;
+    internal long OtherItem;
     internal int Column;
     internal byte* Buffer;
     internal int BufferLength;
     internal int RequiredLength;
+    internal int Operation;
+    internal int Result;
+}
+
+/// <summary>Which wxWidgets virtual member is being asked of managed code. The values match the
+/// <c>WXSHARP_VIRT_*</c> constants in <c>wxsharp.h</c>.</summary>
+internal enum VirtualMember
+{
+    AcceptsFocus = 1,
+    AcceptsFocusFromKeyboard = 2,
+    AcceptsFocusRecursively = 3,
+    Validate = 4,
+    TransferDataToWindow = 5,
+    TransferDataFromWindow = 6,
+    InitDialog = 7,
+    ClientAreaOrigin = 8,
+    AddChild = 9,
+    RemoveChild = 10,
+    InheritAttributes = 11,
+    ShouldInheritColours = 12,
+    OnInternalIdle = 13,
+    MainWindowOfCompositeControl = 14,
+    InformFirstDirection = 15,
+    SetCanFocus = 16,
+    EnableVisibleFocus = 17,
+    DoEnable = 18,
+    DoGetPosition = 19,
+    DoGetSize = 20,
+    DoGetClientSize = 21,
+    BestSize = 22,
+    BestClientSize = 23,
+    DoSetSize = 24,
+    DoSetClientSize = 25,
+    DoSetSizeHints = 26,
+    DoMoveWindow = 27,
+    DoSetWindowVariant = 28,
+    DefaultBorder = 29,
+    DoFreeze = 30,
+    DoThaw = 31,
+    HasTransparentBackground = 32,
+    Destroy = 33,
+
+    // Members that exist on one class rather than on wxWindow.
+    ShouldPreventAppExit = 34,
+    GetContentWindow = 35,
+    OnCreateStatusBar = 36,
+    OnCreateToolBar = 37,
+    DoGiveHelp = 38,
+    ShouldScrollToChildOnFocus = 39,
+    SizeAvailableForScrollTarget = 40,
+    GridColLinePen = 41,
+    GridRowLinePen = 42,
+    GridDefaultLinePen = 43,
+
+    SetValidator = 44,
+    GetValidator = 45,
+    ProcessEvent = 46,
+    TryBefore = 47,
+    TryAfter = 48,
+}
+
+/// <summary>One virtual member being asked of a managed subclass, and its answer. Leaving
+/// <see cref="Handled"/> clear lets wxWidgets run its own implementation.</summary>
+internal unsafe struct NativeVirtualRequest
+{
+    internal uint Size, Version;
+    internal long Token;
+    internal long Handle;
+    internal int Which;
+    internal int Handled;
+    internal int Result;
+    internal int X;
+    internal int Y;
+    internal fixed int Args[6];
+
+    // A string argument, owned natively and valid only for the duration of the callback.
+    internal byte* Text;
+
+    // A packed 0xAARRGGBB colour, for the members that answer with a pen.
+    internal uint UintValue;
 }
 
 /// <summary>Builds the arguments for one event kind. Held by <see cref="EventType{TEventArgs}"/> so the
 /// managed side needs no reflection or type switch to construct them.</summary>
-internal delegate WxEventArgs EventArgsFactory(Window source, in NativeEvent e);
+internal delegate WxEventArgs EventArgsFactory(EvtHandler source, in NativeEvent e);
 
 /// <summary>The modifier keys held down when an input event was raised.</summary>
 [Flags]
@@ -239,15 +321,21 @@ public enum KeyModifiers
 
 public class WxEventArgs : EventArgs
 {
-    public Window Source { get; }
+    /// <summary>What raised the event, following <c>wxEvent.GetEventObject</c>. Usually the window the
+    /// event happened on; an application-level event such as <see cref="WxEvents.ActivateApp"/> reports the
+    /// <see cref="App"/>. Use <see cref="SourceWindow"/> when a window is what you need.</summary>
+    public EvtHandler Source { get; }
+
+    /// <summary>The window that raised the event, or null for an application-level event.</summary>
+    public Window? SourceWindow => Source as Window;
     public int Id { get; }
 
     /// <summary>Whether this handler asked for normal processing to continue. False unless
     /// <see cref="Skip"/> was called.</summary>
     public bool Skipped { get; private set; }
 
-    internal WxEventArgs(Window source, int id) { Source = source; Id = id; }
-    internal WxEventArgs(Window source, in NativeEvent e) : this(source, e.Id) { }
+    internal WxEventArgs(EvtHandler source, int id) { Source = source; Id = id; }
+    internal WxEventArgs(EvtHandler source, in NativeEvent e) : this(source, e.Id) { }
 
     /// <summary>Asks for the event to be processed as though this handler had not run: the control's own
     /// behaviour, the next handler, and - for a command event - propagation to the parent.</summary>
@@ -277,7 +365,7 @@ public abstract class NotifyEventArgs : WxEventArgs
     /// <summary>Allows the action, undoing an earlier <see cref="Veto"/>.</summary>
     public void Allow() => IsAllowed = true;
 
-    internal NotifyEventArgs(Window source, in NativeEvent e) : base(source, e) { }
+    internal NotifyEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) { }
 }
 
 public sealed class EventType<TEventArgs> where TEventArgs : WxEventArgs
@@ -289,19 +377,19 @@ public sealed class EventType<TEventArgs> where TEventArgs : WxEventArgs
 
 public sealed class EventBinding : IDisposable
 {
-    private Window? _window;
+    private EvtHandler? _handler;
     internal int EventId { get; }
     internal long Token { get; }
-    internal EventBinding(Window window, int eventId, long token)
+    internal EventBinding(EvtHandler handler, int eventId, long token)
     {
-        _window = window; EventId = eventId; Token = token;
+        _handler = handler; EventId = eventId; Token = token;
     }
     public void Dispose()
     {
-        var window = _window;
-        if (window is null) return;
-        _window = null;
-        window.RemoveBinding(EventId, Token);
+        var handler = _handler;
+        if (handler is null) return;
+        _handler = null;
+        handler.RemoveBinding(EventId, Token);
     }
 }
 
@@ -322,7 +410,7 @@ public sealed class CommandEventArgs : WxEventArgs
     /// <summary>True when the command came from a control that is now checked.</summary>
     public bool IsChecked => Value != 0;
 
-    internal CommandEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal CommandEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Value = e.IntValue;
         Selection = e.Selection;
@@ -335,7 +423,7 @@ public sealed class BookEventArgs : NotifyEventArgs
 {
     public int Selection { get; }
     public int PreviousSelection { get; }
-    internal BookEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal BookEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Selection = e.Selection;
         PreviousSelection = e.OldSelection;
@@ -355,7 +443,7 @@ public sealed class CloseEventArgs : WxEventArgs
     /// <summary>Refuses the close. Only meaningful when <see cref="CanVeto"/> is true.</summary>
     public void Veto(bool veto = true) => Vetoed = veto;
 
-    internal CloseEventArgs(Window source, in NativeEvent e) : base(source, e) => CanVeto = e.CanVeto != 0;
+    internal CloseEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => CanVeto = e.CanVeto != 0;
 }
 
 public sealed class KeyEventArgs : WxEventArgs
@@ -379,7 +467,7 @@ public sealed class KeyEventArgs : WxEventArgs
     public bool Alt => (Modifiers & KeyModifiers.Alt) != 0;
     public bool Meta => (Modifiers & KeyModifiers.Meta) != 0;
 
-    internal KeyEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal KeyEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         KeyCode = e.KeyCode;
         Modifiers = (KeyModifiers)e.Modifiers;
@@ -407,7 +495,7 @@ public sealed class MouseEventArgs : WxEventArgs
     public bool Shift => (Modifiers & KeyModifiers.Shift) != 0;
     public bool Alt => (Modifiers & KeyModifiers.Alt) != 0;
 
-    internal MouseEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal MouseEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Position = new Point(e.X, e.Y);
         Button = (MouseButton)e.MouseButton;
@@ -427,7 +515,7 @@ public sealed class ContextMenuEventArgs : WxEventArgs
     /// belongs at the focused item rather than under the mouse.</summary>
     public bool FromKeyboard { get; }
 
-    internal ContextMenuEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal ContextMenuEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         ScreenPosition = new Point(e.X, e.Y);
         FromKeyboard = e.X < 0 && e.Y < 0;
@@ -437,30 +525,30 @@ public sealed class ContextMenuEventArgs : WxEventArgs
 public sealed class SizeEventArgs : WxEventArgs
 {
     public Size Size { get; }
-    internal SizeEventArgs(Window source, in NativeEvent e) : base(source, e) => Size = new Size(e.Width, e.Height);
+    internal SizeEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Size = new Size(e.Width, e.Height);
 }
 
 public sealed class MoveEventArgs : WxEventArgs
 {
     public Point Position { get; }
-    internal MoveEventArgs(Window source, in NativeEvent e) : base(source, e) => Position = new Point(e.X, e.Y);
+    internal MoveEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Position = new Point(e.X, e.Y);
 }
 
 public sealed class ActivateEventArgs : WxEventArgs
 {
     public bool Active { get; }
-    internal ActivateEventArgs(Window source, in NativeEvent e) : base(source, e) => Active = e.Active != 0;
+    internal ActivateEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Active = e.Active != 0;
 }
 
 public sealed class ShowEventArgs : WxEventArgs
 {
     public bool Shown { get; }
-    internal ShowEventArgs(Window source, in NativeEvent e) : base(source, e) => Shown = e.Active != 0;
+    internal ShowEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Shown = e.Active != 0;
 }
 
 public sealed class PaintEventArgs : WxEventArgs
 {
-    internal PaintEventArgs(Window source, in NativeEvent e) : base(source, e) { }
+    internal PaintEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) { }
 }
 
 /// <summary>An event from a <see cref="ListCtrl"/>.</summary>
@@ -475,7 +563,7 @@ public sealed class ListEventArgs : NotifyEventArgs
     /// <summary>The key pressed, for <see cref="WxEvents.ListKeyDown"/>.</summary>
     public Key Code { get; }
 
-    internal ListEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal ListEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Index = e.Item;
         Column = e.Column;
@@ -495,7 +583,7 @@ public sealed class TreeEventArgs : NotifyEventArgs
     public string Label { get; }
     public Key Code { get; }
 
-    internal TreeEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal TreeEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Item = new TreeItemId(e.Item);
         PreviousItem = new TreeItemId(e.OldItem);
@@ -509,7 +597,7 @@ public sealed class DataViewEventArgs : WxEventArgs
 {
     public DataViewItem Item { get; }
     public int Column { get; }
-    internal DataViewEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal DataViewEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Item = new DataViewItem(e.Item);
         Column = e.Column;
@@ -521,7 +609,7 @@ public sealed class SpinEventArgs : WxEventArgs
 {
     public int Value { get; }
     public double DoubleValue { get; }
-    internal SpinEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal SpinEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Value = e.IntValue;
         DoubleValue = e.DoubleValue;
@@ -531,20 +619,20 @@ public sealed class SpinEventArgs : WxEventArgs
 public sealed class ScrollEventArgs : WxEventArgs
 {
     public int Position { get; }
-    internal ScrollEventArgs(Window source, in NativeEvent e) : base(source, e) => Position = e.IntValue;
+    internal ScrollEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Position = e.IntValue;
 }
 
 public sealed class SplitterEventArgs : NotifyEventArgs
 {
     public int SashPosition { get; }
-    internal SplitterEventArgs(Window source, in NativeEvent e) : base(source, e) => SashPosition = e.IntValue;
+    internal SplitterEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => SashPosition = e.IntValue;
 }
 
 public sealed class GridEventArgs : WxEventArgs
 {
     public int Row { get; }
     public int Column { get; }
-    internal GridEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal GridEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Row = (int)e.Item;
         Column = e.Column;
@@ -556,14 +644,14 @@ public sealed class DateEventArgs : WxEventArgs
 {
     /// <summary>The new value, or null when the picker holds no date.</summary>
     public DateTime? Date { get; }
-    internal DateEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal DateEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
         => Date = e.Active != 0 ? DateTimeOffset.FromUnixTimeMilliseconds(e.Item).UtcDateTime : null;
 }
 
 public sealed class HyperlinkEventArgs : WxEventArgs
 {
     public string Url { get; }
-    internal HyperlinkEventArgs(Window source, in NativeEvent e) : base(source, e) => Url = e.GetText();
+    internal HyperlinkEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Url = e.GetText();
 }
 
 /// <summary>The question wxWidgets asks about a command's state, on idle and whenever a menu is about to
@@ -581,7 +669,7 @@ public sealed class HyperlinkEventArgs : WxEventArgs
 /// </remarks>
 public sealed class UpdateUIEventArgs : WxEventArgs
 {
-    internal UpdateUIEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal UpdateUIEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         _enabled = e.Active != 0;
         _checked = e.IntValue != 0;
@@ -647,7 +735,7 @@ public sealed class IdleEventArgs : WxEventArgs
 {
     /// <summary>Whether something has already asked to be woken again immediately.</summary>
     public bool MoreRequested { get; }
-    internal IdleEventArgs(Window source, in NativeEvent e) : base(source, e) => MoreRequested = e.Active != 0;
+    internal IdleEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => MoreRequested = e.Active != 0;
 }
 
 /// <summary>A menu is opening, closing, or an item in it is highlighted.</summary>
@@ -659,7 +747,7 @@ public sealed class MenuEventArgs : WxEventArgs
     /// <summary>True when this is a context menu rather than one on the menu bar.</summary>
     public bool IsPopup { get; }
 
-    internal MenuEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal MenuEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         MenuId = e.IntValue;
         IsPopup = e.Active != 0;
@@ -675,7 +763,7 @@ public sealed class DropFilesEventArgs : WxEventArgs
     /// <summary>Where they were dropped, in client coordinates.</summary>
     public Point Position { get; }
 
-    internal unsafe DropFilesEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal unsafe DropFilesEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Position = new Point(e.X, e.Y);
         var count = NativeMethods.wxsharp_dropfiles_count();
@@ -700,7 +788,7 @@ public sealed class NavigationKeyEventArgs : WxEventArgs
     /// <summary>True when this is Ctrl+Tab, which moves between panes rather than between controls.</summary>
     public bool IsWindowChange { get; }
 
-    internal NavigationKeyEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal NavigationKeyEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Forward = e.Active != 0;
         IsWindowChange = e.IntValue != 0;
@@ -712,7 +800,7 @@ public sealed class HelpEventArgs : WxEventArgs
 {
     /// <summary>Where help was asked for, in screen coordinates.</summary>
     public Point ScreenPosition { get; }
-    internal HelpEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal HelpEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
         => ScreenPosition = new Point(e.X, e.Y);
 }
 
@@ -725,7 +813,7 @@ public sealed class TextUrlEventArgs : WxEventArgs
     /// <summary>One past the last character of the URL.</summary>
     public int End { get; }
 
-    internal TextUrlEventArgs(Window source, in NativeEvent e) : base(source, e)
+    internal TextUrlEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
         Start = e.Selection;
         End = e.OldSelection;
@@ -742,34 +830,34 @@ public static class WxEvents
 {
     private static EventType<T> Make<T>(int id, EventArgsFactory factory) where T : WxEventArgs => new(id, factory);
 
-    private static WxEventArgs Command(Window w, in NativeEvent e) => new CommandEventArgs(w, e);
-    private static WxEventArgs Key(Window w, in NativeEvent e) => new KeyEventArgs(w, e);
-    private static WxEventArgs Mouse(Window w, in NativeEvent e) => new MouseEventArgs(w, e);
-    private static WxEventArgs Book(Window w, in NativeEvent e) => new BookEventArgs(w, e);
-    private static WxEventArgs List(Window w, in NativeEvent e) => new ListEventArgs(w, e);
-    private static WxEventArgs Tree(Window w, in NativeEvent e) => new TreeEventArgs(w, e);
-    private static WxEventArgs DataView(Window w, in NativeEvent e) => new DataViewEventArgs(w, e);
-    private static WxEventArgs Spin_(Window w, in NativeEvent e) => new SpinEventArgs(w, e);
-    private static WxEventArgs Scroll(Window w, in NativeEvent e) => new ScrollEventArgs(w, e);
-    private static WxEventArgs Splitter(Window w, in NativeEvent e) => new SplitterEventArgs(w, e);
-    private static WxEventArgs Grid(Window w, in NativeEvent e) => new GridEventArgs(w, e);
-    private static WxEventArgs Date(Window w, in NativeEvent e) => new DateEventArgs(w, e);
-    private static WxEventArgs Link(Window w, in NativeEvent e) => new HyperlinkEventArgs(w, e);
-    private static WxEventArgs Plain(Window w, in NativeEvent e) => new WxEventArgs(w, e);
-    private static WxEventArgs Close(Window w, in NativeEvent e) => new CloseEventArgs(w, e);
-    private static WxEventArgs Show(Window w, in NativeEvent e) => new ShowEventArgs(w, e);
-    private static WxEventArgs Activate(Window w, in NativeEvent e) => new ActivateEventArgs(w, e);
-    private static WxEventArgs Resize(Window w, in NativeEvent e) => new SizeEventArgs(w, e);
-    private static WxEventArgs Move(Window w, in NativeEvent e) => new MoveEventArgs(w, e);
-    private static WxEventArgs Repaint(Window w, in NativeEvent e) => new PaintEventArgs(w, e);
-    private static WxEventArgs Context(Window w, in NativeEvent e) => new ContextMenuEventArgs(w, e);
-    private static WxEventArgs UpdateUIArgs(Window w, in NativeEvent e) => new UpdateUIEventArgs(w, e);
-    private static WxEventArgs IdleArgs(Window w, in NativeEvent e) => new IdleEventArgs(w, e);
-    private static WxEventArgs MenuArgs(Window w, in NativeEvent e) => new MenuEventArgs(w, e);
-    private static WxEventArgs DropFilesArgs(Window w, in NativeEvent e) => new DropFilesEventArgs(w, e);
-    private static WxEventArgs NavigationArgs(Window w, in NativeEvent e) => new NavigationKeyEventArgs(w, e);
-    private static WxEventArgs HelpArgs(Window w, in NativeEvent e) => new HelpEventArgs(w, e);
-    private static WxEventArgs TextUrlArgs(Window w, in NativeEvent e) => new TextUrlEventArgs(w, e);
+    private static WxEventArgs Command(EvtHandler w, in NativeEvent e) => new CommandEventArgs(w, e);
+    private static WxEventArgs Key(EvtHandler w, in NativeEvent e) => new KeyEventArgs(w, e);
+    private static WxEventArgs Mouse(EvtHandler w, in NativeEvent e) => new MouseEventArgs(w, e);
+    private static WxEventArgs Book(EvtHandler w, in NativeEvent e) => new BookEventArgs(w, e);
+    private static WxEventArgs List(EvtHandler w, in NativeEvent e) => new ListEventArgs(w, e);
+    private static WxEventArgs Tree(EvtHandler w, in NativeEvent e) => new TreeEventArgs(w, e);
+    private static WxEventArgs DataView(EvtHandler w, in NativeEvent e) => new DataViewEventArgs(w, e);
+    private static WxEventArgs Spin_(EvtHandler w, in NativeEvent e) => new SpinEventArgs(w, e);
+    private static WxEventArgs Scroll(EvtHandler w, in NativeEvent e) => new ScrollEventArgs(w, e);
+    private static WxEventArgs Splitter(EvtHandler w, in NativeEvent e) => new SplitterEventArgs(w, e);
+    private static WxEventArgs Grid(EvtHandler w, in NativeEvent e) => new GridEventArgs(w, e);
+    private static WxEventArgs Date(EvtHandler w, in NativeEvent e) => new DateEventArgs(w, e);
+    private static WxEventArgs Link(EvtHandler w, in NativeEvent e) => new HyperlinkEventArgs(w, e);
+    private static WxEventArgs Plain(EvtHandler w, in NativeEvent e) => new WxEventArgs(w, e);
+    private static WxEventArgs Close(EvtHandler w, in NativeEvent e) => new CloseEventArgs(w, e);
+    private static WxEventArgs Show(EvtHandler w, in NativeEvent e) => new ShowEventArgs(w, e);
+    private static WxEventArgs Activate(EvtHandler w, in NativeEvent e) => new ActivateEventArgs(w, e);
+    private static WxEventArgs Resize(EvtHandler w, in NativeEvent e) => new SizeEventArgs(w, e);
+    private static WxEventArgs Move(EvtHandler w, in NativeEvent e) => new MoveEventArgs(w, e);
+    private static WxEventArgs Repaint(EvtHandler w, in NativeEvent e) => new PaintEventArgs(w, e);
+    private static WxEventArgs Context(EvtHandler w, in NativeEvent e) => new ContextMenuEventArgs(w, e);
+    private static WxEventArgs UpdateUIArgs(EvtHandler w, in NativeEvent e) => new UpdateUIEventArgs(w, e);
+    private static WxEventArgs IdleArgs(EvtHandler w, in NativeEvent e) => new IdleEventArgs(w, e);
+    private static WxEventArgs MenuArgs(EvtHandler w, in NativeEvent e) => new MenuEventArgs(w, e);
+    private static WxEventArgs DropFilesArgs(EvtHandler w, in NativeEvent e) => new DropFilesEventArgs(w, e);
+    private static WxEventArgs NavigationArgs(EvtHandler w, in NativeEvent e) => new NavigationKeyEventArgs(w, e);
+    private static WxEventArgs HelpArgs(EvtHandler w, in NativeEvent e) => new HelpEventArgs(w, e);
+    private static WxEventArgs TextUrlArgs(EvtHandler w, in NativeEvent e) => new TextUrlEventArgs(w, e);
 
     // Window lifecycle and geometry.
     public static EventType<CloseEventArgs> Closing { get; } = Make<CloseEventArgs>(EventId.Close, Close);
@@ -854,6 +942,7 @@ public static class WxEvents
     public static EventType<DateEventArgs> DateChanged { get; } = Make<DateEventArgs>(EventId.DateChanged, Date);
     public static EventType<DateEventArgs> TimeChanged { get; } = Make<DateEventArgs>(EventId.TimeChanged, Date);
     public static EventType<CommandEventArgs> Timer { get; } = Make<CommandEventArgs>(EventId.Timer, Command);
+    public static EventType<WxEventArgs> ClipboardChanged { get; } = Make<WxEventArgs>(EventId.ClipboardChanged, Plain);
     public static EventType<SpinEventArgs> Spin { get; } = Make<SpinEventArgs>(EventId.Spin, Spin_);
     public static EventType<SpinEventArgs> SpinUp { get; } = Make<SpinEventArgs>(EventId.SpinUp, Spin_);
     public static EventType<SpinEventArgs> SpinDown { get; } = Make<SpinEventArgs>(EventId.SpinDown, Spin_);

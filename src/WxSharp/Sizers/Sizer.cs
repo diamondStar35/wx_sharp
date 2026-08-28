@@ -369,6 +369,8 @@ public abstract class Sizer
 
     /// <summary>Whether this sizer, or one it is nested in, has been given to a window yet.</summary>
     public bool HasContainingWindow => NativeMethods.wxsharp_sizer_containing_window(Handle) != 0;
+    public Window? ContainingWindow => App.Lookup(NativeMethods.wxsharp_sizer_containing_window(Handle));
+    public Window? GetContainingWindow() => ContainingWindow;
 
     private static void Validate(int proportion, int border)
     {

@@ -73,8 +73,13 @@ public class Frame : Window
     {
         var p = position ?? new Point(-1, -1);
         var s = size ?? new Size(-1, -1);
-        Initialize(NativeMethods.wxsharp_window_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width, s.Height,
-            (int)style, Token));
+        // A subclass may override the wxWidgets virtuals Window exposes, and C++ fixes a vtable at
+        // construction, so the type being constructed decides which native constructor runs.
+        Initialize(GetType() == typeof(Frame)
+            ? NativeMethods.wxsharp_window_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width, s.Height,
+                (int)style, Token)
+            : NativeMethods.wxsharp_custom_frame_create(parent?.Handle ?? 0, id, title, p.X, p.Y, s.Width,
+                s.Height, (int)style, Token));
         if (App.Current!.TopWindow is null) App.Current.TopWindow = this;
     }
 
@@ -410,6 +415,62 @@ public class Frame : Window
     {
         OwnerApp.VerifyAccess();
         return NativeMethods.wxsharp_frame_restore_to_geometry(Handle, geometry ?? string.Empty);
+    }
+
+    // ---- Overridable wxFrame virtuals -------------------------------------------------------------------
+    // These exist on wxFrame rather than on wxWindow, so they are layered on the window set rather than
+    // part of it. Only a subclass of Frame gets them; an exact Frame pays nothing.
+
+    /// <summary>Whether this window still existing should keep the application alive. A window doing work
+    /// in the background answers true so closing the last visible frame does not end the process. Follows
+    /// <c>wxTopLevelWindow.ShouldPreventAppExit</c>.</summary>
+    public virtual bool ShouldPreventAppExit() => BaseBool(VirtualMember.ShouldPreventAppExit);
+
+    /// <summary>Builds the status bar <see cref="CreateStatusBar"/> asks for. Override it to supply a
+    /// StatusBar subclass of your own. Follows <c>wxFrame.OnCreateStatusBar</c>.</summary>
+    public virtual StatusBar? OnCreateStatusBar(int fields, StatusBarStyle style, int id, string name)
+    {
+        var request = CallBaseWithText(VirtualMember.OnCreateStatusBar, name, fields, (int)style, id);
+        return App.Lookup((nint)request.Handle) as StatusBar;
+    }
+
+    /// <summary>Builds the tool bar <see cref="CreateToolBar"/> asks for. Follows
+    /// <c>wxFrame.OnCreateToolBar</c>.</summary>
+    public virtual ToolBar? OnCreateToolBar(ToolBarStyle style, int id, string name)
+    {
+        var request = CallBaseWithText(VirtualMember.OnCreateToolBar, name, (int)style, id);
+        return App.Lookup((nint)request.Handle) as ToolBar;
+    }
+
+    /// <summary>Shows the help text for whatever the pointer or keyboard is on - a menu item, or a tool.
+    /// wxWidgets sends it to the status bar; overriding this is how it goes somewhere else instead, which
+    /// is what an application that speaks its help needs. Follows <c>wxFrame.DoGiveHelp</c>.</summary>
+    /// <param name="text">The help to show.</param>
+    /// <param name="show">False when the item has been left, so the help should be cleared.</param>
+    protected virtual void DoGiveHelp(string text, bool show)
+        => CallBaseWithText(VirtualMember.DoGiveHelp, text, show ? 1 : 0);
+
+    internal override unsafe bool TryAnswerVirtual(ref NativeVirtualRequest request)
+    {
+        switch ((VirtualMember)request.Which)
+        {
+            case VirtualMember.ShouldPreventAppExit:
+                request.Result = ShouldPreventAppExit() ? 1 : 0;
+                return true;
+            case VirtualMember.OnCreateStatusBar:
+                request.Handle = OnCreateStatusBar(request.Args[0], (StatusBarStyle)request.Args[1],
+                    request.Args[2], ReadText(request))?.NativeHandleForLookup ?? 0;
+                return true;
+            case VirtualMember.OnCreateToolBar:
+                request.Handle = OnCreateToolBar((ToolBarStyle)request.Args[0], request.Args[1],
+                    ReadText(request))?.NativeHandleForLookup ?? 0;
+                return true;
+            case VirtualMember.DoGiveHelp:
+                DoGiveHelp(ReadText(request), request.Args[0] != 0);
+                return true;
+            default:
+                return base.TryAnswerVirtual(ref request);
+        }
     }
 }
 

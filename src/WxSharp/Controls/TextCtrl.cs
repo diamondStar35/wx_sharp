@@ -34,7 +34,9 @@ public class TextCtrl : Control, ITextEntry
     public TextCtrl(Window parent, int id = WindowId.Any, string value = "", TextCtrlStyle style = TextCtrlStyle.None,
         Point? position = null, Size? size = null) : base(parent, id)
     {
-        Initialize(NativeMethods.wxsharp_textbox_create(parent.Handle, id, value, (int)style, Token));
+        Initialize(GetType() == typeof(TextCtrl)
+            ? NativeMethods.wxsharp_textbox_create(parent.Handle, id, value, (int)style, Token)
+            : NativeMethods.wxsharp_custom_textbox_create(parent.Handle, id, value, (int)style, Token));
         ApplyInitialGeometry(position, size);
     }
 

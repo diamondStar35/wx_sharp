@@ -4,6 +4,21 @@
     <ProjectReference Include="..\..\src\WxSharp\WxSharp.csproj" />
   </ItemGroup>
 
+  <!-- A direct launch must use the same native wrapper as the managed assembly being tested. Previously
+       an old wx.dll could remain in bin and silently load instead of build/stage/win-x64/native/wx.dll. -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' And Exists('$(MSBuildProjectDirectory)\..\..\build\stage\win-x64\native')">
+    <Content Include="$(MSBuildProjectDirectory)\..\..\build\stage\win-x64\native\*.dll"
+             Link="%(Filename)%(Extension)"
+             CopyToOutputDirectory="Always"
+             CopyToPublishDirectory="Always" />
+  </ItemGroup>
+
+  <Target Name="RequireStagedWindowsNativeRuntime"
+          BeforeTargets="Build"
+          Condition="'$(OS)' == 'Windows_NT' And !Exists('$(MSBuildProjectDirectory)\..\..\build\stage\win-x64\native\wx.dll')">
+    <Error Text="Build the staged native wrapper first with scripts\build-wrapper-windows.ps1." />
+  </Target>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>

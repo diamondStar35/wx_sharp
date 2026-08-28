@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace WxSharp;
 
@@ -22,11 +23,15 @@ public class ListBox : Control
     }
 
     public ListBox(Window parent, int id = WindowId.Any, ListBoxStyle style = ListBoxStyle.Single,
-        Point? position = null, Size? size = null) : base(parent, id)
+        Point? position = null, Size? size = null) : this(parent, id, deferInitialization: true)
     {
-        Initialize(NativeMethods.wxsharp_listbox_create(parent.Handle, id, (int)style, Token));
+        Initialize(GetType() == typeof(ListBox)
+            ? NativeMethods.wxsharp_listbox_create(parent.Handle, id, (int)style, Token)
+            : NativeMethods.wxsharp_custom_listbox_create(parent.Handle, id, (int)style, Token));
         ApplyInitialGeometry(position, size);
     }
+
+    private protected ListBox(Window parent, int id, bool deferInitialization) : base(parent, id) { }
 
     /// <summary>Appends an item to the end.</summary>
     public void Add(string item) => NativeMethods.wxsharp_listbox_append(Handle, item);
@@ -79,6 +84,40 @@ public class ListBox : Control
 
     /// <summary>Scrolls the list so the item at <paramref name="index"/> is visible.</summary>
     public void EnsureVisible(int index) => NativeMethods.wxsharp_listbox_ensure_visible(Handle, index);
+
+    /// <summary>Replaces every item in one go, following <c>wxListBox.Set</c>. This is what a list rebuilt
+    /// from changed data wants: clearing and appending item by item leaves the control redrawing between
+    /// each, which flickers and makes a screen reader announce a list that is still being filled.</summary>
+    public void Set(IEnumerable<string> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        Verify();
+        // wxWidgets has no bulk setter across the C boundary, so the redraw is suppressed for the duration
+        // instead - which is what makes the rebuild look and sound like one change rather than many.
+        Freeze();
+        try
+        {
+            NativeMethods.wxsharp_listbox_clear(Handle);
+            foreach (var item in items) NativeMethods.wxsharp_listbox_append(Handle, item);
+        }
+        finally { Thaw(); }
+    }
+
+    /// <summary>Replaces the text of one item, following <c>wxListBox.SetString</c>.</summary>
+    public void SetString(int index, string text) => NativeMethods.wxsharp_listbox_set_string(Handle, index, text);
+
+    /// <summary>Every item's text, in order.</summary>
+    public string[] GetStrings()
+    {
+        var count = Count;
+        var items = new string[count];
+        for (var i = 0; i < count; i++) items[i] = this[i];
+        return items;
+    }
+
+    /// <summary>Clears the selection, following <c>wxListBox.DeselectAll</c>. On a single-selection list
+    /// wxWidgets asserts on <c>DeselectAll</c>, so that case clears the selection the way it requires.</summary>
+    public void DeselectAll() => NativeMethods.wxsharp_listbox_deselect_all(Handle);
 
     private unsafe string GetItem(int index)
     {

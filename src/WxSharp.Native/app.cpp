@@ -1,5 +1,7 @@
 // wxWidgets application lifetime. Managed App owns this one-shot application and enters wx's real loop.
 #include "internal.h"
+#include <cstdio>
+#include <cstdlib>
 #ifdef __WXMSW__
 #include <windows.h>
 #endif
@@ -9,6 +11,26 @@ wxsharp_event_cb g_event_cb = nullptr;
 namespace
 {
     bool g_initialized = false;
+
+#if wxDEBUG_LEVEL
+    void NonInteractiveAssertHandler(const wxString& file, int line, const wxString& func,
+                                     const wxString& condition, const wxString& message)
+    {
+        const wxScopedCharBuffer fileUtf8 = file.utf8_str();
+        const wxScopedCharBuffer funcUtf8 = func.utf8_str();
+        const wxScopedCharBuffer conditionUtf8 = condition.utf8_str();
+        const wxScopedCharBuffer messageUtf8 = message.utf8_str();
+        std::fprintf(stderr,
+                     "wxWidgets assertion failed at %s(%d) in %s: %s%s%s\n",
+                     fileUtf8.data() ? fileUtf8.data() : "<unknown>", line,
+                     funcUtf8.data() ? funcUtf8.data() : "<unknown>",
+                     conditionUtf8.data() ? conditionUtf8.data() : "<unknown>",
+                     message.empty() ? "" : " -- ",
+                     messageUtf8.data() ? messageUtf8.data() : "");
+        std::fflush(stderr);
+        std::_Exit(86);
+    }
+#endif
 
     class WxSharpApp : public wxApp
     {
@@ -43,6 +65,13 @@ bool wxsharp_init()
 {
     if (g_initialized)
         return true;
+#if wxDEBUG_LEVEL
+    // Automated GUI tests must never open wxWidgets' modal Debug Alert: if the desktop is unattended or
+    // the alert is behind the test window, that dialog can make the entire session appear frozen. This is
+    // deliberately opt-in so applications retain wxWidgets/Phoenix's normal assertion behaviour.
+    if (std::getenv("WXSHARP_TEST_NONINTERACTIVE"))
+        wxSetAssertHandler(NonInteractiveAssertHandler);
+#endif
     EnableCommonControlsV6();
     wxApp::SetInstance(new WxSharpApp());
     int argc = 0;
@@ -109,6 +138,9 @@ void wxsharp_shutdown()
     if (!g_initialized)
         return;
     g_event_cb = nullptr;
+    wxsharp_set_accessible_handler(nullptr);
+    wxsharp_set_virtual_list_handler(nullptr);
+    wxsharp_set_virtual_handler(nullptr);
     if (wxTheApp)
         wxTheApp->OnExit();
     wxEntryCleanup();

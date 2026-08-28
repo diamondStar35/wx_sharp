@@ -18,3 +18,6 @@ int wxsharp_label_get_text(wxsharp_handle ctrl, char* buffer, int buffer_length)
 {
     return CopyToBuffer(static_cast<wxStaticText*>(ctrl)->GetLabel(), buffer, buffer_length);
 }
+
+void wxsharp_label_wrap(wxsharp_handle ctrl, int width) { static_cast<wxStaticText*>(ctrl)->Wrap(width); }
+bool wxsharp_label_is_ellipsized(wxsharp_handle ctrl) { return static_cast<wxStaticText*>(ctrl)->IsEllipsized(); }

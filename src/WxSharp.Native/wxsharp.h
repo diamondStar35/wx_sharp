@@ -256,6 +256,7 @@ extern "C" {
         WXSHARP_EV_TEXT_COPY = 201,
         WXSHARP_EV_TEXT_CUT = 202,
         WXSHARP_EV_TEXT_PASTE = 203,
+        WXSHARP_EV_CLIPBOARD_CHANGED = 204,
 
         // Internal: not bindable, delivered directly by the runtime.
         WXSHARP_EV_CALL_AFTER = 1001,
@@ -281,21 +282,117 @@ extern "C" {
     } wxsharp_accessible_request;
     typedef int (*wxsharp_accessible_cb)(wxsharp_accessible_request* request);
 
-    // A virtual list control asking for the text of one cell, the way wxListCtrl::OnGetItemText does.
-    // The handler writes UTF-8 into buffer and reports the full length in required_length, so a caller
-    // that was given too small a buffer can be asked again.
+    // A list/tree control asking a managed subclass for one of Phoenix's item virtuals. `operation` selects
+    // text, image, checked state or tree comparison; strings use buffer/required_length and scalar answers
+    // use result.
     typedef struct wxsharp_virtual_list_request
     {
         unsigned int size;
         unsigned int version;
         long long token;
         long long item;
+        long long other_item;
         int column;
         char* buffer;
         int buffer_length;
         int required_length;
+        int operation;
+        int result;
     } wxsharp_virtual_list_request;
     typedef bool (*wxsharp_virtual_list_cb)(wxsharp_virtual_list_request* request);
+
+    // A wxWidgets virtual member being asked of managed code. wxWidgets asks a window questions - may it
+    // take focus, how big does it want to be, is its content valid, where is its client area - by calling
+    // virtual members, and a managed subclass answers them here. `which` names the member; `handled` says
+    // managed code answered, and leaving it clear lets wxWidgets run its own implementation.
+    //
+    // The set is the one wxPython supports (etgtools/tweaker_tools.py, addWindowVirtuals): overriding every
+    // C++ virtual would bloat the wrapper for members no application overrides, so both projects wrap the
+    // same considered subset. Members wxPython lists that are absent here are recorded in
+    // docs/phoenix-parity.md with the reason, which is always a type the wrapper does not have yet.
+    enum
+    {
+        // Public.
+        WXSHARP_VIRT_ACCEPTS_FOCUS = 1,
+        WXSHARP_VIRT_ACCEPTS_FOCUS_FROM_KEYBOARD = 2,
+        WXSHARP_VIRT_ACCEPTS_FOCUS_RECURSIVELY = 3,
+        WXSHARP_VIRT_VALIDATE = 4,
+        WXSHARP_VIRT_TRANSFER_TO_WINDOW = 5,
+        WXSHARP_VIRT_TRANSFER_FROM_WINDOW = 6,
+        WXSHARP_VIRT_INIT_DIALOG = 7,
+        WXSHARP_VIRT_CLIENT_AREA_ORIGIN = 8,
+        WXSHARP_VIRT_ADD_CHILD = 9,
+        WXSHARP_VIRT_REMOVE_CHILD = 10,
+        WXSHARP_VIRT_INHERIT_ATTRIBUTES = 11,
+        WXSHARP_VIRT_SHOULD_INHERIT_COLOURS = 12,
+        WXSHARP_VIRT_ON_INTERNAL_IDLE = 13,
+        WXSHARP_VIRT_MAIN_WINDOW_OF_COMPOSITE = 14,
+        WXSHARP_VIRT_INFORM_FIRST_DIRECTION = 15,
+        WXSHARP_VIRT_SET_CAN_FOCUS = 16,
+        WXSHARP_VIRT_ENABLE_VISIBLE_FOCUS = 17,
+
+        // Protected.
+        WXSHARP_VIRT_DO_ENABLE = 18,
+        WXSHARP_VIRT_DO_GET_POSITION = 19,
+        WXSHARP_VIRT_DO_GET_SIZE = 20,
+        WXSHARP_VIRT_DO_GET_CLIENT_SIZE = 21,
+        WXSHARP_VIRT_BEST_SIZE = 22,
+        WXSHARP_VIRT_BEST_CLIENT_SIZE = 23,
+        WXSHARP_VIRT_DO_SET_SIZE = 24,
+        WXSHARP_VIRT_DO_SET_CLIENT_SIZE = 25,
+        WXSHARP_VIRT_DO_SET_SIZE_HINTS = 26,
+        WXSHARP_VIRT_DO_MOVE_WINDOW = 27,
+        WXSHARP_VIRT_DO_SET_WINDOW_VARIANT = 28,
+        WXSHARP_VIRT_DEFAULT_BORDER = 29,
+        WXSHARP_VIRT_DO_FREEZE = 30,
+        WXSHARP_VIRT_DO_THAW = 31,
+        WXSHARP_VIRT_HAS_TRANSPARENT_BACKGROUND = 32,
+        WXSHARP_VIRT_DESTROY = 33,
+
+        // Members that exist only on one class, so the mixin carrying them is layered on the generic one.
+        WXSHARP_VIRT_SHOULD_PREVENT_APP_EXIT = 34,   // wxTopLevelWindow
+        WXSHARP_VIRT_GET_CONTENT_WINDOW = 35,        // wxDialog
+        WXSHARP_VIRT_ON_CREATE_STATUS_BAR = 36,      // wxFrame
+        WXSHARP_VIRT_ON_CREATE_TOOL_BAR = 37,        // wxFrame
+        WXSHARP_VIRT_DO_GIVE_HELP = 38,              // wxFrame
+        WXSHARP_VIRT_SHOULD_SCROLL_TO_CHILD_ON_FOCUS = 39, // wxScrolled
+        WXSHARP_VIRT_SIZE_FOR_SCROLL_TARGET = 40,    // wxScrolled
+        WXSHARP_VIRT_GRID_COL_LINE_PEN = 41,         // wxGrid
+        WXSHARP_VIRT_GRID_ROW_LINE_PEN = 42,         // wxGrid
+        WXSHARP_VIRT_GRID_DEFAULT_LINE_PEN = 43,     // wxGrid
+
+        // The validator a window carries, and the three members every event passes through.
+        WXSHARP_VIRT_SET_VALIDATOR = 44,
+        WXSHARP_VIRT_GET_VALIDATOR = 45,
+        WXSHARP_VIRT_PROCESS_EVENT = 46,
+        WXSHARP_VIRT_TRY_BEFORE = 47,
+        WXSHARP_VIRT_TRY_AFTER = 48
+    };
+
+    // One question, and its answer. `args` carries the member's parameters; `result` its bool or int
+    // return; `x`/`y` a returned point or size, or a pair of out parameters; `handle` a window in either
+    // direction. Members with no parameters and no return use none of them.
+    typedef struct wxsharp_virtual_request
+    {
+        unsigned int size;
+        unsigned int version;
+        long long token;
+        long long handle;
+        int which;
+        int handled;
+        int result;
+        int x;
+        int y;
+        int args[6];
+
+        // A string argument, valid only for the duration of the callback - a status bar's name, or the help
+        // text a frame is being asked to show.
+        const char* text;
+
+        // A packed 0xAARRGGBB colour, for the members that answer with a pen.
+        unsigned int uint_value;
+    } wxsharp_virtual_request;
+    typedef void (*wxsharp_virtual_cb)(wxsharp_virtual_request* request);
     typedef struct wxsharp_accelerator { int modifiers; int key_code; int command_id; } wxsharp_accelerator;
 
     // ---- App lifetime ---------------------------------------------------------------------------------
@@ -303,6 +400,12 @@ extern "C" {
     WXSHARP_API void wxsharp_set_event_handler(wxsharp_event_cb cb);
     WXSHARP_API void wxsharp_set_accessible_handler(wxsharp_accessible_cb cb);
     WXSHARP_API void wxsharp_set_virtual_list_handler(wxsharp_virtual_list_cb cb);
+    WXSHARP_API void wxsharp_set_virtual_handler(wxsharp_virtual_cb cb);
+    // Runs wxWidgets' own implementation of one virtual, without dispatching to the managed override that
+    // is asking for it. This is what "calling the base implementation" compiles to.
+    WXSHARP_API void wxsharp_window_call_base(wxsharp_handle window, wxsharp_virtual_request* request);
+    WXSHARP_API int wxsharp_post_command_event(wxsharp_handle window, int event_id, int id, int int_value,
+                                               const char* text, bool process_now);
     WXSHARP_API int  wxsharp_main_loop();
     WXSHARP_API void wxsharp_exit_main_loop();
     WXSHARP_API void wxsharp_set_exit_on_frame_delete(bool value);
@@ -453,8 +556,9 @@ extern "C" {
     WXSHARP_API bool wxsharp_clipboard_flush();
     WXSHARP_API void wxsharp_clipboard_clear();
     WXSHARP_API bool wxsharp_clipboard_is_supported(int format);
+    WXSHARP_API bool wxsharp_clipboard_is_supported_async(wxsharp_handle sink);
     WXSHARP_API void wxsharp_clipboard_use_primary_selection(bool primary);
-    WXSHARP_API void wxsharp_clipboard_set_text(const char* text);
+    WXSHARP_API bool wxsharp_clipboard_set_text(const char* text);
     WXSHARP_API int  wxsharp_clipboard_get_text(char* buffer, int buffer_length);
     WXSHARP_API bool wxsharp_clipboard_set_files(const char* const* paths, int count);
     // Reads the file list and holds it until the next call; then fetch each path by index.
@@ -482,6 +586,10 @@ extern "C" {
     WXSHARP_API bool wxsharp_window_bind(wxsharp_handle window, int event_id, long long token);
     WXSHARP_API bool wxsharp_window_unbind(wxsharp_handle window, int event_id);
     WXSHARP_API void wxsharp_window_unbind_all(wxsharp_handle window);
+    // Binds an event on the application object rather than a window, for the events wxWidgets only ever
+    // sends there.
+    WXSHARP_API bool wxsharp_app_bind(int event_id, long long token);
+    WXSHARP_API bool wxsharp_app_unbind(int event_id);
     // True when wx propagates this event up the parent chain once it is skipped (command events).
     WXSHARP_API bool wxsharp_event_propagates(int event_id);
 
@@ -556,6 +664,51 @@ extern "C" {
     // ---- Explicit panel container ---------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_panel_create(wxsharp_handle parent, int id, int style, long long token);
 
+    // Creation variants whose windows route the whitelisted virtuals above back to managed code. A control
+    // has to opt in at construction, because C++ fixes its vtable there; the plain create functions stay
+    // the zero-overhead path for a control that overrides nothing.
+    WXSHARP_API wxsharp_handle wxsharp_custom_frame_create(wxsharp_handle parent, int id, const char* title,
+                                                          int x, int y, int width, int height, int style,
+                                                          long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_panel_create(wxsharp_handle parent, int id, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_button_create(wxsharp_handle parent, int id, const char* label, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_dialog_create(wxsharp_handle parent, int id, const char* title,
+                                                           int x, int y, int width, int height, int style,
+                                                           long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_activity_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_bitmapbutton_create(wxsharp_handle parent, int id, wxsharp_handle bitmap, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_checkbox_create(wxsharp_handle parent, int id, const char* label, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_checklistbox_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_choice_create(wxsharp_handle parent, int id, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_combobox_create(wxsharp_handle parent, int id, const char* value, bool readOnly, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_dataviewlist_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_dataviewtree_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_datepicker_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_gauge_create(wxsharp_handle parent, int id, int range, int value, bool vertical, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_grid_create(wxsharp_handle parent, int id, int rows, int columns, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_hyperlink_create(wxsharp_handle parent, int id, const char* label, const char* url, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_label_create(wxsharp_handle parent, int id, const char* text, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_listbox_create(wxsharp_handle parent, int id, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_notebook_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_radio_create(wxsharp_handle parent, int id, const char* label, bool group_start, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_radiobox_create(wxsharp_handle parent, int id, const char* label, const char* const* choices, int count, int columns, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_scrollbar_create(wxsharp_handle parent, int id, bool vertical, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_scrolled_create(wxsharp_handle parent, int id, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_searchctrl_create(wxsharp_handle parent, int id, const char* value, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_simplebook_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_slider_create(wxsharp_handle parent, int id, int min_value, int max_value, int value, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_spinctrl_create(wxsharp_handle parent, int id, int minValue, int maxValue, int value, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_spinctrldouble_create(wxsharp_handle parent, int id, double minValue, double maxValue, double value, double increment, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_splitter_create(wxsharp_handle parent, int id, bool vertical, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_staticbitmap_create(wxsharp_handle parent, int id, wxsharp_handle bitmap, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_staticbox_create(wxsharp_handle parent, int id, const char* label, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_staticline_create(wxsharp_handle parent, int id, bool vertical, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_textbox_create(wxsharp_handle parent, int id, const char* value, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_timepicker_create(wxsharp_handle parent, int id, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_togglebutton_create(wxsharp_handle parent, int id, const char* label, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_treectrl_create(wxsharp_handle parent, int id, int style, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_listctrl_create(wxsharp_handle parent, int id, int style, long long token);
+
     // ---- Canvas -------------------------------------------------------------------------------------
     // A non-focusable, custom-drawn surface (skipped by assistive tech). It reports a Paint event; draw from
     // the managed handler with the functions below - they only take effect during that paint. A colour with
@@ -565,8 +718,7 @@ extern "C" {
     WXSHARP_API void wxsharp_canvas_set_brush(wxsharp_handle ctrl, unsigned int argb);
     WXSHARP_API void wxsharp_canvas_set_pen(wxsharp_handle ctrl, unsigned int argb, int width);
     WXSHARP_API void wxsharp_canvas_set_text_colour(wxsharp_handle ctrl, unsigned int argb);
-    WXSHARP_API void wxsharp_canvas_set_font(wxsharp_handle ctrl, int point_size, int family, int weight,
-                                            int style, bool underline, const char* face);
+    WXSHARP_API void wxsharp_canvas_set_font(wxsharp_handle ctrl, wxsharp_handle font);
     WXSHARP_API void wxsharp_canvas_draw_rectangle(wxsharp_handle ctrl, int x, int y, int width, int height);
     WXSHARP_API void wxsharp_canvas_draw_rounded_rectangle(wxsharp_handle ctrl, int x, int y, int width, int height, int radius);
     WXSHARP_API void wxsharp_canvas_draw_line(wxsharp_handle ctrl, int x1, int y1, int x2, int y2);
@@ -579,8 +731,12 @@ extern "C" {
     WXSHARP_API void wxsharp_control_enable(wxsharp_handle ctrl, bool enable);
     WXSHARP_API void wxsharp_control_show(wxsharp_handle ctrl, bool show);
     WXSHARP_API void wxsharp_control_focus(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_control_accepts_focus(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_control_accepts_focus_from_keyboard(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_control_accepts_focus_recursively(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_control_has_flag(wxsharp_handle ctrl, int flag);
     WXSHARP_API void wxsharp_control_layout(wxsharp_handle ctrl);
-    WXSHARP_API void wxsharp_control_destroy(wxsharp_handle ctrl); // hides and destroys the control (create-on-demand UI)
+    WXSHARP_API bool wxsharp_control_destroy(wxsharp_handle ctrl); // hides and destroys the control (create-on-demand UI)
 
     // Geometry (sizes/positions in device pixels).
     WXSHARP_API void wxsharp_control_get_size(wxsharp_handle ctrl, int* width, int* height);
@@ -591,6 +747,7 @@ extern "C" {
     WXSHARP_API void wxsharp_control_set_min_size(wxsharp_handle ctrl, int width, int height);
     WXSHARP_API void wxsharp_control_set_max_size(wxsharp_handle ctrl, int width, int height);
     WXSHARP_API void wxsharp_control_get_best_size(wxsharp_handle ctrl, int* width, int* height);
+    WXSHARP_API wxsharp_handle wxsharp_control_get_font(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_control_fit(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_control_get_pointer_position(wxsharp_handle ctrl, int* x, int* y); // mouse in client coords
 
@@ -599,8 +756,7 @@ extern "C" {
     WXSHARP_API unsigned int wxsharp_control_get_background_colour(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_control_set_foreground_colour(wxsharp_handle ctrl, unsigned int argb);
     WXSHARP_API unsigned int wxsharp_control_get_foreground_colour(wxsharp_handle ctrl);
-    WXSHARP_API void wxsharp_control_set_font(wxsharp_handle ctrl, int point_size, int family, int weight,
-                                             int style, bool underline, const char* face);
+    WXSHARP_API void wxsharp_control_set_font(wxsharp_handle ctrl, wxsharp_handle font);
     WXSHARP_API void wxsharp_control_set_tooltip(wxsharp_handle ctrl, const char* text);
     WXSHARP_API int  wxsharp_control_get_name(wxsharp_handle ctrl, char* buffer, int buffer_length);
     WXSHARP_API void wxsharp_control_set_border(wxsharp_handle ctrl, int border); // WxSharp Border enum value
@@ -769,6 +925,8 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_label_create(wxsharp_handle parent, int id, const char* text, int style, long long token);
     WXSHARP_API void wxsharp_label_set_text(wxsharp_handle ctrl, const char* text);
     WXSHARP_API int  wxsharp_label_get_text(wxsharp_handle ctrl, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_label_wrap(wxsharp_handle ctrl, int width);
+    WXSHARP_API bool wxsharp_label_is_ellipsized(wxsharp_handle ctrl);
 
     // ---- Button --------------------------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_button_create(wxsharp_handle parent, int id, const char* label, long long token);
@@ -811,12 +969,9 @@ extern "C" {
         int left_indent;
         int left_sub_indent;
         int right_indent;
-        int font_point_size;
-        int font_family;
-        int font_weight;
-        int font_style;
-        int font_underline;
-        char font_face[128];
+        // The font, as a handle owned by the caller for the duration of the call. Flattening it into
+        // scalars used to drop strikethrough, encoding and pixel sizes, which the flags above promise.
+        wxsharp_handle font;
     } wxsharp_text_attr;
 
     WXSHARP_API bool wxsharp_textbox_is_modified(wxsharp_handle ctrl);
@@ -857,11 +1012,16 @@ extern "C" {
     WXSHARP_API void wxsharp_checkbox_set_3state(wxsharp_handle ctrl, int state);
     WXSHARP_API bool wxsharp_checkbox_is_3state(wxsharp_handle ctrl);
     WXSHARP_API bool wxsharp_checkbox_is_3rd_state_allowed_for_user(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_checkbox_set_transparent_part_colour(wxsharp_handle ctrl, unsigned int argb);
 
     // ---- Radio button --------------------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_radio_create(wxsharp_handle parent, int id, const char* label, bool group_start, long long token);
     WXSHARP_API bool wxsharp_radio_get(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_radio_set(wxsharp_handle ctrl, bool value);
+    WXSHARP_API wxsharp_handle wxsharp_radio_get_first(wxsharp_handle ctrl);
+    WXSHARP_API wxsharp_handle wxsharp_radio_get_last(wxsharp_handle ctrl);
+    WXSHARP_API wxsharp_handle wxsharp_radio_get_previous(wxsharp_handle ctrl);
+    WXSHARP_API wxsharp_handle wxsharp_radio_get_next(wxsharp_handle ctrl);
 
     // ---- Slider --------------------------------------------------------------------------------------
     // style: WxSharp SliderStyle flags (orientation, labels, ticks, ...). The accessible key/notify behaviour
@@ -905,6 +1065,7 @@ extern "C" {
     WXSHARP_API void wxsharp_listbox_select(wxsharp_handle ctrl, int index, bool select);
     WXSHARP_API bool wxsharp_listbox_is_selected(wxsharp_handle ctrl, int index);
     WXSHARP_API void wxsharp_listbox_ensure_visible(wxsharp_handle ctrl, int index);
+    WXSHARP_API void wxsharp_listbox_deselect_all(wxsharp_handle ctrl);
 
     // ---- Extended common controls -------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_togglebutton_create(wxsharp_handle parent, int id, const char* label,
@@ -918,11 +1079,25 @@ extern "C" {
     WXSHARP_API int  wxsharp_gauge_get_range(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_gauge_set_range(wxsharp_handle ctrl, int range);
     WXSHARP_API void wxsharp_gauge_pulse(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_gauge_is_vertical(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_gauge_get_bezel_face(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_gauge_set_bezel_face(wxsharp_handle ctrl, int width);
+    WXSHARP_API int  wxsharp_gauge_get_shadow_width(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_gauge_set_shadow_width(wxsharp_handle ctrl, int width);
     WXSHARP_API wxsharp_handle wxsharp_spinctrl_create(wxsharp_handle parent, int id, int min_value,
                                                        int max_value, int value, long long token);
     WXSHARP_API int  wxsharp_spinctrl_get(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_spinctrl_set(wxsharp_handle ctrl, int value);
     WXSHARP_API void wxsharp_spinctrl_set_range(wxsharp_handle ctrl, int min_value, int max_value);
+    WXSHARP_API int  wxsharp_spinctrl_get_min(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_spinctrl_get_max(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_spinctrl_get_increment(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_spinctrl_set_increment(wxsharp_handle ctrl, int increment);
+    WXSHARP_API int  wxsharp_spinctrl_get_base(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_spinctrl_set_base(wxsharp_handle ctrl, int base);
+    WXSHARP_API int  wxsharp_spinctrl_get_text_value(wxsharp_handle ctrl, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_spinctrl_set_text_value(wxsharp_handle ctrl, const char* value);
+    WXSHARP_API void wxsharp_spinctrl_set_selection(wxsharp_handle ctrl, int from, int to);
     WXSHARP_API wxsharp_handle wxsharp_combobox_create(wxsharp_handle parent, int id, const char* value,
                                                        bool read_only, long long token);
     WXSHARP_API int  wxsharp_combobox_get_value(wxsharp_handle ctrl, char* buffer, int buffer_length);
@@ -943,6 +1118,16 @@ extern "C" {
     WXSHARP_API void wxsharp_searchctrl_set_value(wxsharp_handle ctrl, const char* value);
     WXSHARP_API void wxsharp_searchctrl_show_cancel(wxsharp_handle ctrl, bool show);
     WXSHARP_API void wxsharp_searchctrl_show_search(wxsharp_handle ctrl, bool show);
+    WXSHARP_API bool wxsharp_searchctrl_is_cancel_visible(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_searchctrl_is_search_visible(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_searchctrl_get_descriptive_text(wxsharp_handle ctrl, char* buffer,
+                                                              int buffer_length);
+    WXSHARP_API void wxsharp_searchctrl_set_descriptive_text(wxsharp_handle ctrl, const char* text);
+    WXSHARP_API wxsharp_handle wxsharp_searchctrl_get_menu(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_searchctrl_set_menu(wxsharp_handle ctrl, wxsharp_handle menu);
+    WXSHARP_API void wxsharp_searchctrl_set_search_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap);
+    WXSHARP_API void wxsharp_searchctrl_set_search_menu_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap);
+    WXSHARP_API void wxsharp_searchctrl_set_cancel_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap);
     WXSHARP_API wxsharp_handle wxsharp_checklistbox_create(wxsharp_handle parent, int id, long long token);
     WXSHARP_API void wxsharp_checklistbox_append(wxsharp_handle ctrl, const char* value);
     WXSHARP_API int  wxsharp_checklistbox_count(wxsharp_handle ctrl);
@@ -957,6 +1142,9 @@ extern "C" {
                                                         long long token);
     WXSHARP_API wxsharp_handle wxsharp_staticline_create(wxsharp_handle parent, int id, bool vertical,
                                                          long long token);
+    WXSHARP_API void wxsharp_staticbox_get_borders(wxsharp_handle ctrl, int* top, int* other);
+    WXSHARP_API bool wxsharp_staticline_is_vertical(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_staticline_default_size(void);
     WXSHARP_API wxsharp_handle wxsharp_activity_create(wxsharp_handle parent, int id, long long token);
     WXSHARP_API void wxsharp_activity_start(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_activity_stop(wxsharp_handle ctrl);
@@ -966,27 +1154,65 @@ extern "C" {
                                                              long long token);
     WXSHARP_API double wxsharp_spinctrldouble_get(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_spinctrldouble_set(wxsharp_handle ctrl, double value);
+    WXSHARP_API double wxsharp_spinctrldouble_get_min(wxsharp_handle ctrl);
+    WXSHARP_API double wxsharp_spinctrldouble_get_max(wxsharp_handle ctrl);
+    WXSHARP_API double wxsharp_spinctrldouble_get_increment(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_spinctrldouble_set_increment(wxsharp_handle ctrl, double increment);
+    WXSHARP_API unsigned int wxsharp_spinctrldouble_get_digits(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_spinctrldouble_set_digits(wxsharp_handle ctrl, unsigned int digits);
+    WXSHARP_API void wxsharp_spinctrldouble_set_range(wxsharp_handle ctrl, double min_value, double max_value);
+    WXSHARP_API int  wxsharp_spinctrldouble_get_text_value(wxsharp_handle ctrl, char* buffer, int buffer_length);
+    WXSHARP_API void wxsharp_spinctrldouble_set_text_value(wxsharp_handle ctrl, const char* value);
     WXSHARP_API wxsharp_handle wxsharp_scrollbar_create(wxsharp_handle parent, int id, bool vertical,
                                                         long long token);
     WXSHARP_API void wxsharp_scrollbar_set(wxsharp_handle ctrl, int position, int thumb_size,
                                            int range, int page_size);
     WXSHARP_API int wxsharp_scrollbar_get_position(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_scrollbar_set_ex(wxsharp_handle ctrl, int position, int thumb_size,
+                                              int range, int page_size, bool refresh);
+    WXSHARP_API void wxsharp_scrollbar_set_position(wxsharp_handle ctrl, int position);
+    WXSHARP_API int  wxsharp_scrollbar_get_thumb_size(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_scrollbar_get_range(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_scrollbar_get_page_size(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_scrollbar_is_vertical(wxsharp_handle ctrl);
     WXSHARP_API wxsharp_handle wxsharp_hyperlink_create(wxsharp_handle parent, int id, const char* label,
                                                         const char* url, long long token);
     WXSHARP_API int wxsharp_hyperlink_get_url(wxsharp_handle ctrl, char* buffer, int buffer_length);
     WXSHARP_API void wxsharp_hyperlink_set_url(wxsharp_handle ctrl, const char* url);
+    WXSHARP_API bool wxsharp_hyperlink_get_visited(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_hyperlink_set_visited(wxsharp_handle ctrl, bool visited);
+    WXSHARP_API unsigned int wxsharp_hyperlink_get_normal_colour(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_hyperlink_set_normal_colour(wxsharp_handle ctrl, unsigned int colour);
+    WXSHARP_API unsigned int wxsharp_hyperlink_get_hover_colour(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_hyperlink_set_hover_colour(wxsharp_handle ctrl, unsigned int colour);
+    WXSHARP_API unsigned int wxsharp_hyperlink_get_visited_colour(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_hyperlink_set_visited_colour(wxsharp_handle ctrl, unsigned int colour);
     WXSHARP_API wxsharp_handle wxsharp_datepicker_create(wxsharp_handle parent, int id, long long token);
     WXSHARP_API wxsharp_handle wxsharp_timepicker_create(wxsharp_handle parent, int id, long long token);
     WXSHARP_API void wxsharp_datetime_get(wxsharp_handle ctrl, int* year, int* month, int* day,
                                           int* hour, int* minute, int* second);
     WXSHARP_API void wxsharp_datetime_set(wxsharp_handle ctrl, int year, int month, int day,
                                           int hour, int minute, int second);
+    WXSHARP_API bool wxsharp_datepicker_get_range(wxsharp_handle ctrl, int* y1, int* m1, int* d1,
+                                                  int* y2, int* m2, int* d2);
+    WXSHARP_API void wxsharp_datepicker_set_range(wxsharp_handle ctrl, int y1, int m1, int d1,
+                                                  int y2, int m2, int d2);
+    WXSHARP_API void wxsharp_datepicker_set_null_text(wxsharp_handle ctrl, const char* text);
 
     // ---- Containers ---------------------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_scrolled_create(wxsharp_handle parent, int id, int style, long long token);
     WXSHARP_API void wxsharp_scrolled_set_rate(wxsharp_handle ctrl, int x_step, int y_step);
     WXSHARP_API void wxsharp_scrolled_scroll(wxsharp_handle ctrl, int x, int y);
     WXSHARP_API void wxsharp_scrolled_get_view_start(wxsharp_handle ctrl, int* x, int* y);
+    WXSHARP_API void wxsharp_scrolled_set_scrollbars(wxsharp_handle ctrl, int pixels_x, int pixels_y,
+                                                     int units_x, int units_y, int pos_x, int pos_y,
+                                                     bool no_refresh);
+    WXSHARP_API void wxsharp_scrolled_enable_scrolling(wxsharp_handle ctrl, bool x, bool y);
+    WXSHARP_API void wxsharp_scrolled_show_scrollbars(wxsharp_handle ctrl, int x, int y);
+    WXSHARP_API void wxsharp_scrolled_get_pixels_per_unit(wxsharp_handle ctrl, int* x, int* y);
+    WXSHARP_API void wxsharp_scrolled_set_target_window(wxsharp_handle ctrl, wxsharp_handle target);
+    WXSHARP_API void wxsharp_scrolled_set_scroll_page_size(wxsharp_handle ctrl, int orientation, int size);
+    WXSHARP_API int  wxsharp_scrolled_get_scroll_page_size(wxsharp_handle ctrl, int orientation);
     WXSHARP_API wxsharp_handle wxsharp_splitter_create(wxsharp_handle parent, int id, bool vertical,
                                                        long long token);
     WXSHARP_API bool wxsharp_splitter_split(wxsharp_handle ctrl, wxsharp_handle first,
@@ -1052,6 +1278,10 @@ extern "C" {
     WXSHARP_API bool wxsharp_tree_is_expanded(wxsharp_handle ctrl, long long item);
     WXSHARP_API void wxsharp_tree_select(wxsharp_handle ctrl, long long item);
     WXSHARP_API long long wxsharp_tree_get_selection(wxsharp_handle ctrl);
+    WXSHARP_API int  wxsharp_tree_get_count(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_tree_expand_all(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_tree_collapse_all(wxsharp_handle ctrl);
+    WXSHARP_API bool wxsharp_tree_item_has_children(wxsharp_handle ctrl, long long item);
     WXSHARP_API void wxsharp_tree_unselect(wxsharp_handle ctrl);
     WXSHARP_API long long wxsharp_tree_get_root(wxsharp_handle ctrl);
     WXSHARP_API long long wxsharp_tree_get_parent(wxsharp_handle ctrl, long long item);
@@ -1062,6 +1292,7 @@ extern "C" {
     WXSHARP_API void wxsharp_tree_ensure_visible(wxsharp_handle ctrl, long long item);
     WXSHARP_API long long wxsharp_tree_insert(wxsharp_handle ctrl, long long parent, int position,
                                               const char* text);
+    WXSHARP_API void wxsharp_tree_sort_children(wxsharp_handle ctrl, long long item);
     WXSHARP_API wxsharp_handle wxsharp_grid_create(wxsharp_handle parent, int id, int rows, int columns,
                                                    long long token);
     WXSHARP_API int  wxsharp_grid_rows(wxsharp_handle ctrl);
@@ -1193,12 +1424,17 @@ extern "C" {
     WXSHARP_API int  wxsharp_stock_id(int which);
 
     // ---- Timers --------------------------------------------------------------------------------------
-    WXSHARP_API wxsharp_handle wxsharp_timer_create(int id, long long owner_token);
+    WXSHARP_API wxsharp_handle wxsharp_timer_create(wxsharp_handle owner, int id, long long owner_token);
     WXSHARP_API void wxsharp_timer_destroy(wxsharp_handle timer);
     WXSHARP_API bool wxsharp_timer_start(wxsharp_handle timer, int milliseconds, bool one_shot);
+    WXSHARP_API bool wxsharp_timer_start_once(wxsharp_handle timer, int milliseconds);
     WXSHARP_API void wxsharp_timer_stop(wxsharp_handle timer);
     WXSHARP_API bool wxsharp_timer_is_running(wxsharp_handle timer);
+    WXSHARP_API bool wxsharp_timer_is_one_shot(wxsharp_handle timer);
     WXSHARP_API int wxsharp_timer_get_interval(wxsharp_handle timer);
+    WXSHARP_API void wxsharp_timer_notify(wxsharp_handle timer);
+    WXSHARP_API void wxsharp_timer_set_owner(wxsharp_handle timer, wxsharp_handle owner, int id,
+                                             long long owner_token);
 
     // ---- Images and bitmap controls ------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_image_load(const char* path);
@@ -1214,8 +1450,18 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_staticbitmap_create(wxsharp_handle parent, int id,
                                                            wxsharp_handle bitmap, long long token);
     WXSHARP_API void wxsharp_staticbitmap_set(wxsharp_handle ctrl, wxsharp_handle bitmap);
+    WXSHARP_API wxsharp_handle wxsharp_staticbitmap_get(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_staticbitmap_set_icon(wxsharp_handle ctrl, wxsharp_handle icon);
+    WXSHARP_API wxsharp_handle wxsharp_staticbitmap_get_icon(wxsharp_handle ctrl);
+    WXSHARP_API void wxsharp_staticbitmap_set_scale_mode(wxsharp_handle ctrl, int mode);
+    WXSHARP_API int wxsharp_staticbitmap_get_scale_mode(wxsharp_handle ctrl);
     WXSHARP_API wxsharp_handle wxsharp_bitmapbutton_create(wxsharp_handle parent, int id,
                                                            wxsharp_handle bitmap, long long token);
+    WXSHARP_API wxsharp_handle wxsharp_bitmapbutton_new_close(wxsharp_handle parent, int id,
+                                                              const char* name, long long token);
+    WXSHARP_API void wxsharp_bitmapbutton_set_margins(wxsharp_handle ctrl, int x, int y);
+    WXSHARP_API int wxsharp_bitmapbutton_get_margin_x(wxsharp_handle ctrl);
+    WXSHARP_API int wxsharp_bitmapbutton_get_margin_y(wxsharp_handle ctrl);
     WXSHARP_API wxsharp_handle wxsharp_icon_load(const char* path);
     WXSHARP_API void wxsharp_icon_destroy(wxsharp_handle icon);
     WXSHARP_API void wxsharp_frame_set_icon(wxsharp_handle frame, wxsharp_handle icon);
@@ -1396,16 +1642,107 @@ extern "C" {
     WXSHARP_API void wxsharp_begin_busy_cursor();
     WXSHARP_API void wxsharp_end_busy_cursor();
     WXSHARP_API wxsharp_handle wxsharp_progress_create(wxsharp_handle parent, const char* title,
-                                                       const char* message, int maximum);
+                                                       const char* message, int maximum, int style,
+                                                       long long token);
+    WXSHARP_API wxsharp_handle wxsharp_custom_progress_create(wxsharp_handle parent, const char* title,
+                                                              const char* message, int maximum, int style,
+                                                              long long token);
     WXSHARP_API bool wxsharp_progress_update(wxsharp_handle progress, int value, const char* message,
-                                             bool* continue_running);
+                                             bool* continueRunning);
     WXSHARP_API bool wxsharp_progress_pulse(wxsharp_handle progress, const char* message,
-                                            bool* continue_running);
+                                            bool* continueRunning);
+    WXSHARP_API bool wxsharp_progress_was_cancelled(wxsharp_handle progress);
+    WXSHARP_API bool wxsharp_progress_was_skipped(wxsharp_handle progress);
+    WXSHARP_API void wxsharp_progress_resume(wxsharp_handle progress);
+    WXSHARP_API int  wxsharp_progress_get_value(wxsharp_handle progress);
+    WXSHARP_API int  wxsharp_progress_get_range(wxsharp_handle progress);
+    WXSHARP_API void wxsharp_progress_set_range(wxsharp_handle progress, int range);
     WXSHARP_API void wxsharp_progress_destroy(wxsharp_handle progress);
 
+
+    // ---- Font ----------------------------------------------------------------------------------------
+    // A font crosses as a handle. The family, style, weight and encoding values are wxWidgets' own, so
+    // neither side translates them; a weight is the numeric 100-1000 scale, not a three-point enum.
+    WXSHARP_API wxsharp_handle wxsharp_font_create_empty();
+    WXSHARP_API wxsharp_handle wxsharp_font_create(double point_size, int pixel_width, int pixel_height,
+                                                   bool use_pixels, int family, int style, int weight,
+                                                   bool underlined, bool strikethrough, const char* face,
+                                                   int encoding, int flags);
+    WXSHARP_API wxsharp_handle wxsharp_font_create_from_native(const char* native_info);
+    WXSHARP_API wxsharp_handle wxsharp_font_copy(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_destroy(wxsharp_handle font);
+    WXSHARP_API bool wxsharp_font_is_ok(wxsharp_handle font);
+    WXSHARP_API bool wxsharp_font_equals(wxsharp_handle a, wxsharp_handle b);
+
+    WXSHARP_API int    wxsharp_font_get_point_size(wxsharp_handle font);
+    WXSHARP_API void   wxsharp_font_set_point_size(wxsharp_handle font, int size);
+    WXSHARP_API double wxsharp_font_get_fractional_point_size(wxsharp_handle font);
+    WXSHARP_API void   wxsharp_font_set_fractional_point_size(wxsharp_handle font, double size);
+    WXSHARP_API bool   wxsharp_font_is_using_size_in_pixels(wxsharp_handle font);
+    WXSHARP_API void   wxsharp_font_get_pixel_size(wxsharp_handle font, int* width, int* height);
+    WXSHARP_API void   wxsharp_font_set_pixel_size(wxsharp_handle font, int width, int height);
+    WXSHARP_API void   wxsharp_font_set_symbolic_size(wxsharp_handle font, int size);
+    WXSHARP_API void   wxsharp_font_set_symbolic_size_relative_to(wxsharp_handle font, int size, int base);
+
+    WXSHARP_API int  wxsharp_font_get_family(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_family(wxsharp_handle font, int family);
+    WXSHARP_API int  wxsharp_font_get_style(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_style(wxsharp_handle font, int style);
+    WXSHARP_API int  wxsharp_font_get_numeric_weight(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_numeric_weight(wxsharp_handle font, int weight);
+    WXSHARP_API int  wxsharp_font_get_weight(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_weight(wxsharp_handle font, int weight);
+    WXSHARP_API bool wxsharp_font_get_underlined(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_underlined(wxsharp_handle font, bool value);
+    WXSHARP_API bool wxsharp_font_get_strikethrough(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_strikethrough(wxsharp_handle font, bool value);
+    WXSHARP_API int  wxsharp_font_get_encoding(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_set_encoding(wxsharp_handle font, int encoding);
+    WXSHARP_API bool wxsharp_font_is_fixed_width(wxsharp_handle font);
+    WXSHARP_API int  wxsharp_font_get_face_name(wxsharp_handle font, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_font_set_face_name(wxsharp_handle font, const char* face);
+    WXSHARP_API int  wxsharp_font_get_native_info(wxsharp_handle font, char* buffer, int buffer_length);
+    WXSHARP_API int  wxsharp_font_get_native_info_user_desc(wxsharp_handle font, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_font_set_native_info(wxsharp_handle font, const char* description);
+    WXSHARP_API bool wxsharp_font_set_native_info_user_desc(wxsharp_handle font, const char* description);
+    WXSHARP_API int  wxsharp_font_get_family_string(wxsharp_handle font, char* buffer, int buffer_length);
+    WXSHARP_API int  wxsharp_font_get_style_string(wxsharp_handle font, char* buffer, int buffer_length);
+    WXSHARP_API int  wxsharp_font_get_weight_string(wxsharp_handle font, char* buffer, int buffer_length);
+
+    WXSHARP_API wxsharp_handle wxsharp_font_bold(wxsharp_handle font);
+    WXSHARP_API wxsharp_handle wxsharp_font_italic(wxsharp_handle font);
+    WXSHARP_API wxsharp_handle wxsharp_font_underlined(wxsharp_handle font);
+    WXSHARP_API wxsharp_handle wxsharp_font_strikethrough(wxsharp_handle font);
+    WXSHARP_API wxsharp_handle wxsharp_font_larger(wxsharp_handle font);
+    WXSHARP_API wxsharp_handle wxsharp_font_smaller(wxsharp_handle font);
+    WXSHARP_API wxsharp_handle wxsharp_font_scaled(wxsharp_handle font, float factor);
+    WXSHARP_API wxsharp_handle wxsharp_font_base(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_make_bold(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_make_italic(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_make_underlined(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_make_strikethrough(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_make_larger(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_make_smaller(wxsharp_handle font);
+    WXSHARP_API void wxsharp_font_scale(wxsharp_handle font, float factor);
+
+    WXSHARP_API int  wxsharp_font_get_default_encoding();
+    WXSHARP_API void wxsharp_font_set_default_encoding(int encoding);
+    WXSHARP_API int  wxsharp_font_numeric_weight_of(int weight);
+    WXSHARP_API int  wxsharp_font_weight_closest_to(int numeric_weight);
+    WXSHARP_API int  wxsharp_font_adjust_to_symbolic_size(int size, int base);
+    WXSHARP_API int  wxsharp_font_add_private(const char* filename);
+    WXSHARP_API wxsharp_handle wxsharp_font_from_system(int which);
+
+    // Listing the faces the platform has. The result set is held natively until the next call; read each
+    // name back with wxsharp_font_enumerated_name().
+    WXSHARP_API int  wxsharp_font_enumerate_facenames(int encoding, bool fixed_width_only);
+    WXSHARP_API int  wxsharp_font_enumerate_encodings(const char* facename);
+    WXSHARP_API int  wxsharp_font_enumerated_name(int index, char* buffer, int buffer_length);
+    WXSHARP_API bool wxsharp_font_is_valid_facename(const char* facename);
+    WXSHARP_API void wxsharp_font_invalidate_enumeration_cache();
+    WXSHARP_API bool wxsharp_font_can_use_private();
+
     // ---- Services ------------------------------------------------------------------------------------
-    WXSHARP_API void wxsharp_clipboard_set_text(const char* text);
-    WXSHARP_API int  wxsharp_clipboard_get_text(char* buffer, int buffer_length);
     // Shows a native open/save file dialog; returns true and writes the chosen path if confirmed.
     // Shows an open or save dialog and keeps the chosen paths until the next call, so a multiple selection
     // does not have to be squeezed into a caller-sized buffer. Returns how many paths were chosen, 0 when

@@ -19,6 +19,9 @@ This document distinguishes behavioral compatibility from API completeness.
 | Event hooking | Lazy. An event is connected natively on its first subscriber and disconnected on its last, so nothing crosses the boundary unobserved. A handful - window destruction, canvas paints, timer ticks - are reported unconditionally because the native side owns when they happen. |
 | Handling and skipping | wxWidgets' model exactly: an event is handled, and stops, unless a handler calls `Skip()`. Every event is treated the same way; none is special-cased. A second handler on the same window and ID runs only if the first skipped. |
 | Event propagation | wxWidgets'. A skipped command event travels up the real parent chain, as in Phoenix; the wrapper does not re-dispatch to parents itself. |
+| Event handlers | `EvtHandler` is the base, as `wxEvtHandler` is: `Window` and `App` both derive from it, so an application can bind events of its own and a `Timer` can be owned by either. `WxEventArgs.Source` is therefore an `EvtHandler` - wx's `GetEventObject` - with `SourceWindow` for the common case. |
+| Application events | Bound on the application rather than a window, because wxWidgets only ever sends them there. |
+| Raising events | `Wx.PostEvent` queues a command event and `Wx.ProcessEvent` runs one immediately, following `wx.PostEvent` and `wxEvtHandler.ProcessEvent`. Only command events can be synthesised: the other classes carry state wxWidgets fills in from a real occurrence - a key event's scan code, a mouse event's position - and the type system enforces it, since both take an `EventType<CommandEventArgs>`. |
 | Command state | `wxEVT_UPDATE_UI` is wrapped as the event Phoenix exposes, with `UpdateUIEventArgs` carrying `Enabled`, `Checked`, `Shown` and `Text` as Phoenix's added properties do, and `SetUpdateInterval`/`SetMode` as statics. Answering it requires no special handling: a handler that does not skip is handled, which is what wxWidgets needs before it applies the answer. |
 | Menu lifecycle | `Frame.MenuOpened`, `MenuClosed` and `MenuHighlighted` follow `wxEVT_MENU_OPEN`/`_CLOSE`/`_HIGHLIGHT`, so a dynamic menu can be rebuilt before it is shown and item help can drive a status bar. |
 | Event coverage | 145 of the 249 `wxEVT_*` types wxWidgets declares. The absent ones are the gesture, touch, stylus and joystick families, palette and session events, and the grid events, none of which the wrapped widgets need. |
@@ -42,9 +45,25 @@ This document distinguishes behavioral compatibility from API completeness.
 | Accessible names | The wrapper sets no control's name on its own. wxWidgets attaches no `wxAccessible` to a control by default, which is what lets the platform's own provider report a check box's or button's label - so `Window.Name` sets the window name and nothing else, and never attaches one. |
 | Accessibility events | `Accessible.NotifyEvent` is static and takes the window, following `wxAccessible.NotifyEvent`. |
 | Custom accessible objects | Derive from `Accessible` and assign `Window.Accessible` to provide virtual children, string properties, roles, states, screen locations, hit testing, navigation, selection, focus, and default actions through Native AOT-safe reverse callbacks. |
+| Overridable virtuals | 33 members from wxPython's supported set (`etgtools/tweaker_tools.py`, `addWindowVirtuals`): `Destroy`; the focus trio; `Validate`; `TransferDataToWindow`/`FromWindow`; `InitDialog`; `GetClientAreaOrigin`; `AddChild`/`RemoveChild`; `InheritAttributes`; `ShouldInheritColours`; `OnInternalIdle`; `GetMainWindowOfCompositeControl`; `InformFirstDirection`; `SetCanFocus`; `EnableVisibleFocus`; and the protected `DoEnable`, `DoGetPosition`, `DoGetSize`, `DoGetClientSize`, `DoGetBestSize`, `DoGetBestClientSize`, `DoSetSize`, `DoSetClientSize`, `DoSetSizeHints`, `DoMoveWindow`, `DoSetWindowVariant`, `GetDefaultBorder`, `DoFreeze`, `DoThaw` and `HasTransparentBackground`. Each base implementation is wxWidgets' own answer, reached without recursive virtual dispatch. Raw child pointers are preserved when a wx-created child has no managed wrapper. |
+| Virtual dispatch cost | Opt-in at construction, because C++ fixes a vtable there. Each wrapped window class builds an overriding native twin only for a managed subclass; exact framework classes retain their ordinary wxWidgets vtable. |
+| Item-control virtuals | `ListCtrl` forwards Phoenix's `OnGetItemText`, `OnGetItemImage`, `OnGetItemColumnImage` and `OnGetItemIsChecked`. `TreeCtrl.OnCompareItems` is forwarded too, using a distinct wx runtime class so the MSW `SortChildren` exact-class optimization cannot bypass it. `OnGetItemAttr` remains tied to the not-yet-wrapped `wxItemAttr` type. |
+| Class-specific virtuals | Members that exist on one class rather than on wxWindow are layered on the window set rather than folded into it, because a `wxButton` has no `ShouldPreventAppExit` to override. `Frame` adds `ShouldPreventAppExit`, `OnCreateStatusBar`, `OnCreateToolBar` and `DoGiveHelp`; `Dialog` adds `ShouldPreventAppExit` and `GetContentWindow`; `ScrolledWindow` adds `ShouldScrollToChildOnFocus` and `GetSizeAvailableForScrollTarget`; `Grid` adds the three grid-line pens. Each carries its own payload - a string, a window, a size or a pen - so the callback grew a text pointer and a packed colour rather than gaining a channel per class. |
+| `DoGiveHelp` | Overridable, which is how menu and tool help goes somewhere other than the status bar - spoken, for instance, which is what an accessible application wants. |
+| Progress dialogs and modality | `ProgressDialog` destroys itself immediately rather than scheduling it. An app-modal progress dialog holds a `wxWindowDisabler` for as long as it exists, so deferring the deletion to the next idle cycle leaves every other window disabled with nothing to say why. |
+| Virtuals not wrapped | Five of wxPython's list still need a type the wrapper does not have: `SetValidator` and `GetValidator` need `wxValidator`, and `ProcessEvent`, `TryBefore` and `TryAfter` take a live `wxEvent&` while events currently cross this ABI as per-kind value snapshots. |
+| Type-specific virtuals not wrapped | Phoenix also re-enables `Dialog.GetContentWindow`; `Frame.OnCreateStatusBar`, `OnCreateToolBar` and `DoGiveHelp`; the four `ScrolledWindow` drawing/auto-scroll hooks; three grid-line-pen hooks; and `TopLevelWindow.ShouldPreventAppExit`. These need dedicated per-class callback contracts rather than the common `wxWindow` request shape and remain explicit parity work. |
 | Unsupported custom accessibility | Standard native accessibility stays enabled. The `wxWindow` accessibility hooks throw `NotImplementedException` where wxWidgets was built without accessibility, which is the direct analogue of the `NotImplementedError` wxPython raises there (`etg/window.py` wraps each in `wxPyRaiseNotImplemented`). |
 | Native handle | `Frame.NativeHandle` exposes the wx port's native handle: HWND, GTK widget pointer, or macOS view pointer. |
 | Creation styles | Every `Default` is resolved by wxWidgets natively, not composed in managed code, so it is the platform's real default - `wxDEFAULT_FRAME_STYLE`, `wxDEFAULT_DIALOG_STYLE`, `wxScrolledWindowStyle`, `wxLC_ICON`, `wxTR_DEFAULT_STYLE`, `wxTAB_TRAVERSAL`. `wxTR_DEFAULT_STYLE` in particular is a different set on Windows, GTK and macOS. |
+| Fonts | `Font` is a real `wxFont` behind a handle, not a description of one, so it carries fractional and pixel sizes, the numeric weight, the encoding, strikethrough, `IsFixedWidth` and the platform's own font description - none of which the six flattened scalars it used to be could hold. `FontInfo` mirrors `wxFontInfo`. The derivations return a new font and the `Make…` forms change it in place, exactly as wxWidgets splits them; `Underlined()` is the derivation and `IsUnderlined` the property, which is how wxPython resolves the same collision (`etg/font.py`). |
+| Font enum values | `FontFamily`, `FontStyle` and `FontWeight` carry wxWidgets' own values rather than wrapper-private codes, which is what let three duplicated mapping tables go. `FontWeight` is therefore the numeric 100-1000 scale, not three names. `wxFontStyle` is the trap: it borrows the deprecated `wxNORMAL`/`wxITALIC`/`wxSLANT` constants, between which `wxLIGHT` and `wxBOLD` sit, so italic is 93 and not 94. The smoke test round-trips every value through wxWidgets so a drifting one cannot pass unnoticed. |
+| Font resolution | Asking for a family or style you do not get back is wxWidgets answering, not the wrapper losing it: `Default` resolves to a real family, `Teletype` and `Modern` are one family on MSW, and `Slant` is only distinct from `Italic` where a slanted face exists. |
+| Text attributes | `TextAttr` carries a font handle, so `TextAttrFlags.FontStrikethrough`, `FontEncoding` and `FontPixelSize` finally mean something - the flattened form declared them but could never deliver them. |
+| Canvas text | `Canvas.MeasureText` measures in the font that will draw the text: the one set by `SetTextFont` during a paint, and the control's otherwise. It used to draw on the device context while measuring on the window, so any text drawn in a canvas font was measured wrongly. |
+| System fonts | `SystemSettings.GetFont` exposes the platform's own fonts, which is where a themed interface has to start rather than from a hard-coded family and size. |
+| Progress dialogs | `ProgressDialog` is a `Window`, and `Update`/`Pulse` return both of the answers `wxProgressDialog` gives - whether to continue, and whether this step was skipped - as `ProgressUpdate`. Reading only one would either ignore a Cancel or mistake a Skip for an abort. Its style defaults to wxWidgets' own `wxPD_APP_MODAL | wxPD_AUTO_HIDE`; cancelling and skipping are opt-in. Destruction uses the same scheduled `wxWindow.Destroy` path as Phoenix. |
+| Item data | `TreeCtrl` and `ListCtrl` hold `SetItemData`/`GetItemData` values on the managed side rather than in `wxTreeItemData`. Handing a managed object's address to C++ to keep across a garbage collection is a lifetime bug that surfaces under load; the item's own ID is a key that needs none of it, and the API is the one Phoenix has. |
 | Style pass-through | No style is added behind the caller's back. A single-line `TextCtrl` does not silently gain `wxTE_PROCESS_ENTER`, and a `ListBox` with no flags gets no flags - both matching wxWidgets. |
 | Accessible names | The wrapper does not set a control's name on its own. wxWidgets already reports a check box's or radio button's own label to the platform bridge; `Window.Name` follows `wxWindow.Name` for the cases where a control needs a name its label does not give it. |
 | Dialog results | `Dialog.ShowModal` returns the command ID the dialog ended with, as an `int`, exactly as Phoenix does - not a two-value enum that could not represent a custom button. |
@@ -54,7 +73,7 @@ This document distinguishes behavioral compatibility from API completeness.
 | Sizers | The full `wxSizer` surface: insert, prepend, detach, remove, replace, clear, show and hide by window, nested sizer or index, plus layout, fitting and minimum sizes. `wxSizerItem` is wrapped as `SizerItem` and returned by everything that adds to a sizer, so proportion, flags, border and visibility can be read back and changed. `wxBoxSizer`, `wxGridSizer`, `wxFlexGridSizer`, `wxStaticBoxSizer` and `wxGridBagSizer` are complete. |
 | Sizer item identity | `SizerItem.Id` is the item's own identifier, as `wxSizerItem::GetId` is - not the window's ID, and unset until assigned. `Sizer.GetItemById` searches that; `Sizer.GetItem(Window)` is what finds an item by window. |
 | Window surface | `wxWindow` is complete apart from the members needing a type the wrapper does not have yet. Coordinate spaces (`Rect`, `ClientRect`, `ScreenRect`, `ClientToScreen`, `ScreenToClient`), `Freeze`/`Thaw`, DPI scaling (`FromDip`, `ToDip`, `Dpi`), text metrics, scrolling, `Navigate`, z-order, background style, window variant and transparency all follow wxWidgets. `Close` and `Center` are on `Window`, where wxWidgets puts them, rather than only on `Frame`. |
-| Text entry | `wxTextEntry` is a mix-in in wxWidgets, so it is `ITextEntry` here, implemented by `TextCtrl`, `ComboBox` and `SearchCtrl`. `SearchCtrl` derives from `TextCtrl` because `wxSearchCtrl` does. |
+| Text entry | `wxTextEntry` is a mix-in in wxWidgets, so it is `ITextEntry` here, implemented by `TextCtrl`, `ComboBox` and `SearchCtrl`. `SearchCtrl` derives from `Control`, not `TextCtrl`: `wxSearchCtrl` derives from `wxControl` plus the `wxTextEntry` mix-in (`wx/srchctrl.h`), and Phoenix declares it `SearchCtrl(Control)` for the same reason. So it has the text-entry surface without `wxTextCtrl`'s own members - `IsMultiLine` and the line and styling calls are not part of it. |
 | `ComboBox.Clear` | Empties the item list *and* the field. `wxComboBox` inherits `Clear` from both its bases and resolves it to one method that does both, and so does this. |
 | `ComboBox.SelectedText` | Reports the selected item rather than the highlighted text, which is `wxComboBox`'s own resolution of inheriting `GetStringSelection` twice. `Selection` plus `GetRange` reads the highlighted text. |
 | `ChangeValue` | Sets the text without raising `TextChanged`, as `wxTextEntry::ChangeValue` does; assigning `Value` raises it. |
@@ -117,6 +136,14 @@ recorded here rather than quietly skipped:
   the installed table cannot be read back.
 - `wxImageList` — blocks icons in list, tree, notebook and toolbar controls.
 
+`FontEnumerator` wraps `wxFontEnumerator`'s statics - `GetFacenames`, `GetEncodings`,
+`IsValidFacename` and `InvalidateCache`. wxWidgets also shapes it as a class to
+derive from, with `OnFacename` and `OnFontEncoding` callbacks that collect
+results; the statics do that collecting already, and are the form wxPython
+recommends, so only they are wrapped. This is the one way to know a face exists
+before asking for it: assigning an unavailable `Font.FaceName` leaves the font
+unchanged, and only `Font.TrySetFaceName` reports it afterwards.
+
 `Wx` carries the wxWidgets free functions: launching a URL or a file with the
 user's own default program, running a command, the system bell, key and mouse
 state, who and where the machine is, the OS and CPU description, environment
@@ -144,9 +171,6 @@ and high-contrast-safe interface has to read its colours from. `TextAttr` covers
 `wxTextAttr`, keeping its set-or-inherit model: a style overrides only what it
 was given.
 
-Known gaps in this area: there is no equivalent of `wx.PostEvent` for
-synthesising a command.
-
 Single-instance detection and inter-process messaging are deliberately not
 wrapped. On Windows `wxSingleInstanceChecker` is `CreateMutex` plus a test for
 `ERROR_ALREADY_EXISTS`, which `System.Threading.Mutex` already gives; and
@@ -154,9 +178,9 @@ wrapped. On Windows `wxSingleInstanceChecker` is `CreateMutex` plus a test for
 defaults `wxUSE_DDE_FOR_IPC` to 1 on Windows and the TCP classes are not
 compiled in at all. A named pipe through `System.IO.Pipes` is both simpler and
 closer to what such an application actually needs, and neither wxWidgets class
-would be carrying its weight. Command-event propagation and vetoing are
-implemented but are not covered by an automated test, because triggering either
-needs a synthesised event the smoke test cannot produce.
+would be carrying its weight. Command-event propagation and
+consumption are covered by the smoke test, which raises the events it needs
+with `Wx.ProcessEvent` and `Wx.PostEvent`.
 
 Advanced Phoenix modules such as AUI, ribbon, property grid, rich text, STC,
 HTML/webview, media, OpenGL, printing, custom grid tables, and custom data-view
