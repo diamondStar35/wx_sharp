@@ -30,3 +30,6 @@ compile_commands.json
 *.tmp
 *~
 ~$*
+
+# Python bytecode from the coverage script.
+__pycache__/
