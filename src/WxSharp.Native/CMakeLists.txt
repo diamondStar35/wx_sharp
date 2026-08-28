@@ -68,6 +68,7 @@ add_library(wxsharp SHARED
   chrome.cpp
   services.cpp
   font.cpp
+  services2.cpp
   virtuals.cpp)
 
 if(WIN32)

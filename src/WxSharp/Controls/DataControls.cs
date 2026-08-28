@@ -288,6 +288,23 @@ public class ListCtrl : Control
 
     /// <summary>Redraws an inclusive range of rows.</summary>
     public void RefreshItems(long from, long to) => NativeMethods.wxsharp_listctrl_refresh_items(Handle, from, to);
+
+    /// <summary>Gives the control the images its items are drawn with, following
+    /// <c>wxListCtrl.SetImageList</c> and <c>AssignImageList</c>.</summary>
+    /// <param name="transfer">True to hand the list to the control, which then destroys it. False to lend
+    /// it, in which case you must keep it alive for as long as the control uses it.</param>
+    public void SetImageList(ImageList images, ImageListKind kind = ImageListKind.Small, bool transfer = true)
+    {
+        ArgumentNullException.ThrowIfNull(images);
+        Verify();
+        NativeMethods.wxsharp_listctrl_set_image_list(Handle, images.Handle, (int)kind, transfer);
+        if (transfer) images.Detach();
+    }
+
+    /// <summary>Draws one of the image list's images beside a row. Follows
+    /// <c>wxListCtrl.SetItemImage</c>.</summary>
+    public void SetItemImage(long item, int image)
+        => NativeMethods.wxsharp_listctrl_set_item_image(Handle, item, image);
 }
 
 public readonly record struct TreeItemId(long Value)
@@ -525,6 +542,27 @@ public class TreeCtrl : Control
         Verify();
         return _itemData is not null && _itemData.TryGetValue(item.Value, out var data) ? data : null;
     }
+
+    /// <summary>Gives the control the images its items are drawn with, following
+    /// <c>wxTreeCtrl.SetImageList</c> and <c>AssignImageList</c>.</summary>
+    /// <param name="transfer">True to hand the list to the control, which then destroys it. False to lend
+    /// it, in which case you must keep it alive for as long as the control uses it.</param>
+    public void SetImageList(ImageList images, bool transfer = true)
+    {
+        ArgumentNullException.ThrowIfNull(images);
+        Verify();
+        NativeMethods.wxsharp_treectrl_set_image_list(Handle, images.Handle, transfer);
+        if (transfer) images.Detach();
+    }
+
+    /// <summary>Draws one of the image list's images beside an item. A tree item has four, so a branch can
+    /// look different open than closed. Follows <c>wxTreeCtrl.SetItemImage</c>.</summary>
+    public void SetItemImage(TreeItemId item, int image, TreeItemIcon which = TreeItemIcon.Normal)
+        => NativeMethods.wxsharp_treectrl_set_item_image(Handle, item.Value, image, (int)which);
+
+    /// <summary>The image drawn beside an item, or -1 when it has none.</summary>
+    public int GetItemImage(TreeItemId item, TreeItemIcon which = TreeItemIcon.Normal)
+        => NativeMethods.wxsharp_treectrl_get_item_image(Handle, item.Value, (int)which);
 }
 
 public class Grid : Control
