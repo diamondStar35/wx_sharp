@@ -101,6 +101,11 @@ build does not compile wxWidgets.
 dotnet build WxSharp.slnx -c Release
 ```
 
+To build only the C++ shim as a static archive, configure the native project with
+`-DWXSHARP_BUILD_STATIC=ON`. This does not statically link wxWidgets: consumers must still link the
+wxWidgets import libraries and deploy its runtime DLLs. The archive is intended for Native AOT hosts
+that want to link the C ABI shim into their executable.
+
 Packages are written to `build/packages`. Rebuilding the bundled wxWidgets
 binaries is a separate, deliberate step:
 
