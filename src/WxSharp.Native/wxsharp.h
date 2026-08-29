@@ -6,7 +6,9 @@
 #  include <stdbool.h>
 #endif
 
-#if defined(_WIN32) && defined(WXSHARP_BUILD)
+#if defined(WXSHARP_STATIC)
+#  define WXSHARP_API
+#elif defined(_WIN32) && defined(WXSHARP_BUILD)
 #  define WXSHARP_API __declspec(dllexport)
 #elif defined(_WIN32)
 #  define WXSHARP_API __declspec(dllimport)

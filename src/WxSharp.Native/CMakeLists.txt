@@ -6,6 +6,10 @@ option(WXSHARP_STATIC_MSVC_RUNTIME
   "Link the MSVC runtime statically into wxsharp and its test executable"
   OFF)
 
+option(WXSHARP_BUILD_STATIC
+  "Build wxsharp as a static library instead of a shared library"
+  OFF)
+
 if(WIN32)
   enable_language(RC)
 endif()
@@ -39,7 +43,13 @@ else()
   endif()
 endif()
 
-add_library(wxsharp SHARED
+if(WXSHARP_BUILD_STATIC)
+  set(WXSHARP_LIBRARY_TYPE STATIC)
+else()
+  set(WXSHARP_LIBRARY_TYPE SHARED)
+endif()
+
+add_library(wxsharp ${WXSHARP_LIBRARY_TYPE}
   app.cpp
   events.cpp
   window.cpp
@@ -78,7 +88,11 @@ if(WIN32)
 endif()
 
 target_compile_features(wxsharp PRIVATE cxx_std_17)
-target_compile_definitions(wxsharp PRIVATE WXSHARP_BUILD)
+if(WXSHARP_BUILD_STATIC)
+  target_compile_definitions(wxsharp PUBLIC WXSHARP_STATIC)
+else()
+  target_compile_definitions(wxsharp PRIVATE WXSHARP_BUILD)
+endif()
 target_link_libraries(wxsharp PRIVATE ${WXSHARP_WX_TARGETS})
 
 set_target_properties(wxsharp PROPERTIES
