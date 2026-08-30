@@ -6,6 +6,9 @@ namespace WxSharp;
 
 public class ToggleButton : Control
 {
+    /// <summary>Wraps a ToggleButton wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal ToggleButton(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> Toggled
     {
         add => AddHandler(WxEvents.ToggleButtonToggled, value);
@@ -20,6 +23,9 @@ public class ToggleButton : Control
 
 public class Gauge : Control
 {
+    /// <summary>Wraps a Gauge wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal Gauge(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public Gauge(Window parent, int range = 100, int value = 0, Orientation orientation = Orientation.Horizontal,
         int id = WindowId.Any) : base(parent, id)
     {
@@ -48,11 +54,33 @@ public class Gauge : Control
 
 public class SpinCtrl : Control
 {
+    /// <summary>Wraps a SpinCtrl wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal SpinCtrl(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<SpinEventArgs> ValueChanged
     {
         add => AddHandler(WxEvents.SpinChanged, value);
         remove => RemoveHandler(WxEvents.SpinChanged, value);
     }
+
+    /// <summary>The text in the entry changed, whether typed or set in code. wxWidgets raises
+    /// <c>wxEVT_SPINCTRL</c> only for the arrows and for a value committed by the control, so a value being
+    /// typed is seen here and nowhere else - watch both when a range has to be re-checked on every
+    /// keystroke.</summary>
+    public event EventHandler<CommandEventArgs> TextChanged
+    {
+        add => AddHandler(WxEvents.TextChanged, value);
+        remove => RemoveHandler(WxEvents.TextChanged, value);
+    }
+
+    /// <summary>Enter was pressed in the entry, following <c>wxEVT_TEXT_ENTER</c>. Only raised when the
+    /// control was created with <see cref="TextCtrlStyle.ProcessEnter"/>.</summary>
+    public event EventHandler<CommandEventArgs> TextEntered
+    {
+        add => AddHandler(WxEvents.TextEntered, value);
+        remove => RemoveHandler(WxEvents.TextEntered, value);
+    }
+
     /// <summary>The up arrow was pressed, separately from the value it produced. Veto to refuse the step.</summary>
     public event EventHandler<SpinEventArgs> SpinUp
     {
@@ -107,6 +135,9 @@ public class SpinCtrl : Control
 
 public class ComboBox : Control, ITextEntry
 {
+    /// <summary>Wraps a ComboBox wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal ComboBox(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> SelectionChanged
     {
         add => AddHandler(WxEvents.ComboBoxSelected, value);
@@ -469,6 +500,9 @@ public class RadioBox : Control
 
 public class StaticBox : Control
 {
+    /// <summary>Wraps a StaticBox wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal StaticBox(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public StaticBox(Window parent, string label = "", int id = WindowId.Any) : base(parent, id)
         => Initialize(GetType() == typeof(StaticBox)
             ? NativeMethods.wxsharp_staticbox_create(parent.Handle, id, label, Token)
@@ -509,6 +543,25 @@ public class SpinCtrlDouble : Control
         add => AddHandler(WxEvents.SpinDoubleChanged, value);
         remove => RemoveHandler(WxEvents.SpinDoubleChanged, value);
     }
+
+    /// <summary>The text in the entry changed, whether typed or set in code. wxWidgets raises
+    /// <c>wxEVT_SPINCTRL</c> only for the arrows and for a value committed by the control, so a value being
+    /// typed is seen here and nowhere else - watch both when a range has to be re-checked on every
+    /// keystroke.</summary>
+    public event EventHandler<CommandEventArgs> TextChanged
+    {
+        add => AddHandler(WxEvents.TextChanged, value);
+        remove => RemoveHandler(WxEvents.TextChanged, value);
+    }
+
+    /// <summary>Enter was pressed in the entry, following <c>wxEVT_TEXT_ENTER</c>. Only raised when the
+    /// control was created with <see cref="TextCtrlStyle.ProcessEnter"/>.</summary>
+    public event EventHandler<CommandEventArgs> TextEntered
+    {
+        add => AddHandler(WxEvents.TextEntered, value);
+        remove => RemoveHandler(WxEvents.TextEntered, value);
+    }
+
     public SpinCtrlDouble(Window parent, double value = 0, double minimum = 0, double maximum = 100,
         double increment = 1, int id = WindowId.Any) : base(parent, id)
         => Initialize(GetType() == typeof(SpinCtrlDouble)

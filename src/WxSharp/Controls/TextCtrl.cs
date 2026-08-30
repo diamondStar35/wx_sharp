@@ -5,6 +5,9 @@ namespace WxSharp;
 /// <summary>A native wxTextCtrl. Single-line by default.</summary>
 public class TextCtrl : Control, ITextEntry
 {
+    /// <summary>Wraps a TextCtrl wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal TextCtrl(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> TextChanged
     {
         add => AddHandler(WxEvents.TextChanged, value);

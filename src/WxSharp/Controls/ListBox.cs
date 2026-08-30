@@ -8,6 +8,9 @@ namespace WxSharp;
 /// <see cref="SelectedIndex"/> is -1 when nothing is selected.</summary>
 public class ListBox : Control
 {
+    /// <summary>Wraps a ListBox wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal ListBox(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> SelectionChanged
     {
         add => AddHandler(WxEvents.ListBoxSelected, value);

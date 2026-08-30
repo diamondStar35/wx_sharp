@@ -5,6 +5,9 @@ namespace WxSharp;
 /// <summary>A push button.</summary>
 public class Button : Control
 {
+    /// <summary>Wraps a Button wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal Button(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> Click
     {
         add => AddHandler(WxEvents.ButtonClicked, value);

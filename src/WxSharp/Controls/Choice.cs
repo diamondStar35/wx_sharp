@@ -5,6 +5,9 @@ namespace WxSharp;
 /// <summary>A drop-down list of items; <see cref="SelectedIndex"/> is -1 when nothing is selected.</summary>
 public class Choice : Control
 {
+    /// <summary>Wraps a Choice wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal Choice(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> SelectionChanged
     {
         add => AddHandler(WxEvents.ChoiceSelected, value);

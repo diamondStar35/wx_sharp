@@ -67,6 +67,13 @@ enter the event loop. Nothing is created behind your back: if you want a panel,
 make one; if you want a layout, assign a sizer. All UI work happens on the `App`
 thread, and `Wx.CallAfter` is the thread-safe way in from a background thread.
 
+A few windows do come from wxWidgets itself — the buttons behind
+`Dialog.CreateButtonSizer`, for one. Lookups such as `Window.FindWindowById` and
+`Window.FindFocus` wrap those on demand, typed as the class wxWidgets reports,
+so `FindWindowById(StandardId.Ok, dialog) is Button` holds and you can bind its
+`Click`. Such a wrapper reports `IsAdopted`, and disposing it detaches rather
+than destroying a window it does not own.
+
 On Windows the entry point needs `[STAThread]`, the same as any other desktop
 UI framework there — which means an explicit `Main` rather than top-level
 statements. .NET otherwise starts on a multi-threaded apartment, where the

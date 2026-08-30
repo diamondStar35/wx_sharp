@@ -5,6 +5,9 @@ namespace WxSharp;
 /// <summary>A check box.</summary>
 public class CheckBox : Control
 {
+    /// <summary>Wraps a CheckBox wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal CheckBox(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> Toggled
     {
         add => AddHandler(WxEvents.CheckBoxToggled, value);

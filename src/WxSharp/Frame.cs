@@ -240,7 +240,7 @@ public class Frame : Window
     /// <summary>The button Enter activates, where one has been set.</summary>
     public Window? DefaultItem
     {
-        get => App.Lookup(NativeMethods.wxsharp_frame_get_default_item(Handle));
+        get => Adopt(NativeMethods.wxsharp_frame_get_default_item(Handle));
         set => NativeMethods.wxsharp_frame_set_default_item(Handle, value?.Handle ?? 0);
     }
 
