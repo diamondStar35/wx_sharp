@@ -311,28 +311,28 @@ public static partial class Wx
     public static Window? FindWindowByName(string name, Window? parent = null)
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_find_window_by_name(name ?? string.Empty, parent?.Handle ?? 0));
+        return Window.Adopt(NativeMethods.wxsharp_find_window_by_name(name ?? string.Empty, parent?.Handle ?? 0));
     }
 
     /// <summary>Finds a window by its label.</summary>
     public static Window? FindWindowByLabel(string label, Window? parent = null)
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_find_window_by_label(label ?? string.Empty, parent?.Handle ?? 0));
+        return Window.Adopt(NativeMethods.wxsharp_find_window_by_label(label ?? string.Empty, parent?.Handle ?? 0));
     }
 
     /// <summary>The window under a point in screen coordinates.</summary>
     public static Window? FindWindowAtPoint(Point point)
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_find_window_at_point(point.X, point.Y));
+        return Window.Adopt(NativeMethods.wxsharp_find_window_at_point(point.X, point.Y));
     }
 
     /// <summary>The application's active top-level window, or null when none is.</summary>
     public static Window? GetActiveWindow()
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_get_active_window());
+        return Window.Adopt(NativeMethods.wxsharp_get_active_window());
     }
 
     /// <summary>Enables or disables every top-level window at once.</summary>

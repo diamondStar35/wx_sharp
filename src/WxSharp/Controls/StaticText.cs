@@ -3,6 +3,9 @@ namespace WxSharp;
 /// <summary>A native wxStaticText label.</summary>
 public class StaticText : Control
 {
+    /// <summary>Wraps a StaticText wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal StaticText(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public StaticText(Window parent, int id = WindowId.Any, string label = "", Alignment alignment = Alignment.Left,
         Point? position = null, Size? size = null) : base(parent, id)
     {

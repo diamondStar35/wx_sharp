@@ -6,6 +6,9 @@ namespace WxSharp;
 /// follow it (until the next group start) are mutually exclusive.</summary>
 public class RadioButton : Control
 {
+    /// <summary>Wraps a RadioButton wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal RadioButton(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     public event EventHandler<CommandEventArgs> Selected
     {
         add => AddHandler(WxEvents.RadioButtonSelected, value);

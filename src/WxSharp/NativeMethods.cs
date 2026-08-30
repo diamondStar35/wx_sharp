@@ -632,6 +632,8 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_window_set_style_flags(nint window, int style);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_has_style_flag(nint window, int flag);
     [LibraryImport(Library)] internal static partial int wxsharp_window_get_label(nint window, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial int wxsharp_window_get_class_name(nint window, byte* buffer, int bufferLength);
+    [LibraryImport(Library)] internal static partial nint wxsharp_window_get_parent(nint window);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_window_set_label(nint window, string label);
     [LibraryImport(Library)] internal static partial int wxsharp_window_get_help_text(nint window, byte* buffer, int bufferLength);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_window_set_help_text(nint window, string text);

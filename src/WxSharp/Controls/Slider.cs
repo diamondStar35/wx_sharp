@@ -8,6 +8,9 @@ namespace WxSharp;
 /// <see cref="CustomSlider"/>.</summary>
 public class Slider : Control
 {
+    /// <summary>Wraps a Slider wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    internal Slider(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
+
     /// <summary>Raised when the value changes.</summary>
     public event EventHandler<CommandEventArgs> ValueChanged
     {

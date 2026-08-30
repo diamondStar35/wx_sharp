@@ -43,6 +43,7 @@ public abstract partial class Window : EvtHandler, IDisposable
     [ThreadStatic] private static nint _mainWindowBaseHandle;
     private protected nint _handle;
     private bool _destroyed;
+    private bool _adopted;
     private Accessible? _accessible;
     private Sizer? _sizer;
     internal override App OwnerApp { get; }
@@ -247,6 +248,40 @@ public abstract partial class Window : EvtHandler, IDisposable
         _handle = handle;
         App.MapHandle(handle, this);
         Id = NativeMethods.wxsharp_control_get_id(handle);
+    }
+
+    // ---- Adopting a window wxWidgets created itself ----------------------------------------------------
+
+    /// <summary>Wraps a native window this binding did not create. Used by <see cref="Adopt"/>; the wrapper
+    /// does not own the window, so disposing it detaches rather than destroying.</summary>
+    private protected Window(nint existingHandle, Window? parent)
+    {
+        OwnerApp = App.Current ?? throw new InvalidOperationException("Create an App before creating windows or controls.");
+        OwnerApp.VerifyAccess();
+        Parent = parent;
+        parent?._children.Add(this);
+        Token = App.Register(this);
+        _adopted = true;
+        _handle = existingHandle;
+        App.MapHandle(existingHandle, this);
+        Id = NativeMethods.wxsharp_control_get_id(existingHandle);
+    }
+
+    /// <summary>Whether this wrapper was attached to a window wxWidgets created on its own, rather than one
+    /// created through this binding. An adopted wrapper never destroys its window.</summary>
+    public bool IsAdopted => _adopted;
+
+    /// <summary>Returns the wrapper for <paramref name="handle"/>, creating a non-owning one when wxWidgets
+    /// created the window itself - the buttons behind <see cref="Dialog.CreateButtonSizer"/>, for example.
+    /// The wrapper's runtime type follows the window's wxWidgets class where that class is known here, so a
+    /// wxButton comes back as a <see cref="Button"/>.</summary>
+    internal static Window? Adopt(nint handle)
+    {
+        if (handle == 0) return null;
+        if (App.Lookup(handle) is Window existing) return existing;
+        var parent = App.Lookup(NativeMethods.wxsharp_window_get_parent(handle));
+        var window = AdoptedWindowFactory.Create(handle, parent);
+        return window;
     }
 
     protected void ApplyInitialGeometry(Point? position, Size? size)
@@ -882,6 +917,8 @@ public abstract partial class Window : EvtHandler, IDisposable
     public virtual bool Destroy()
     {
         if (_destroyed) return false;
+        // An adopted wrapper borrows a window wxWidgets owns; dropping the wrapper must not delete it.
+        if (_adopted) { Invalidate(); return true; }
         var request = CallBase(VirtualMember.Destroy);
         if (request.Result == 0) return false;
         Invalidate();
@@ -1006,7 +1043,7 @@ public abstract partial class Window : EvtHandler, IDisposable
     public static Window? FindFocus()
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_window_find_focus());
+        return Adopt(NativeMethods.wxsharp_window_find_focus());
     }
 
     /// <summary>Finds a window by command ID, optionally limited to one parent's descendants. Follows
@@ -1014,7 +1051,7 @@ public abstract partial class Window : EvtHandler, IDisposable
     public static Window? FindWindowById(int id, Window? parent = null)
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_window_find_by_id(id, parent?.Handle ?? 0));
+        return Adopt(NativeMethods.wxsharp_window_find_by_id(id, parent?.Handle ?? 0));
     }
 
     /// <summary>The window that has captured the mouse, or null. Follows
@@ -1022,14 +1059,14 @@ public abstract partial class Window : EvtHandler, IDisposable
     public static Window? GetCapture()
     {
         _ = App.RequireCurrent();
-        return App.Lookup(NativeMethods.wxsharp_window_get_capture());
+        return Adopt(NativeMethods.wxsharp_window_get_capture());
     }
 
     /// <summary>Finds a descendant of this window by command ID.</summary>
     public Window? FindWindow(int id)
     {
         Verify();
-        return App.Lookup(NativeMethods.wxsharp_window_find_child_by_id(_handle, id));
+        return Adopt(NativeMethods.wxsharp_window_find_child_by_id(_handle, id));
     }
 
     /// <summary>Finds a descendant of this window by name.</summary>
@@ -1037,7 +1074,7 @@ public abstract partial class Window : EvtHandler, IDisposable
     {
         ArgumentNullException.ThrowIfNull(name);
         Verify();
-        return App.Lookup(NativeMethods.wxsharp_window_find_child_by_name(_handle, name));
+        return Adopt(NativeMethods.wxsharp_window_find_child_by_name(_handle, name));
     }
 
     /// <summary>Reserves a control ID that will not clash with wxWidgets' own or with another reservation.
@@ -1061,13 +1098,13 @@ public abstract partial class Window : EvtHandler, IDisposable
     /// bar or the window it must be modal to.</summary>
     public Window? TopLevelParent
     {
-        get { Verify(); return App.Lookup(NativeMethods.wxsharp_window_top_level_parent(_handle)); }
+        get { Verify(); return Adopt(NativeMethods.wxsharp_window_top_level_parent(_handle)); }
     }
 
     /// <summary>This window's parent's parent, or null.</summary>
     public Window? GrandParent
     {
-        get { Verify(); return App.Lookup(NativeMethods.wxsharp_window_grand_parent(_handle)); }
+        get { Verify(); return Adopt(NativeMethods.wxsharp_window_grand_parent(_handle)); }
     }
 
     /// <summary>The next sibling in the parent's child list - which is also the tab order.</summary>
@@ -1345,4 +1382,7 @@ public abstract partial class Window : EvtHandler, IDisposable
 public abstract class Control : Window
 {
     protected Control(Window parent, int id) : base(parent, id) { }
+
+    /// <summary>Wraps a control wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
+    private protected Control(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
 }

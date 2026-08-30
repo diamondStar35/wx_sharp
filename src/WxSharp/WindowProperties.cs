@@ -406,6 +406,21 @@ public abstract partial class Window
         set { Verify(); NativeMethods.wxsharp_window_set_label(_handle, value ?? string.Empty); }
     }
 
+    /// <summary>The wxWidgets runtime class name of this window, such as <c>"wxButton"</c>. Follows
+    /// <c>wxObject.GetClassInfo()->GetClassName()</c>.</summary>
+    public unsafe string ClassName
+    {
+        get
+        {
+            Verify();
+            var length = NativeMethods.wxsharp_window_get_class_name(_handle, null, 0);
+            if (length <= 0) return string.Empty;
+            var buffer = new byte[length + 1];
+            fixed (byte* p = buffer) _ = NativeMethods.wxsharp_window_get_class_name(_handle, p, buffer.Length);
+            return Utf8String.Decode(buffer, length);
+        }
+    }
+
     /// <summary>Context help for this window.</summary>
     ///
     /// <remarks>

@@ -489,6 +489,8 @@ extern "C" {
     WXSHARP_API bool wxsharp_window_has_style_flag(wxsharp_handle window, int flag);
     WXSHARP_API int  wxsharp_window_get_label(wxsharp_handle window, char* buffer, int buffer_length);
     WXSHARP_API void wxsharp_window_set_label(wxsharp_handle window, const char* label);
+    WXSHARP_API int  wxsharp_window_get_class_name(wxsharp_handle window, char* buffer, int buffer_length);
+    WXSHARP_API wxsharp_handle wxsharp_window_get_parent(wxsharp_handle window);
     WXSHARP_API int  wxsharp_window_get_help_text(wxsharp_handle window, char* buffer, int buffer_length);
     WXSHARP_API void wxsharp_window_set_help_text(wxsharp_handle window, const char* text);
     WXSHARP_API bool wxsharp_window_is_double_buffered(wxsharp_handle window);

@@ -258,6 +258,15 @@ int wxsharp_window_get_label(wxsharp_handle window, char* buffer, int buffer_len
 
 void wxsharp_window_set_label(wxsharp_handle window, const char* label) { W(window)->SetLabel(Str(label)); }
 
+wxsharp_handle wxsharp_window_get_parent(wxsharp_handle window) { return W(window)->GetParent(); }
+
+// The runtime class name, e.g. "wxButton". Lets a binding recognise a window wxWidgets created on its own -
+// the buttons behind wxDialog::CreateButtonSizer, for instance - and wrap it as the right type.
+int wxsharp_window_get_class_name(wxsharp_handle window, char* buffer, int buffer_length)
+{
+    return CopyToBuffer(W(window)->GetClassInfo()->GetClassName(), buffer, buffer_length);
+}
+
 int wxsharp_window_get_help_text(wxsharp_handle window, char* buffer, int buffer_length)
 {
     return CopyToBuffer(W(window)->GetHelpText(), buffer, buffer_length);
