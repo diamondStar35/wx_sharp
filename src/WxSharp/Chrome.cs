@@ -103,9 +103,14 @@ public enum AcceleratorModifiers
     Alt = 1,
     Control = 2,
     Shift = 4,
+    /// <summary>The Windows key. Accepted by <see cref="Window.RegisterHotKey"/> but not by an accelerator
+    /// table, which has no way to express it. wxWidgets defines <c>wxMOD_WIN</c> as <c>wxMOD_META</c>, so this
+    /// is the same flag under either name.</summary>
+    Win = 8,
     /// <summary>The physical Control key. The same as <see cref="Control"/> everywhere except macOS, where
-    /// <see cref="Control"/> means Command.</summary>
-    RawControl = 8,
+    /// <see cref="Control"/> means Command - which is why this shares that value on the platforms wxWidgets
+    /// builds here.</summary>
+    RawControl = Control,
 }
 
 /// <summary>One entry in an accelerator table: a key combination and the command ID it sends.</summary>
