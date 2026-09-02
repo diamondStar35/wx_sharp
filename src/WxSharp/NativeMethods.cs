@@ -1671,6 +1671,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial int wxsharp_timer_get_interval(nint timer);
     [LibraryImport(Library)] internal static partial void wxsharp_timer_notify(nint timer);
     [LibraryImport(Library)] internal static partial void wxsharp_timer_set_owner(nint timer, nint owner, int id, long ownerToken);
+    [LibraryImport(Library)] internal static partial int wxsharp_timer_get_id(nint timer);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_image_load(string path);
     [LibraryImport(Library)] internal static partial void wxsharp_image_destroy(nint image);
     [LibraryImport(Library)] internal static partial int wxsharp_image_width(nint image);
@@ -1710,6 +1711,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial int wxsharp_progress_get_value(nint progress);
     [LibraryImport(Library)] internal static partial int wxsharp_progress_get_range(nint progress);
     [LibraryImport(Library)] internal static partial void wxsharp_progress_set_range(nint progress, int range);
+    [LibraryImport(Library)] internal static unsafe partial int wxsharp_progress_get_message(nint progress, byte* buffer, int bufferLength);
     [LibraryImport(Library)] internal static partial void wxsharp_progress_destroy(nint progress);
 
     // ---- Services ----

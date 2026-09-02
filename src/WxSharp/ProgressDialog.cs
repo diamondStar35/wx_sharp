@@ -95,6 +95,22 @@ public class ProgressDialog : Window
         return true;
     }
 
+    /// <summary>The message currently shown above the bar - the last one handed to <see cref="Update"/> or
+    /// <see cref="Pulse"/>, or the one the dialog was created with. Follows
+    /// <c>wxProgressDialog.GetMessage</c>.</summary>
+    public unsafe string Message
+    {
+        get
+        {
+            Verify();
+            var length = NativeMethods.wxsharp_progress_get_message(Handle, null, 0);
+            if (length <= 0) return string.Empty;
+            var buffer = new byte[length + 1];
+            fixed (byte* p = buffer) _ = NativeMethods.wxsharp_progress_get_message(Handle, p, buffer.Length);
+            return Utf8String.Decode(buffer, length);
+        }
+    }
+
     /// <summary>The value that counts as complete. Follows <c>wxProgressDialog.GetRange</c> and
     /// <c>SetRange</c>, which is how a total that is only discovered part-way through is applied.</summary>
     public int Range

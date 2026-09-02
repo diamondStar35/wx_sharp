@@ -1443,6 +1443,9 @@ extern "C" {
     WXSHARP_API void wxsharp_timer_notify(wxsharp_handle timer);
     WXSHARP_API void wxsharp_timer_set_owner(wxsharp_handle timer, wxsharp_handle owner, int id,
                                              long long owner_token);
+    // The ID the timer's events actually carry. wxWidgets replaces wxID_ANY with a freshly allocated one,
+    // so this is not always the ID the timer was created with.
+    WXSHARP_API int  wxsharp_timer_get_id(wxsharp_handle timer);
 
     // ---- Images and bitmap controls ------------------------------------------------------------------
     WXSHARP_API wxsharp_handle wxsharp_image_load(const char* path);
@@ -1665,6 +1668,7 @@ extern "C" {
     WXSHARP_API int  wxsharp_progress_get_value(wxsharp_handle progress);
     WXSHARP_API int  wxsharp_progress_get_range(wxsharp_handle progress);
     WXSHARP_API void wxsharp_progress_set_range(wxsharp_handle progress, int range);
+    WXSHARP_API int  wxsharp_progress_get_message(wxsharp_handle progress, char* buffer, int buffer_length);
     WXSHARP_API void wxsharp_progress_destroy(wxsharp_handle progress);
 
 
