@@ -6,9 +6,12 @@ namespace WxSharp;
 /// <see cref="WxEvents.Timer"/> events carrying this timer's ID.</summary>
 ///
 /// <remarks>
-/// The ID works as it does in wxWidgets: with the default of <see cref="WindowId.Any"/> the timer's events
-/// carry no distinguishing ID, so an owner running more than one timer should give each an ID of its own -
-/// otherwise every timer's handler sees every timer's tick.
+/// Each timer has an ID of its own, and its events carry it. Passing <see cref="WindowId.Any"/> - the
+/// default - takes one from <see cref="IdManager"/> rather than passing wxID_ANY down, because wxWidgets
+/// does the same thing internally: <c>wxTimerImpl::SetOwner</c> replaces wxID_ANY with <c>wxNewId()</c>, so
+/// the events arrive carrying a real ID whatever was asked for. Binding the handler for wxID_ANY would then
+/// match every other timer on the same owner as well as this one, and two timers would each be run by the
+/// other's tick. An ID taken here is returned to the pool when the timer is disposed.
 ///
 /// The owner is any <see cref="EvtHandler"/>, which is what <c>wxTimer</c> takes. Owning one from the
 /// <see cref="App"/> is how a timer outlives every window - a debounce that has to keep running while the
@@ -19,14 +22,19 @@ public class Timer : IDisposable
     private EvtHandler _owner;
     private EventBinding _binding;
     private nint _handle;
+    private bool _ownsId;
     public int Id { get; private set; }
     public event EventHandler? Tick;
     public Timer(EvtHandler owner, int id = WindowId.Any)
     {
         ArgumentNullException.ThrowIfNull(owner);
-        _owner = owner; Id = id;
+        _ownsId = id == WindowId.Any;
+        _owner = owner; Id = _ownsId ? IdManager.NewId() : id;
         _handle = NativeMethods.wxsharp_timer_create(OwnerHandle(owner), Id, owner.Token);
         if (_handle == 0) throw new InvalidOperationException("wxWidgets failed to create the timer.");
+        // Read back what wxWidgets settled on, so the binding below is made for the ID the events will
+        // actually carry rather than the one that was asked for.
+        Id = NativeMethods.wxsharp_timer_get_id(_handle);
         _binding = owner.Bind(WxEvents.Timer, (_, _) => Tick?.Invoke(this, EventArgs.Empty), Id);
         if (owner is Window window) window.Invalidated += Dispose;
     }
@@ -56,9 +64,12 @@ public class Timer : IDisposable
         if (!ReferenceEquals(_owner.OwnerApp, owner.OwnerApp)) throw new ArgumentException("Owner belongs to another App.", nameof(owner));
         if (_owner is Window previous) previous.Invalidated -= Dispose;
         _binding.Dispose();
-        _owner = owner; Id = id;
-        NativeMethods.wxsharp_timer_set_owner(Handle, OwnerHandle(owner), id, owner.Token);
-        _binding = owner.Bind(WxEvents.Timer, (_, _) => Tick?.Invoke(this, EventArgs.Empty), id);
+        ReleaseId();
+        _ownsId = id == WindowId.Any;
+        _owner = owner; Id = _ownsId ? IdManager.NewId() : id;
+        NativeMethods.wxsharp_timer_set_owner(Handle, OwnerHandle(owner), Id, owner.Token);
+        Id = NativeMethods.wxsharp_timer_get_id(Handle);
+        _binding = owner.Bind(WxEvents.Timer, (_, _) => Tick?.Invoke(this, EventArgs.Empty), Id);
         if (owner is Window window) window.Invalidated += Dispose;
     }
     public void Stop() => NativeMethods.wxsharp_timer_stop(Handle);
@@ -69,7 +80,15 @@ public class Timer : IDisposable
         if (_owner is Window owner) owner.Invalidated -= Dispose;
         _binding.Dispose();
         NativeMethods.wxsharp_timer_destroy(_handle); _handle = 0;
+        ReleaseId();
         GC.SuppressFinalize(this);
+    }
+
+    private void ReleaseId()
+    {
+        if (!_ownsId) return;
+        _ownsId = false;
+        IdManager.Release(Id);
     }
     private nint Handle => _handle != 0 ? _handle : throw new ObjectDisposedException(nameof(Timer));
 }

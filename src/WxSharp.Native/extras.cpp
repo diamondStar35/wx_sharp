@@ -680,6 +680,7 @@ bool wxsharp_timer_is_running(wxsharp_handle timer) { return static_cast<WxSharp
 bool wxsharp_timer_is_one_shot(wxsharp_handle timer) { return static_cast<WxSharpTimer*>(timer)->IsOneShot(); }
 int wxsharp_timer_get_interval(wxsharp_handle timer) { return static_cast<WxSharpTimer*>(timer)->GetInterval(); }
 void wxsharp_timer_notify(wxsharp_handle timer) { static_cast<WxSharpTimer*>(timer)->Notify(); }
+int wxsharp_timer_get_id(wxsharp_handle timer) { return static_cast<WxSharpTimer*>(timer)->GetId(); }
 void wxsharp_timer_set_owner(wxsharp_handle timer, wxsharp_handle owner, int id, long long ownerToken)
 {
     static_cast<WxSharpTimer*>(timer)->SetManagedOwner(TimerOwner(owner), id, ownerToken);
@@ -753,6 +754,10 @@ void wxsharp_progress_resume(wxsharp_handle progress) { static_cast<wxProgressDi
 int wxsharp_progress_get_value(wxsharp_handle progress) { return static_cast<wxProgressDialog*>(progress)->GetValue(); }
 int wxsharp_progress_get_range(wxsharp_handle progress) { return static_cast<wxProgressDialog*>(progress)->GetRange(); }
 void wxsharp_progress_set_range(wxsharp_handle progress, int range) { static_cast<wxProgressDialog*>(progress)->SetRange(range); }
+int wxsharp_progress_get_message(wxsharp_handle progress, char* buffer, int buffer_length)
+{
+    return CopyToBuffer(static_cast<wxProgressDialog*>(progress)->GetMessage(), buffer, buffer_length);
+}
 
 // Destroyed at once rather than scheduled. An app-modal progress dialog holds a wxWindowDisabler for as long
 // as it exists, so deferring the deletion to the next idle cycle leaves the rest of the application disabled

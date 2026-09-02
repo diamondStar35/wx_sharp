@@ -36,6 +36,14 @@ public class Gauge : Control
     }
     public int Value { get => NativeMethods.wxsharp_gauge_get(Handle); set => NativeMethods.wxsharp_gauge_set(Handle, value); }
     public int Range { get => NativeMethods.wxsharp_gauge_get_range(Handle); set { ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value); NativeMethods.wxsharp_gauge_set_range(Handle, value); } }
+    /// <summary>Moves the bar back and forth to show that work is going on without saying how far along it
+    /// is. Follows <c>wxGauge.Pulse</c>.</summary>
+    /// <remarks>
+    /// This puts the gauge into indeterminate mode, and <see cref="Value"/> puts it back - on MSW by turning
+    /// the PBS_MARQUEE window style on and off. Switching between the two restarts the bar, so a caller that
+    /// pulses whenever it has nothing new to report and sets a value when it does will make the bar appear to
+    /// reset on every alternation. Pick one for the life of a given operation.
+    /// </remarks>
     public void Pulse() => NativeMethods.wxsharp_gauge_pulse(Handle);
     public bool IsVertical => NativeMethods.wxsharp_gauge_is_vertical(Handle);
     [Obsolete("Phoenix exposes this legacy wxGauge property, but wxWidgets always returns zero and ignores writes.")]
