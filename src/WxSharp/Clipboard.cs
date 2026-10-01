@@ -7,8 +7,11 @@ namespace WxSharp;
 /// <summary>A kind of content the clipboard can hold, following the standard <c>wxDataFormat</c> values.</summary>
 public enum ClipboardFormat
 {
+    /// <summary>Plain Unicode text (<c>wxDF_UNICODETEXT</c>).</summary>
     Text = 0,
+    /// <summary>A list of file paths (<c>wxDF_FILENAME</c>), as a file manager copies.</summary>
     FileNames = 1,
+    /// <summary>A bitmap image (<c>wxDF_BITMAP</c>).</summary>
     Bitmap = 2,
 }
 
@@ -31,12 +34,16 @@ public static class Clipboard
         return NativeMethods.wxsharp_clipboard_open();
     }
 
+    /// <summary>Closes the clipboard opened with <see cref="Open"/>. Pair every successful
+    /// <see cref="Open"/> with a <see cref="Close"/>.</summary>
     public static void Close()
     {
         _ = App.RequireCurrent();
         NativeMethods.wxsharp_clipboard_close();
     }
 
+    /// <summary>Whether the clipboard is currently open (between <see cref="Open"/> and
+    /// <see cref="Close"/>).</summary>
     public static bool IsOpen
     {
         get { _ = App.RequireCurrent(); return NativeMethods.wxsharp_clipboard_is_opened(); }
@@ -155,6 +162,8 @@ public static class Clipboard
 
     // ---- Bitmaps --------------------------------------------------------------------------------------
 
+    /// <summary>Puts an image on the clipboard. False when the write failed (typically because another
+    /// application briefly held the clipboard).</summary>
     public static bool SetBitmap(Bitmap bitmap)
     {
         ArgumentNullException.ThrowIfNull(bitmap);

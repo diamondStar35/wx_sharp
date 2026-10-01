@@ -1,5 +1,7 @@
 namespace WxSharp;
 
+/// <summary>Lays its items out in a single row or column, following <c>wxBoxSizer</c>. The most common
+/// sizer: nest a horizontal one inside a vertical one (or vice versa) to build most layouts.</summary>
 public sealed class BoxSizer : Sizer
 {
     /// <summary>Creates a box sizer. The default orientation is horizontal, as it is in wxWidgets and

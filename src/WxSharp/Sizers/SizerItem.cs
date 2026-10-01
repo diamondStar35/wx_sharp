@@ -56,8 +56,11 @@ public sealed class SizerItem
         set => NativeMethods.wxsharp_sizeritem_set_id(_handle, value);
     }
 
+    /// <summary>Whether this item holds a window (as opposed to a nested sizer or a spacer).</summary>
     public bool IsWindow => NativeMethods.wxsharp_sizeritem_is_window(_handle);
+    /// <summary>Whether this item holds a nested <see cref="Sizer"/>.</summary>
     public bool IsSizer => NativeMethods.wxsharp_sizeritem_is_sizer(_handle);
+    /// <summary>Whether this item is a spacer — reserved space holding neither a window nor a sizer.</summary>
     public bool IsSpacer => NativeMethods.wxsharp_sizeritem_is_spacer(_handle);
 
     /// <summary>Whether the item takes part in the layout. Hiding an item removes it from the layout unless

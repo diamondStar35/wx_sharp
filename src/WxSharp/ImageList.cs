@@ -101,6 +101,8 @@ public sealed class ImageList : IDisposable
         return handle == 0 ? null : Bitmap.Attach(handle);
     }
 
+    /// <summary>Destroys the native image list and the images it holds. Do not dispose a list a control has
+    /// taken ownership of; the control frees it.</summary>
     public void Dispose()
     {
         if (_handle != 0) NativeMethods.wxsharp_imagelist_destroy(_handle);
