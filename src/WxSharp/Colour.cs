@@ -9,14 +9,23 @@ public readonly record struct Colour(byte R, byte G, byte B, byte A = 255)
     /// <summary>Unpacks a colour from 0xAARRGGBB.</summary>
     public static Colour FromArgb(uint value)
         => new((byte)(value >> 16), (byte)(value >> 8), (byte)value, (byte)(value >> 24));
+    /// <summary>An opaque colour from red, green and blue components, each 0-255. Alpha is 255.</summary>
     public static Colour Rgb(byte r, byte g, byte b) => new(r, g, b);
+    /// <summary>Opaque black.</summary>
     public static Colour Black => new(0, 0, 0);
+    /// <summary>Opaque white.</summary>
     public static Colour White => new(255, 255, 255);
+    /// <summary>Opaque full-intensity red.</summary>
     public static Colour Red => new(255, 0, 0);
+    /// <summary>Opaque half-intensity green (0, 128, 0), the darker web/wxWidgets "green".</summary>
     public static Colour Green => new(0, 128, 0);
+    /// <summary>Opaque full-intensity blue.</summary>
     public static Colour Blue => new(0, 0, 255);
+    /// <summary>Opaque yellow.</summary>
     public static Colour Yellow => new(255, 255, 0);
+    /// <summary>Fully transparent (alpha 0).</summary>
     public static Colour Transparent => new(0, 0, 0, 0);
+    /// <summary>The colour as a <c>#AARRGGBB</c> hex string.</summary>
     public override string ToString() => $"#{A:X2}{R:X2}{G:X2}{B:X2}";
 
     /// <summary>Reads a colour written the way wxWidgets writes them: one of the standard colour names

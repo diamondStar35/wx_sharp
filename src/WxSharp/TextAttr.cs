@@ -8,23 +8,40 @@ namespace WxSharp;
 [Flags]
 public enum TextAttrFlags : uint
 {
+    /// <summary>Nothing is overridden; the style inherits everything from the control.</summary>
     None = 0,
+    /// <summary>The text (foreground) colour is set.</summary>
     TextColour = 0x00000001,
+    /// <summary>The text background colour is set.</summary>
     BackgroundColour = 0x00000002,
+    /// <summary>The typeface name is set.</summary>
     FontFace = 0x00000004,
+    /// <summary>The point size is set.</summary>
     FontPointSize = 0x00000008,
+    /// <summary>The font weight is set.</summary>
     FontWeight = 0x00000010,
+    /// <summary>The italic flag is set.</summary>
     FontItalic = 0x00000020,
+    /// <summary>The underline flag is set.</summary>
     FontUnderline = 0x00000040,
+    /// <summary>The paragraph alignment is set.</summary>
     Alignment = 0x00000080,
+    /// <summary>The left indent and sub-indent are set.</summary>
     LeftIndent = 0x00000100,
+    /// <summary>The right indent is set.</summary>
     RightIndent = 0x00000200,
+    /// <summary>The strikethrough flag is set.</summary>
     FontStrikethrough = 0x08000000,
+    /// <summary>The font encoding is set.</summary>
     FontEncoding = 0x02000000,
+    /// <summary>The font family is set.</summary>
     FontFamily = 0x04000000,
+    /// <summary>The pixel size is set.</summary>
     FontPixelSize = 0x10000000,
 
+    /// <summary>A size, in either form - <see cref="FontPointSize"/> or <see cref="FontPixelSize"/>.</summary>
     FontSize = FontPointSize | FontPixelSize,
+    /// <summary>Every font property at once.</summary>
     Font = FontFace | FontSize | FontWeight | FontItalic | FontUnderline | FontStrikethrough
          | FontEncoding | FontFamily,
 }

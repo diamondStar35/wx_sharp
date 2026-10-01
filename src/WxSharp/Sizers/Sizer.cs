@@ -2,6 +2,8 @@ using System;
 
 namespace WxSharp;
 
+/// <summary>The direction a <see cref="BoxSizer"/> or <see cref="StaticBoxSizer"/> lays its items out,
+/// following <c>wxHORIZONTAL</c> and <c>wxVERTICAL</c>.</summary>
 public enum Orientation { Horizontal, Vertical }
 
 /// <summary>How a sizer treats one item: whether it grows, how it is aligned in the space it is given, and
@@ -18,6 +20,7 @@ public enum Orientation { Horizontal, Vertical }
 [Flags]
 public enum SizerFlags
 {
+    /// <summary>No border, no alignment, no growth.</summary>
     None = 0,
 
     /// <summary>Grow to fill the space across the sizer's direction.</summary>
@@ -26,18 +29,27 @@ public enum SizerFlags
     /// <summary>Centre in both directions.</summary>
     AlignCenter = 2,
 
+    /// <summary>Put the border on the left edge.</summary>
     BorderLeft = 4,
+    /// <summary>Put the border on the top edge.</summary>
     BorderTop = 8,
+    /// <summary>Put the border on the right edge.</summary>
     BorderRight = 16,
+    /// <summary>Put the border on the bottom edge.</summary>
     BorderBottom = 32,
 
+    /// <summary>Align the item to the left of the space given to it; use in a vertical sizer.</summary>
     AlignLeft = 64,
+    /// <summary>Align the item to the right of its space; use in a vertical sizer.</summary>
     AlignRight = 128,
+    /// <summary>Align the item to the top of its space; use in a horizontal sizer.</summary>
     AlignTop = 256,
+    /// <summary>Align the item to the bottom of its space; use in a horizontal sizer.</summary>
     AlignBottom = 512,
 
     /// <summary>Centre vertically - what a label beside a taller control usually wants.</summary>
     AlignCenterVertical = 1024,
+    /// <summary>Centre horizontally in the space given to the item; use in a vertical sizer.</summary>
     AlignCenterHorizontal = 2048,
 
     /// <summary>Keep the item's aspect ratio while it grows.</summary>
@@ -53,6 +65,9 @@ public enum SizerFlags
     All = BorderLeft | BorderTop | BorderRight | BorderBottom,
 }
 
+/// <summary>The base of every layout manager, following <c>wxSizer</c>. A sizer arranges windows and
+/// nested sizers in a window's client area and re-lays them out when the window is resized, so positions
+/// and sizes are never hard-coded.</summary>
 public abstract class Sizer
 {
     private readonly App _owner;
@@ -114,48 +129,56 @@ public abstract class Sizer
 
     // ---- Inserting and prepending ---------------------------------------------------------------------
 
+    /// <summary>Inserts a window at <paramref name="index"/>, pushing everything from there along.</summary>
     public SizerItem Insert(int index, Window window, int proportion = 0, SizerFlags flags = SizerFlags.None, int border = 0)
     {
         ArgumentNullException.ThrowIfNull(window); ValidateIndex(index); Validate(proportion, border);
         return new SizerItem(NativeMethods.wxsharp_sizer_insert_control(Handle, index, window.Handle, proportion, (int)flags, border));
     }
 
+    /// <summary>Inserts a nested sizer at <paramref name="index"/>.</summary>
     public SizerItem Insert(int index, Sizer child, int proportion = 0, SizerFlags flags = SizerFlags.None, int border = 0)
     {
         ArgumentNullException.ThrowIfNull(child); ValidateIndex(index); Validate(proportion, border);
         return new SizerItem(NativeMethods.wxsharp_sizer_insert_sizer(Handle, index, child.Handle, proportion, (int)flags, border));
     }
 
+    /// <summary>Inserts a fixed gap at <paramref name="index"/>.</summary>
     public SizerItem InsertSpacer(int index, int size)
     {
         ValidateIndex(index); ArgumentOutOfRangeException.ThrowIfNegative(size);
         return new SizerItem(NativeMethods.wxsharp_sizer_insert_spacer(Handle, index, size));
     }
 
+    /// <summary>Inserts a gap at <paramref name="index"/> that grows to take spare space.</summary>
     public SizerItem InsertStretchSpacer(int index, int proportion = 1)
     {
         ValidateIndex(index); ArgumentOutOfRangeException.ThrowIfNegativeOrZero(proportion);
         return new SizerItem(NativeMethods.wxsharp_sizer_insert_stretch_spacer(Handle, index, proportion));
     }
 
+    /// <summary>Adds a window at the start, before everything already in the sizer.</summary>
     public SizerItem Prepend(Window window, int proportion = 0, SizerFlags flags = SizerFlags.None, int border = 0)
     {
         ArgumentNullException.ThrowIfNull(window); Validate(proportion, border);
         return new SizerItem(NativeMethods.wxsharp_sizer_prepend_control(Handle, window.Handle, proportion, (int)flags, border));
     }
 
+    /// <summary>Adds a nested sizer at the start.</summary>
     public SizerItem Prepend(Sizer child, int proportion = 0, SizerFlags flags = SizerFlags.None, int border = 0)
     {
         ArgumentNullException.ThrowIfNull(child); Validate(proportion, border);
         return new SizerItem(NativeMethods.wxsharp_sizer_prepend_sizer(Handle, child.Handle, proportion, (int)flags, border));
     }
 
+    /// <summary>Adds a fixed gap at the start.</summary>
     public SizerItem PrependSpacer(int size)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(size);
         return new SizerItem(NativeMethods.wxsharp_sizer_prepend_spacer(Handle, size));
     }
 
+    /// <summary>Adds a gap at the start that grows to take spare space.</summary>
     public SizerItem PrependStretchSpacer(int proportion = 1)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(proportion);
@@ -219,6 +242,7 @@ public abstract class Sizer
     /// <summary>How many items the sizer holds, spacers included.</summary>
     public int ItemCount => NativeMethods.wxsharp_sizer_item_count(Handle);
 
+    /// <summary>Whether the sizer holds nothing at all.</summary>
     public bool IsEmpty => NativeMethods.wxsharp_sizer_is_empty(Handle);
 
     /// <summary>The item at <paramref name="index"/>, or null when there is none.</summary>
@@ -252,16 +276,21 @@ public abstract class Sizer
         return NativeMethods.wxsharp_sizer_show_control(Handle, window.Handle, show, recursive);
     }
 
+    /// <summary>Shows or hides a nested sizer, closing the gap it leaves.</summary>
     public bool Show(Sizer child, bool show = true, bool recursive = false)
     {
         ArgumentNullException.ThrowIfNull(child);
         return NativeMethods.wxsharp_sizer_show_sizer(Handle, child.Handle, show, recursive);
     }
 
+    /// <summary>Shows or hides the item at <paramref name="index"/>.</summary>
     public bool ShowAt(int index, bool show = true) => NativeMethods.wxsharp_sizer_show_at(Handle, index, show);
 
+    /// <summary>Hides a window, taking it out of the layout. Shorthand for <see cref="Show(Window, bool, bool)"/> with show false.</summary>
     public bool Hide(Window window, bool recursive = false) => Show(window, false, recursive);
+    /// <summary>Hides a nested sizer, taking it out of the layout.</summary>
     public bool Hide(Sizer child, bool recursive = false) => Show(child, false, recursive);
+    /// <summary>Hides the item at <paramref name="index"/>.</summary>
     public bool HideAt(int index) => ShowAt(index, false);
 
     /// <summary>Shows or hides everything in the sizer at once.</summary>
@@ -270,18 +299,21 @@ public abstract class Sizer
     /// <summary>Whether anything in the sizer is still visible.</summary>
     public bool AreAnyItemsShown() => NativeMethods.wxsharp_sizer_any_items_shown(Handle);
 
+    /// <summary>Whether a window is currently shown by the sizer.</summary>
     public bool IsShown(Window window)
     {
         ArgumentNullException.ThrowIfNull(window);
         return NativeMethods.wxsharp_sizer_is_shown_control(Handle, window.Handle);
     }
 
+    /// <summary>Whether a nested sizer is currently shown.</summary>
     public bool IsShown(Sizer child)
     {
         ArgumentNullException.ThrowIfNull(child);
         return NativeMethods.wxsharp_sizer_is_shown_sizer(Handle, child.Handle);
     }
 
+    /// <summary>Whether the item at <paramref name="index"/> is currently shown.</summary>
     public bool IsShownAt(int index) => NativeMethods.wxsharp_sizer_is_shown_at(Handle, index);
 
     // ---- Layout and measurement -----------------------------------------------------------------------
@@ -358,18 +390,23 @@ public abstract class Sizer
         return NativeMethods.wxsharp_sizer_set_item_min_size_control(Handle, window.Handle, size.Width, size.Height);
     }
 
+    /// <summary>Sets the minimum size of the item holding a nested sizer.</summary>
     public bool SetItemMinSize(Sizer child, Size size)
     {
         ArgumentNullException.ThrowIfNull(child);
         return NativeMethods.wxsharp_sizer_set_item_min_size_sizer(Handle, child.Handle, size.Width, size.Height);
     }
 
+    /// <summary>Sets the minimum size of the item at <paramref name="index"/>.</summary>
     public bool SetItemMinSizeAt(int index, Size size)
         => NativeMethods.wxsharp_sizer_set_item_min_size_at(Handle, index, size.Width, size.Height);
 
     /// <summary>Whether this sizer, or one it is nested in, has been given to a window yet.</summary>
     public bool HasContainingWindow => NativeMethods.wxsharp_sizer_containing_window(Handle) != 0;
+    /// <summary>The window this sizer has been given to, directly or through the sizer it nests in, or null
+    /// when it has not been assigned yet.</summary>
     public Window? ContainingWindow => App.Lookup(NativeMethods.wxsharp_sizer_containing_window(Handle));
+    /// <summary>The same as <see cref="ContainingWindow"/>, in method form.</summary>
     public Window? GetContainingWindow() => ContainingWindow;
 
     private static void Validate(int proportion, int border)

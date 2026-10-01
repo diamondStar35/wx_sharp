@@ -1,4 +1,8 @@
 // Generated from third-party/Windows/include/wx/language.h. Do not edit by hand.
+// The wxLanguage header documents none of these region/language codes individually, so there is
+// nothing to carry across as per-value XML docs. CS1591 (missing XML comment) is disabled for this
+// generated enum so the documentation build stays clean without hand-editing a generated file.
+#pragma warning disable CS1591
 
 namespace WxSharp;
 
