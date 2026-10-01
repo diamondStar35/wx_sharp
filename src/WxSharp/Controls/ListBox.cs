@@ -90,20 +90,33 @@ public class ListBox : Control
 
     /// <summary>Replaces every item in one go, following <c>wxListBox.Set</c>. This is what a list rebuilt
     /// from changed data wants: clearing and appending item by item leaves the control redrawing between
-    /// each, which flickers and makes a screen reader announce a list that is still being filled.</summary>
+    /// each, which flickers and makes a screen reader announce a list that is still being filled. The whole
+    /// list crosses the boundary once and reaches wxWidgets as a single wxArrayString it preallocates and
+    /// fills; wrap this in <see cref="Window.Freeze"/>/<see cref="Window.Thaw"/> if refreshing a shown
+    /// list.</summary>
     public void Set(IEnumerable<string> items)
     {
         ArgumentNullException.ThrowIfNull(items);
         Verify();
-        // wxWidgets has no bulk setter across the C boundary, so the redraw is suppressed for the duration
-        // instead - which is what makes the rebuild look and sound like one change rather than many.
-        Freeze();
-        try
-        {
-            NativeMethods.wxsharp_listbox_clear(Handle);
-            foreach (var item in items) NativeMethods.wxsharp_listbox_append(Handle, item);
-        }
-        finally { Thaw(); }
+        unsafe { ItemsInterop.Invoke(Handle, items, &NativeMethods.wxsharp_listbox_set); }
+    }
+
+    /// <summary>Appends many items at once, following <c>wxListBox.Append(const wxArrayString&amp;)</c>. One
+    /// boundary crossing for the whole set, unlike calling <see cref="Add"/> in a loop.</summary>
+    public void AppendRange(IEnumerable<string> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        Verify();
+        unsafe { ItemsInterop.Invoke(Handle, items, &NativeMethods.wxsharp_listbox_append_many); }
+    }
+
+    /// <summary>Inserts many items before <paramref name="index"/> in one go, following
+    /// <c>wxListBox.InsertItems</c>.</summary>
+    public void InsertRange(IEnumerable<string> items, int index)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        Verify();
+        unsafe { ItemsInterop.Invoke(Handle, items, index, &NativeMethods.wxsharp_listbox_insert_many); }
     }
 
     /// <summary>Replaces the text of one item, following <c>wxListBox.SetString</c>.</summary>

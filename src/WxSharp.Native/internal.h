@@ -501,6 +501,20 @@ inline wxString Str(const char* s)
     return wxString::FromUTF8(s ? s : "");
 }
 
+// Builds a wxArrayString from a native array of UTF-8 pointers, so a whole list of items crosses the ABI
+// in one call rather than one per item. A null entry is treated as the empty string.
+inline wxArrayString StrArray(const char** items, int count)
+{
+    wxArrayString array;
+    if (count > 0)
+    {
+        array.Alloc(static_cast<size_t>(count));
+        for (int i = 0; i < count; ++i)
+            array.Add(Str(items ? items[i] : nullptr));
+    }
+    return array;
+}
+
 // ---- Colour ---------------------------------------------------------------------------------------------
 // Colours cross the ABI as a packed 0xAARRGGBB integer.
 inline wxColour ColourFromArgb(unsigned int v)

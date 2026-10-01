@@ -1032,6 +1032,15 @@ internal static unsafe partial class NativeMethods
     internal static partial void wxsharp_choice_insert(nint ctrl, string item, int index);
 
     [LibraryImport(Library)]
+    internal static unsafe partial void wxsharp_choice_set(nint ctrl, byte** items, int count);
+
+    [LibraryImport(Library)]
+    internal static unsafe partial void wxsharp_choice_append_many(nint ctrl, byte** items, int count);
+
+    [LibraryImport(Library)]
+    internal static unsafe partial void wxsharp_choice_insert_many(nint ctrl, byte** items, int count, int index);
+
+    [LibraryImport(Library)]
     internal static partial void wxsharp_choice_delete(nint ctrl, int index);
 
     [LibraryImport(Library)]
@@ -1066,6 +1075,15 @@ internal static unsafe partial class NativeMethods
 
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial void wxsharp_listbox_insert(nint ctrl, string item, int index);
+
+    [LibraryImport(Library)]
+    internal static unsafe partial void wxsharp_listbox_set(nint ctrl, byte** items, int count);
+
+    [LibraryImport(Library)]
+    internal static unsafe partial void wxsharp_listbox_append_many(nint ctrl, byte** items, int count);
+
+    [LibraryImport(Library)]
+    internal static unsafe partial void wxsharp_listbox_insert_many(nint ctrl, byte** items, int count, int index);
 
     [LibraryImport(Library)]
     internal static partial void wxsharp_listbox_delete(nint ctrl, int index);
