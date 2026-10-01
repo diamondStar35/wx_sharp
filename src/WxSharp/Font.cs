@@ -610,6 +610,8 @@ public sealed unsafe class Font : IDisposable
     /// <summary>The font's human-readable description (its <see cref="NativeFontInfoUserDesc"/>).</summary>
     public override string ToString() => NativeFontInfoUserDesc;
 
+    /// <summary>Releases the native font. Copies share storage, so disposing one does not affect another
+    /// made from it.</summary>
     public void Dispose()
     {
         if (_handle != 0) NativeMethods.wxsharp_font_destroy(_handle);
@@ -617,6 +619,7 @@ public sealed unsafe class Font : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>Finalizer; releases the native font if <see cref="Dispose"/> was not called.</summary>
     ~Font()
     {
         // A finalizer must never let a late process/AssemblyLoadContext teardown failure escape.
