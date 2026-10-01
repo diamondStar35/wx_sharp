@@ -8,14 +8,15 @@ using System.Threading;
 
 namespace WxSharp;
 
-/// <summary>Owns one wxWidgets application and its blocking native event loop.</summary>
 /// <summary>Which interface appearance an application asks the platform for, following
 /// <c>wxApp.Appearance</c>.</summary>
 public enum Appearance
 {
     /// <summary>Follow whatever the user has chosen.</summary>
     System = 0,
+    /// <summary>Request a light interface.</summary>
     Light = 1,
+    /// <summary>Request a dark interface.</summary>
     Dark = 2,
 }
 
@@ -42,6 +43,9 @@ public enum DarkMode
     Always = 1,
 }
 
+/// <summary>Owns one wxWidgets application and its blocking native event loop. Create exactly one, build
+/// your windows (typically in <see cref="OnInit"/>), then call <see cref="MainLoop"/>; following
+/// <c>wxApp</c>.</summary>
 public class App : EvtHandler, IDisposable
 {
     private static readonly Dictionary<long, EvtHandler> Handlers = new();
@@ -55,8 +59,11 @@ public class App : EvtHandler, IDisposable
     private Window? _topWindow;
     private bool _exitOnFrameDelete = true;
 
+    /// <summary>The one running application, or null before one is created.</summary>
     public static App? Current { get; private set; }
 
+    /// <summary>Creates the application and initializes wxWidgets. Only one may exist at a time, and on
+    /// Windows it must run on an <c>[STAThread]</c> entry point.</summary>
     public App()
     {
         if (Current is not null) throw new InvalidOperationException("Only one App may exist at a time.");
@@ -86,6 +93,8 @@ public class App : EvtHandler, IDisposable
             "with [STAThread], which requires an explicit Main method rather than top-level statements.");
     }
 
+    /// <summary>Whether the application quits automatically when its last top-level window is closed, as
+    /// <c>wxApp.SetExitOnFrameDelete</c>. True by default.</summary>
     public bool ExitOnFrameDelete
     {
         get => _exitOnFrameDelete;
@@ -141,6 +150,8 @@ public class App : EvtHandler, IDisposable
     /// Windows only, which is what wxWidgets implements it for.</summary>
     public static bool SupportsDarkMode => NativeMethods.wxsharp_app_supports_dark_mode();
 
+    /// <summary>The application's main window, following <c>wxApp.SetTopWindow</c>. Must belong to this
+    /// application.</summary>
     public Window? TopWindow
     {
         get => _topWindow;
@@ -153,9 +164,16 @@ public class App : EvtHandler, IDisposable
         }
     }
 
+    /// <summary>Override to build the initial windows and set up the application. Return false to abort
+    /// startup before the event loop runs. Follows <c>wxApp.OnInit</c>.</summary>
     protected virtual bool OnInit() => true;
+    /// <summary>Override for cleanup after the event loop ends. The return value is the process exit code.
+    /// Follows <c>wxApp.OnExit</c>.</summary>
     protected virtual int OnExit() => 0;
 
+    /// <summary>Runs the application: calls <see cref="OnInit"/>, then the native event loop until
+    /// <see cref="ExitMainLoop"/> or the last window closes, then <see cref="OnExit"/>. Blocks until the
+    /// application quits, and may be called only once. Returns the exit code.</summary>
     public int MainLoop()
     {
         VerifyAccess(); ThrowIfDisposed();
@@ -184,12 +202,15 @@ public class App : EvtHandler, IDisposable
         return result;
     }
 
+    /// <summary>Asks the event loop to exit, ending <see cref="MainLoop"/> after the current events drain.</summary>
     public void ExitMainLoop()
     {
         VerifyAccess(); ThrowIfDisposed();
         if (_running) NativeMethods.wxsharp_exit_main_loop();
     }
 
+    /// <summary>Shuts down wxWidgets and releases the application. If the loop is still running this requests
+    /// its exit instead; the real teardown then happens as <see cref="MainLoop"/> returns.</summary>
     public void Dispose()
     {
         if (_disposed) return;
