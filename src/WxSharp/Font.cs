@@ -312,6 +312,12 @@ public sealed unsafe class Font : IDisposable
     /// <summary>Builds a font the way <c>wxFont</c>'s own constructor does. Note the order: style comes
     /// before weight, as it does in wxWidgets and wxPython.</summary>
     /// <param name="pointSize">Size in points.</param>
+    /// <param name="family">The font family to fall back on when the face is unavailable.</param>
+    /// <param name="style">Upright, italic or slant.</param>
+    /// <param name="weight">The font weight.</param>
+    /// <param name="underlined">Whether the font is underlined.</param>
+    /// <param name="faceName">The typeface name, or empty for the family default.</param>
+    /// <param name="encoding">The character encoding.</param>
     public Font(int pointSize, FontFamily family = FontFamily.Default, FontStyle style = FontStyle.Normal,
         FontWeight weight = FontWeight.Normal, bool underlined = false, string faceName = "",
         FontEncoding encoding = FontEncoding.Default)

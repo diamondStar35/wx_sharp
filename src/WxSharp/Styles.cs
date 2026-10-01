@@ -218,7 +218,7 @@ public enum ButtonSizerFlags
     YesNo = Yes | No,
 }
 
-/// <summary>The border drawn around a control. Set through <see cref="Control.Border"/>.</summary>
+/// <summary>The border drawn around a control. Set through <see cref="Window.Border"/>.</summary>
 public enum Border
 {
     /// <summary>The platform default border for the control.</summary>

@@ -5,8 +5,8 @@ namespace WxSharp;
 /// <summary>A generic custom-drawn surface. It raises <see cref="Paint"/> when it needs repainting; draw from
 /// that handler with the <c>Draw*</c>/<c>Set*</c> methods (they only take effect during a paint). The canvas
 /// refuses keyboard focus and is skipped by assistive technology, so it is a purely visual layer - it never
-/// affects tab order or speech. Call <see cref="Control.Refresh"/> to request a repaint after state changes;
-/// use the mouse events plus <see cref="Control.MousePosition"/> for hover and click hit-testing.
+/// affects tab order or speech. Call <see cref="Window.Refresh"/> to request a repaint after state changes;
+/// use the mouse events plus <see cref="Window.MousePosition"/> for hover and click hit-testing.
 ///
 /// Modelled on the wxWidgets/Phoenix custom-paint examples (an <c>OnPaint</c> handler drawing with a device
 /// context), but with the drawing driven from managed code.</summary>

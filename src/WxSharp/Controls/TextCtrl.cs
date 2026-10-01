@@ -38,8 +38,12 @@ public class TextCtrl : Control, ITextEntry
 
     /// <summary>Creates a <c>wxTextCtrl</c> child of <paramref name="parent"/>. Pass
     /// <see cref="TextCtrlStyle.MultiLine"/> for a multi-line editor; the default is a single-line field.</summary>
+    /// <param name="parent">The parent window.</param>
+    /// <param name="id">The control's command id.</param>
     /// <param name="value">The initial text.</param>
     /// <param name="style">Creation styles, such as multi-line, read-only or password.</param>
+    /// <param name="position">The initial position, or null for the default.</param>
+    /// <param name="size">The initial size, or null for the default.</param>
     public TextCtrl(Window parent, int id = WindowId.Any, string value = "", TextCtrlStyle style = TextCtrlStyle.None,
         Point? position = null, Size? size = null) : base(parent, id)
     {

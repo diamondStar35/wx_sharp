@@ -328,7 +328,7 @@ public enum KeyModifiers
 public class WxEventArgs : EventArgs
 {
     /// <summary>What raised the event, following <c>wxEvent.GetEventObject</c>. Usually the window the
-    /// event happened on; an application-level event such as <see cref="WxEvents.ActivateApp"/> reports the
+    /// event happened on; an application-level event such as <c>wxEVT_ACTIVATE_APP</c> reports the
     /// <see cref="App"/>. Use <see cref="SourceWindow"/> when a window is what you need.</summary>
     public EvtHandler Source { get; }
 
@@ -377,7 +377,7 @@ public abstract class NotifyEventArgs : WxEventArgs
 }
 
 /// <summary>Identifies one kind of event and knows how to build its arguments. Pass one to
-/// <see cref="Window.Bind{T}"/>; the <see cref="WxEvents"/> catalogue holds the full set.</summary>
+/// <see cref="EvtHandler.Bind{T}"/>; the <see cref="WxEvents"/> catalogue holds the full set.</summary>
 public sealed class EventType<TEventArgs> where TEventArgs : WxEventArgs
 {
     internal int EventId { get; }
@@ -899,7 +899,7 @@ public sealed class TextUrlEventArgs : WxEventArgs
 // ---- The event catalogue ----------------------------------------------------------------------------------
 
 /// <summary>Every event a window can be bound to, following Phoenix's <c>wx.EVT_*</c> naming. Pass one to
-/// <see cref="Window.Bind{T}"/>; the typed <c>event</c> members on each control are shorthand for the same
+/// <see cref="EvtHandler.Bind{T}"/>; the typed <c>event</c> members on each control are shorthand for the same
 /// thing. Binding a command event on a parent works, because wxWidgets propagates it up the real parent
 /// chain exactly as it does in Phoenix.</summary>
 public static class WxEvents
