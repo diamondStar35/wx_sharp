@@ -11,6 +11,8 @@ public class ListBox : Control
     /// <summary>Wraps a ListBox wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
     internal ListBox(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
 
+    /// <summary>The selection changed, following <c>wxEVT_LISTBOX</c>. Not raised for a change made in code
+    /// via <see cref="SelectedIndex"/>.</summary>
     public event EventHandler<CommandEventArgs> SelectionChanged
     {
         add => AddHandler(WxEvents.ListBoxSelected, value);
@@ -25,6 +27,8 @@ public class ListBox : Control
         remove => RemoveHandler(WxEvents.ListBoxDoubleClicked, value);
     }
 
+    /// <summary>Creates an empty list box. Pass <see cref="ListBoxStyle.Multiple"/> or
+    /// <see cref="ListBoxStyle.Extended"/> to allow more than one selection.</summary>
     public ListBox(Window parent, int id = WindowId.Any, ListBoxStyle style = ListBoxStyle.Single,
         Point? position = null, Size? size = null) : this(parent, id, deferInitialization: true)
     {
@@ -45,8 +49,10 @@ public class ListBox : Control
     /// <summary>Removes the item at <paramref name="index"/>.</summary>
     public void RemoveAt(int index) => NativeMethods.wxsharp_listbox_delete(Handle, index);
 
+    /// <summary>Removes every item.</summary>
     public void Clear() => NativeMethods.wxsharp_listbox_clear(Handle);
 
+    /// <summary>How many items the list holds.</summary>
     public int Count => NativeMethods.wxsharp_listbox_count(Handle);
 
     /// <summary>Gets or replaces the text of the item at <paramref name="index"/>.</summary>

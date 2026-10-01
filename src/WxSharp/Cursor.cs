@@ -5,32 +5,59 @@ namespace WxSharp;
 /// <summary>One of the platform's own cursors, following <c>wxStockCursor</c>.</summary>
 public enum StockCursor
 {
+    /// <summary>No cursor; the window shows no pointer at all.</summary>
     None = 0,
+    /// <summary>The standard arrow pointer.</summary>
     Arrow = 1,
+    /// <summary>An arrow pointing to the upper right.</summary>
     RightArrow = 2,
+    /// <summary>A bullseye of concentric circles.</summary>
     Bullseye = 3,
+    /// <summary>A text-character cursor.</summary>
     Character = 4,
+    /// <summary>A crosshair, for precise pointing.</summary>
     Cross = 5,
+    /// <summary>An open hand, marking a draggable or clickable spot.</summary>
     Hand = 6,
+    /// <summary>The I-beam shown over editable text.</summary>
     IBeam = 7,
+    /// <summary>A left mouse-button cursor; not available on every platform.</summary>
     LeftButton = 8,
+    /// <summary>A magnifying glass.</summary>
     Magnifier = 9,
+    /// <summary>A middle mouse-button cursor; not available on every platform.</summary>
     MiddleButton = 10,
+    /// <summary>The "no entry" forbidden symbol.</summary>
     NoEntry = 11,
+    /// <summary>A paintbrush.</summary>
     PaintBrush = 12,
+    /// <summary>A pencil.</summary>
     Pencil = 13,
+    /// <summary>A hand pointing left.</summary>
     PointLeft = 14,
+    /// <summary>A hand pointing right.</summary>
     PointRight = 15,
+    /// <summary>An arrow with a question mark, for context help.</summary>
     QuestionArrow = 16,
+    /// <summary>A right mouse-button cursor; not available on every platform.</summary>
     RightButton = 17,
+    /// <summary>A diagonal resize arrow running north-east to south-west.</summary>
     SizeNeSw = 18,
+    /// <summary>A vertical resize arrow (north-south).</summary>
     SizeNs = 19,
+    /// <summary>A diagonal resize arrow running north-west to south-east.</summary>
     SizeNwSe = 20,
+    /// <summary>A horizontal resize arrow (west-east).</summary>
     SizeWe = 21,
+    /// <summary>A general sizing cursor.</summary>
     Sizing = 22,
+    /// <summary>A spray-can.</summary>
     SprayCan = 23,
+    /// <summary>An hourglass shown while the application is busy and unresponsive.</summary>
     Wait = 24,
+    /// <summary>A watch, an alternative "busy" cursor.</summary>
     Watch = 25,
+    /// <summary>An invisible cursor.</summary>
     Blank = 26,
     /// <summary>The hourglass shown while the application is busy but still responding.</summary>
     ArrowWait = 27,
@@ -82,6 +109,7 @@ public sealed class Cursor : IDisposable
         NativeMethods.wxsharp_cursor_set_global(cursor?.Handle ?? 0);
     }
 
+    /// <summary>Releases the native cursor.</summary>
     public void Dispose()
     {
         if (_handle != 0) NativeMethods.wxsharp_cursor_destroy(_handle);
@@ -93,9 +121,14 @@ public sealed class Cursor : IDisposable
 /// normally loaded from are named; wxWidgets defines more.</summary>
 public enum BitmapType
 {
+    /// <summary>No or unknown format.</summary>
     Invalid = 0,
+    /// <summary>Windows bitmap (<c>.bmp</c>).</summary>
     Bmp = 1,
+    /// <summary>Windows icon (<c>.ico</c>).</summary>
     Ico = 3,
+    /// <summary>Windows cursor (<c>.cur</c>), carrying its own hotspot.</summary>
     Cur = 5,
+    /// <summary>PNG image.</summary>
     Png = 15,
 }

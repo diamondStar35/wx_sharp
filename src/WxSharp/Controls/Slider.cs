@@ -25,6 +25,9 @@ public class Slider : Control
         remove => RemoveHandler(WxEvents.ScrollThumbReleased, value);
     }
 
+    /// <summary>Creates a slider over the integer range <paramref name="minValue"/>..<paramref name="maxValue"/>
+    /// starting at <paramref name="value"/>. Pass <see cref="SliderStyle.Vertical"/> for a vertical
+    /// slider.</summary>
     public Slider(Window parent, int id = WindowId.Any, int value = 0, int minValue = 0, int maxValue = 100,
         SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null) : base(parent, id)
     {
@@ -34,13 +37,17 @@ public class Slider : Control
         ApplyInitialGeometry(position, size);
     }
 
+    /// <summary>The current position. Setting it in code moves the thumb but does not raise
+    /// <see cref="ValueChanged"/> on a plain slider; use <see cref="CustomSlider"/> if you need that.</summary>
     public virtual int Value
     {
         get => NativeMethods.wxsharp_slider_get(Handle);
         set => NativeMethods.wxsharp_slider_set(Handle, value);
     }
 
+    /// <summary>The lowest value the slider can take.</summary>
     public int Minimum => NativeMethods.wxsharp_slider_get_min(Handle);
+    /// <summary>The highest value the slider can take.</summary>
     public int Maximum => NativeMethods.wxsharp_slider_get_max(Handle);
 
     /// <summary>Changes the range; the current value is clamped into it by the control.</summary>

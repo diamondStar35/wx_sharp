@@ -23,8 +23,14 @@ public class Timer : IDisposable
     private EventBinding _binding;
     private nint _handle;
     private bool _ownsId;
+    /// <summary>This timer's ID, carried by its <see cref="WxEvents.Timer"/> events. Settles to a real ID
+    /// even when <see cref="WindowId.Any"/> was requested.</summary>
     public int Id { get; private set; }
+    /// <summary>Raised on the UI thread each time the timer fires.</summary>
     public event EventHandler? Tick;
+    /// <summary>Creates a timer owned by <paramref name="owner"/>. Pass an <see cref="App"/> as the owner for
+    /// a timer that outlives every window. The default <paramref name="id"/> takes one from
+    /// <see cref="IdManager"/>.</summary>
     public Timer(EvtHandler owner, int id = WindowId.Any)
     {
         ArgumentNullException.ThrowIfNull(owner);
@@ -42,21 +48,34 @@ public class Timer : IDisposable
     // A null handle tells the native side to own the timer from the application, which is what an
     // App-owned timer means; an application outlives its windows, so there is nothing to be invalidated by.
     private static nint OwnerHandle(EvtHandler owner) => owner is Window window ? window.Handle : 0;
+    /// <summary>Whether the timer is currently running.</summary>
     public bool IsRunning => NativeMethods.wxsharp_timer_is_running(Handle);
+    /// <summary>Whether the timer is set to fire only once rather than repeatedly.</summary>
     public bool IsOneShot() => NativeMethods.wxsharp_timer_is_one_shot(Handle);
+    /// <summary>The interval between ticks, in milliseconds.</summary>
     public int Interval => NativeMethods.wxsharp_timer_get_interval(Handle);
+    /// <summary>Starts the timer. <paramref name="milliseconds"/> is the interval (-1 reuses the last one);
+    /// <paramref name="oneShot"/> fires once instead of repeating. Returns false if the timer could not
+    /// start.</summary>
     public bool Start(int milliseconds = -1, bool oneShot = false)
     {
         if (milliseconds < -1 || milliseconds == 0) throw new ArgumentOutOfRangeException(nameof(milliseconds));
         return NativeMethods.wxsharp_timer_start(Handle, milliseconds, oneShot);
     }
+    /// <summary>Starts the timer to fire exactly once after <paramref name="milliseconds"/> (-1 reuses the
+    /// last interval). Shorthand for <see cref="Start(int, bool)"/> with one-shot set.</summary>
     public bool StartOnce(int milliseconds = -1)
     {
         if (milliseconds < -1 || milliseconds == 0) throw new ArgumentOutOfRangeException(nameof(milliseconds));
         return NativeMethods.wxsharp_timer_start_once(Handle, milliseconds);
     }
+    /// <summary>Fires the timer's notification now, as wxWidgets does on each tick. Override in a subclass to
+    /// react without binding <see cref="Tick"/>.</summary>
     public virtual void Notify() => NativeMethods.wxsharp_timer_notify(Handle);
+    /// <summary>The handler that owns this timer and receives its events.</summary>
     public EvtHandler GetOwner() => _owner;
+    /// <summary>Re-points the timer at a new owner (and optional ID). The new owner must belong to the same
+    /// <see cref="App"/>.</summary>
     public void SetOwner(EvtHandler owner, int id = WindowId.Any)
     {
         ArgumentNullException.ThrowIfNull(owner);
@@ -72,7 +91,9 @@ public class Timer : IDisposable
         _binding = owner.Bind(WxEvents.Timer, (_, _) => Tick?.Invoke(this, EventArgs.Empty), Id);
         if (owner is Window window) window.Invalidated += Dispose;
     }
+    /// <summary>Stops the timer. Safe to call when it is not running.</summary>
     public void Stop() => NativeMethods.wxsharp_timer_stop(Handle);
+    /// <summary>Stops and destroys the timer, returning its ID to the pool if it owns one.</summary>
     public void Dispose()
     {
         if (_handle == 0) return;

@@ -5,6 +5,8 @@ namespace WxSharp;
 /// <summary>Global wxWidgets services. Application lifetime is owned by <see cref="App"/>.</summary>
 public static partial class Wx
 {
+    /// <summary>Whether this build can expose managed <see cref="Accessible"/> providers to the platform's
+    /// accessibility API. False on platforms where the native shim was built without that bridge.</summary>
     public static bool SupportsCustomAccessibility => NativeMethods.wxsharp_custom_accessibility_available();
     /// <summary>Shows a native message box and returns the button pressed. Pass the window it belongs to as
     /// <paramref name="parent"/>: that is what makes it modal to the right window and tells assistive
@@ -16,6 +18,9 @@ public static partial class Wx
         app.VerifyAccess();
         return (MessageBoxStyle)NativeMethods.wxsharp_message_box(parent?.Handle ?? 0, message, caption, (int)style);
     }
+    /// <summary>Queues <paramref name="action"/> to run on the UI thread from the event loop, as
+    /// <c>wx.CallAfter</c> does. Use it to defer work out of the current handler, or to marshal onto the UI
+    /// thread from another one.</summary>
     public static void CallAfter(Action action) => App.Queue(action);
 
     /// <summary>Queues a command event on <paramref name="target"/>, as <c>wx.PostEvent</c> does. The event
@@ -55,12 +60,18 @@ public static partial class Wx
         return result != 0;
     }
 
+    /// <summary>Processes pending events once, as <c>wxApp::Yield</c> does, so the interface repaints during
+    /// a long operation. Use sparingly: it re-enters the event loop and can deliver events in the middle of
+    /// your code. With <paramref name="onlyIfNeeded"/> true, a re-entrant call is a no-op rather than an
+    /// error. Returns false if the yield was refused.</summary>
     public static bool Yield(bool onlyIfNeeded = false)
     {
         var app = App.Current ?? throw new InvalidOperationException("Create an App before yielding.");
         app.VerifyAccess();
         return NativeMethods.wxsharp_yield(onlyIfNeeded);
     }
+    /// <summary>Shows the busy (hourglass) cursor until the returned scope is disposed, matching
+    /// <c>wxBusyCursor</c>. Wrap a blocking operation in a <c>using</c> so the cursor is always restored.</summary>
     public static IDisposable BusyCursor()
     {
         _ = App.RequireCurrent(); NativeMethods.wxsharp_begin_busy_cursor(); return new BusyCursorScope();

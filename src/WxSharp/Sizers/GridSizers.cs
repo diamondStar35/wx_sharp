@@ -6,7 +6,9 @@ namespace WxSharp;
 /// <c>wxFlexGridSizer.SetFlexibleDirection</c>.</summary>
 public enum FlexDirection
 {
+    /// <summary>Only columns may grow.</summary>
     Horizontal = 0,
+    /// <summary>Only rows may grow.</summary>
     Vertical = 1,
     /// <summary>Both, which is the default.</summary>
     Both = 2,
@@ -27,6 +29,8 @@ public enum FlexGrowMode
 /// <summary>A grid where every cell is the same size.</summary>
 public class GridSizer : Sizer
 {
+    /// <summary>Creates a grid of equal-sized cells. A zero <paramref name="rows"/> or
+    /// <paramref name="columns"/> is derived from the other and the item count.</summary>
     public GridSizer(int rows, int columns, int verticalGap = 0, int horizontalGap = 0)
         : base(Create(rows, columns, verticalGap, horizontalGap)) { }
 
@@ -79,6 +83,8 @@ public class GridSizer : Sizer
 /// columns take the spare space.</summary>
 public class FlexGridSizer : GridSizer
 {
+    /// <summary>Creates a flex grid of the given shape and gaps. Mark rows/columns growable with
+    /// <see cref="AddGrowableRow"/> / <see cref="AddGrowableColumn"/>.</summary>
     public FlexGridSizer(int rows, int columns, int verticalGap = 0, int horizontalGap = 0)
         : base(Create(rows, columns, verticalGap, horizontalGap)) { }
 
@@ -96,9 +102,13 @@ public class FlexGridSizer : GridSizer
         NativeMethods.wxsharp_flexgridsizer_add_growable_column(Handle, column, proportion);
     }
 
+    /// <summary>Stops a row growing, undoing <see cref="AddGrowableRow"/>.</summary>
     public void RemoveGrowableRow(int row) => NativeMethods.wxsharp_flexgridsizer_remove_growable_row(Handle, row);
+    /// <summary>Stops a column growing, undoing <see cref="AddGrowableColumn"/>.</summary>
     public void RemoveGrowableColumn(int column) => NativeMethods.wxsharp_flexgridsizer_remove_growable_column(Handle, column);
+    /// <summary>Whether a row has been made growable.</summary>
     public bool IsRowGrowable(int row) => NativeMethods.wxsharp_flexgridsizer_is_row_growable(Handle, row);
+    /// <summary>Whether a column has been made growable.</summary>
     public bool IsColumnGrowable(int column) => NativeMethods.wxsharp_flexgridsizer_is_column_growable(Handle, column);
 
     /// <summary>Which directions the sizer may grow in. Defaults to <see cref="FlexDirection.Both"/>.</summary>
@@ -146,6 +156,8 @@ public class FlexGridSizer : GridSizer
 /// <summary>A box sizer that draws a labelled frame around its contents.</summary>
 public class StaticBoxSizer : Sizer
 {
+    /// <summary>Creates a static-box sizer, drawing a frame labelled by <paramref name="box"/>, laying its
+    /// items out in the given orientation.</summary>
     public StaticBoxSizer(StaticBox box, Orientation orientation = Orientation.Vertical)
         : base(NativeMethods.wxsharp_staticboxsizer_create(box?.Handle ?? throw new ArgumentNullException(nameof(box)),
             orientation == Orientation.Horizontal))
@@ -159,6 +171,7 @@ public class StaticBoxSizer : Sizer
 /// <c>wxGridBagSizer</c>.</summary>
 public class GridBagSizer : FlexGridSizer
 {
+    /// <summary>Creates a grid-bag sizer, where each item names its own cell and span.</summary>
     public GridBagSizer(int verticalGap = 0, int horizontalGap = 0)
         : base(NativeMethods.wxsharp_gridbagsizer_create(verticalGap, horizontalGap)) { }
 
@@ -190,6 +203,7 @@ public class GridBagSizer : FlexGridSizer
         return (row, column);
     }
 
+    /// <summary>The cell occupied by the item at <paramref name="index"/>.</summary>
     public (int Row, int Column) GetItemPositionAt(int index)
     {
         NativeMethods.wxsharp_gridbagsizer_get_item_position_at(Handle, index, out var row, out var column);
@@ -204,6 +218,8 @@ public class GridBagSizer : FlexGridSizer
         return NativeMethods.wxsharp_gridbagsizer_set_item_position_control(Handle, window.Handle, row, column);
     }
 
+    /// <summary>Moves the item at <paramref name="index"/> to another cell. Returns false if the target is
+    /// taken.</summary>
     public bool SetItemPositionAt(int index, int row, int column)
         => NativeMethods.wxsharp_gridbagsizer_set_item_position_at(Handle, index, row, column);
 
@@ -215,6 +231,7 @@ public class GridBagSizer : FlexGridSizer
         return (rows, columns);
     }
 
+    /// <summary>How many rows and columns the item at <paramref name="index"/> spans.</summary>
     public (int RowSpan, int ColumnSpan) GetItemSpanAt(int index)
     {
         NativeMethods.wxsharp_gridbagsizer_get_item_span_at(Handle, index, out var rows, out var columns);
@@ -229,6 +246,7 @@ public class GridBagSizer : FlexGridSizer
         return NativeMethods.wxsharp_gridbagsizer_set_item_span_control(Handle, window.Handle, rowSpan, columnSpan);
     }
 
+    /// <summary>Changes the span of the item at <paramref name="index"/>. Returns false if it would overlap.</summary>
     public bool SetItemSpanAt(int index, int rowSpan, int columnSpan)
         => NativeMethods.wxsharp_gridbagsizer_set_item_span_at(Handle, index, rowSpan, columnSpan);
 

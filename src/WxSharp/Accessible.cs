@@ -7,22 +7,132 @@ using System.Text;
 
 namespace WxSharp;
 
-public enum AccessibleStatus { Fail = 0, False = 1, Ok = 2, NotImplemented = 3, NotSupported = 4, InvalidArgument = 5 }
-public enum AccessibleNavigationDirection { Down, FirstChild, LastChild, Left, Next, Previous, Right, Up }
+/// <summary>The result of an <see cref="Accessible"/> query, following <c>wxAccStatus</c>.</summary>
+public enum AccessibleStatus
+{
+    /// <summary>The query failed.</summary>
+    Fail = 0,
+    /// <summary>The query succeeded with a "false" answer.</summary>
+    False = 1,
+    /// <summary>The query succeeded.</summary>
+    Ok = 2,
+    /// <summary>This object does not implement the query; fall back to the default.</summary>
+    NotImplemented = 3,
+    /// <summary>The query is not supported.</summary>
+    NotSupported = 4,
+    /// <summary>An argument was invalid.</summary>
+    InvalidArgument = 5,
+}
+
+/// <summary>A direction for <see cref="Accessible.Navigate"/>, following <c>wxNavDir</c>.</summary>
+public enum AccessibleNavigationDirection
+{
+    /// <summary>Spatially below.</summary>
+    Down,
+    /// <summary>The first child.</summary>
+    FirstChild,
+    /// <summary>The last child.</summary>
+    LastChild,
+    /// <summary>Spatially to the left.</summary>
+    Left,
+    /// <summary>The next sibling.</summary>
+    Next,
+    /// <summary>The previous sibling.</summary>
+    Previous,
+    /// <summary>Spatially to the right.</summary>
+    Right,
+    /// <summary>Spatially above.</summary>
+    Up,
+}
+
+/// <summary>What a <see cref="Accessible.Select"/> call should do, following <c>wxAccSelectionFlags</c>.</summary>
 [Flags]
-public enum AccessibleSelection { None = 0, TakeFocus = 1, TakeSelection = 2, ExtendSelection = 4, AddSelection = 8, RemoveSelection = 16 }
+public enum AccessibleSelection
+{
+    /// <summary>No change.</summary>
+    None = 0,
+    /// <summary>Give the object keyboard focus.</summary>
+    TakeFocus = 1,
+    /// <summary>Make this the whole selection.</summary>
+    TakeSelection = 2,
+    /// <summary>Extend the selection to this object.</summary>
+    ExtendSelection = 4,
+    /// <summary>Add this object to the selection.</summary>
+    AddSelection = 8,
+    /// <summary>Remove this object from the selection.</summary>
+    RemoveSelection = 16,
+}
+
+/// <summary>A standard window part, following the <c>OBJID_*</c> values used by <c>wxAccessible</c>.</summary>
 public enum AccessibleObjectType
 {
-    Window = 0, SystemMenu = -1, TitleBar = -2, Menu = -3, Client = -4, VerticalScrollBar = -5,
-    HorizontalScrollBar = -6, SizeGrip = -7, Caret = -8, Cursor = -9, Alert = -10, Sound = -11,
+    /// <summary>The window itself.</summary>
+    Window = 0,
+    /// <summary>The window (system) menu.</summary>
+    SystemMenu = -1,
+    /// <summary>The title bar.</summary>
+    TitleBar = -2,
+    /// <summary>The menu bar.</summary>
+    Menu = -3,
+    /// <summary>The client area.</summary>
+    Client = -4,
+    /// <summary>The vertical scrollbar.</summary>
+    VerticalScrollBar = -5,
+    /// <summary>The horizontal scrollbar.</summary>
+    HorizontalScrollBar = -6,
+    /// <summary>The resize grip.</summary>
+    SizeGrip = -7,
+    /// <summary>The text caret.</summary>
+    Caret = -8,
+    /// <summary>The mouse cursor.</summary>
+    Cursor = -9,
+    /// <summary>An alert.</summary>
+    Alert = -10,
+    /// <summary>A sound.</summary>
+    Sound = -11,
 }
+
+/// <summary>An accessibility event to raise with <see cref="Accessible.NotifyEvent"/>, following the
+/// <c>EVENT_OBJECT_*</c> values.</summary>
 public enum AccessibleEvent
 {
-    Create = 0x8000, Destroy = 0x8001, Show = 0x8002, Hide = 0x8003, Reorder = 0x8004,
-    Focus = 0x8005, Selection = 0x8006, SelectionAdd = 0x8007, SelectionRemove = 0x8008,
-    SelectionWithin = 0x8009, StateChanged = 0x800A, LocationChanged = 0x800B,
-    NameChanged = 0x800C, DescriptionChanged = 0x800D, ValueChanged = 0x800E,
-    ParentChanged = 0x800F, HelpChanged = 0x8010, DefaultActionChanged = 0x8011,
+    /// <summary>An object was created.</summary>
+    Create = 0x8000,
+    /// <summary>An object was destroyed.</summary>
+    Destroy = 0x8001,
+    /// <summary>An object was shown.</summary>
+    Show = 0x8002,
+    /// <summary>An object was hidden.</summary>
+    Hide = 0x8003,
+    /// <summary>Children were reordered.</summary>
+    Reorder = 0x8004,
+    /// <summary>Focus moved.</summary>
+    Focus = 0x8005,
+    /// <summary>The selection changed.</summary>
+    Selection = 0x8006,
+    /// <summary>An item was added to the selection.</summary>
+    SelectionAdd = 0x8007,
+    /// <summary>An item was removed from the selection.</summary>
+    SelectionRemove = 0x8008,
+    /// <summary>The selection changed within a container.</summary>
+    SelectionWithin = 0x8009,
+    /// <summary>An object's state changed.</summary>
+    StateChanged = 0x800A,
+    /// <summary>An object moved or resized.</summary>
+    LocationChanged = 0x800B,
+    /// <summary>An object's name changed.</summary>
+    NameChanged = 0x800C,
+    /// <summary>An object's description changed.</summary>
+    DescriptionChanged = 0x800D,
+    /// <summary>An object's value changed.</summary>
+    ValueChanged = 0x800E,
+    /// <summary>An object's parent changed.</summary>
+    ParentChanged = 0x800F,
+    /// <summary>An object's help text changed.</summary>
+    HelpChanged = 0x8010,
+    /// <summary>An object's default action changed.</summary>
+    DefaultActionChanged = 0x8011,
+    /// <summary>An object's accelerator changed.</summary>
     AcceleratorChanged = 0x8012,
 }
 
@@ -45,22 +155,39 @@ public abstract class Accessible
     private Window? _window;
     internal long Token { get; private set; }
 
+    /// <summary>The window this object provides accessibility for, or null when it is not attached.</summary>
     public Window? Window => _window;
+    /// <summary>Override to report how many children this object has.</summary>
     public virtual AccessibleStatus GetChildCount(out int count) { count = 0; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the name of a child (or this object, child 0).</summary>
     public virtual AccessibleStatus GetName(int childId, out string name) { name = string.Empty; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the description of a child.</summary>
     public virtual AccessibleStatus GetDescription(int childId, out string description) { description = string.Empty; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the help text of a child.</summary>
     public virtual AccessibleStatus GetHelpText(int childId, out string helpText) { helpText = string.Empty; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the value of a child.</summary>
     public virtual AccessibleStatus GetValue(int childId, out string value) { value = string.Empty; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the keyboard shortcut of a child.</summary>
     public virtual AccessibleStatus GetKeyboardShortcut(int childId, out string shortcut) { shortcut = string.Empty; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the default action name of a child.</summary>
     public virtual AccessibleStatus GetDefaultAction(int childId, out string action) { action = string.Empty; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the role of a child.</summary>
     public virtual AccessibleStatus GetRole(int childId, out AccessibleRole role) { role = AccessibleRole.Default; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the state flags of a child.</summary>
     public virtual AccessibleStatus GetState(int childId, out AccessibleState state) { state = AccessibleState.None; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the screen rectangle of a child.</summary>
     public virtual AccessibleStatus GetLocation(int childId, out Rect location) { location = default; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to map a screen point to the child under it.</summary>
     public virtual AccessibleStatus HitTest(Point screenPoint, out int childId) { childId = 0; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to navigate from one child in a direction to another.</summary>
     public virtual AccessibleStatus Navigate(AccessibleNavigationDirection direction, int fromId, out int toId) { toId = 0; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to change the selection or focus of a child.</summary>
     public virtual AccessibleStatus Select(int childId, AccessibleSelection selection) => AccessibleStatus.NotImplemented;
+    /// <summary>Override to perform a child's default action.</summary>
     public virtual AccessibleStatus DoDefaultAction(int childId) => AccessibleStatus.NotImplemented;
+    /// <summary>Override to report which child has focus.</summary>
     public virtual AccessibleStatus GetFocus(out int childId) { childId = 0; return AccessibleStatus.NotImplemented; }
+    /// <summary>Override to report the currently selected children.</summary>
     public virtual AccessibleStatus GetSelections(out IReadOnlyList<int> childIds) { childIds = Array.Empty<int>(); return AccessibleStatus.NotImplemented; }
 
     /// <summary>Tells the platform that something about a window changed, following

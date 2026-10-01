@@ -17,9 +17,13 @@ public enum ImageListKind
 /// <summary>Which of a tree item's images is being set, following <c>wxTreeItemIcon</c>.</summary>
 public enum TreeItemIcon
 {
+    /// <summary>The image drawn for an item in its normal, unselected state.</summary>
     Normal = 0,
+    /// <summary>The image drawn when the item is selected.</summary>
     Selected = 1,
+    /// <summary>The image drawn when the item is expanded.</summary>
     Expanded = 2,
+    /// <summary>The image drawn when the item is both selected and expanded.</summary>
     SelectedExpanded = 3,
 }
 
@@ -41,6 +45,8 @@ public sealed class ImageList : IDisposable
     internal nint Handle => _handle != 0 ? _handle : throw new ObjectDisposedException(nameof(ImageList));
 
     /// <summary>Creates a list of images of a fixed size.</summary>
+    /// <param name="width">The width of every image, in pixels.</param>
+    /// <param name="height">The height of every image, in pixels.</param>
     /// <param name="mask">Whether to keep each image's transparency mask.</param>
     /// <param name="initialCount">A hint at how many images will be added; not a limit.</param>
     public ImageList(int width, int height, bool mask = true, int initialCount = 1)
@@ -97,6 +103,8 @@ public sealed class ImageList : IDisposable
         return handle == 0 ? null : Bitmap.Attach(handle);
     }
 
+    /// <summary>Destroys the native image list and the images it holds. Do not dispose a list a control has
+    /// taken ownership of; the control frees it.</summary>
     public void Dispose()
     {
         if (_handle != 0) NativeMethods.wxsharp_imagelist_destroy(_handle);
