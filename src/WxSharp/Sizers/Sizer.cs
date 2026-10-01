@@ -4,7 +4,13 @@ namespace WxSharp;
 
 /// <summary>The direction a <see cref="BoxSizer"/> or <see cref="StaticBoxSizer"/> lays its items out,
 /// following <c>wxHORIZONTAL</c> and <c>wxVERTICAL</c>.</summary>
-public enum Orientation { Horizontal, Vertical }
+public enum Orientation
+{
+    /// <summary>Lays items out left to right (<c>wxHORIZONTAL</c>).</summary>
+    Horizontal,
+    /// <summary>Lays items out top to bottom (<c>wxVERTICAL</c>).</summary>
+    Vertical,
+}
 
 /// <summary>How a sizer treats one item: whether it grows, how it is aligned in the space it is given, and
 /// which of its edges get the border.</summary>

@@ -8,6 +8,8 @@ public class TextCtrl : Control, ITextEntry
     /// <summary>Wraps a TextCtrl wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
     internal TextCtrl(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
 
+    /// <summary>The text changed, whether by the user or by code. Fires on every edit (<c>wxEVT_TEXT</c>);
+    /// use <see cref="ITextEntry.ChangeValue"/> to set the text without raising it.</summary>
     public event EventHandler<CommandEventArgs> TextChanged
     {
         add => AddHandler(WxEvents.TextChanged, value);
@@ -34,6 +36,10 @@ public class TextCtrl : Control, ITextEntry
         remove => RemoveHandler(WxEvents.TextUrlClicked, value);
     }
 
+    /// <summary>Creates a <c>wxTextCtrl</c> child of <paramref name="parent"/>. Pass
+    /// <see cref="TextCtrlStyle.MultiLine"/> for a multi-line editor; the default is a single-line field.</summary>
+    /// <param name="value">The initial text.</param>
+    /// <param name="style">Creation styles, such as multi-line, read-only or password.</param>
     public TextCtrl(Window parent, int id = WindowId.Any, string value = "", TextCtrlStyle style = TextCtrlStyle.None,
         Point? position = null, Size? size = null) : base(parent, id)
     {

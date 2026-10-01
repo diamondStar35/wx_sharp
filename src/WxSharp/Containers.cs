@@ -220,30 +220,42 @@ public class Notebook : Control
     public bool SetPageText(int index, string text) => NativeMethods.wxsharp_notebook_set_page_text(Handle, index, text);
 }
 
+/// <summary>A page container that shows one child page at a time with no tabs or other visible chrome,
+/// switched only in code. Wraps <c>wxSimplebook</c> — useful for wizard-style flows where you drive the
+/// page changes yourself.</summary>
 public class SimpleBook : Control
 {
+    /// <summary>The visible page changed.</summary>
     public event EventHandler<BookEventArgs> PageChanged
     {
         add => AddHandler(WxEvents.BookPageChanged, value);
         remove => RemoveHandler(WxEvents.BookPageChanged, value);
     }
 
+    /// <summary>The visible page is about to change. Veto to keep the current page.</summary>
     public event EventHandler<BookEventArgs> PageChanging
     {
         add => AddHandler(WxEvents.BookPageChanging, value);
         remove => RemoveHandler(WxEvents.BookPageChanging, value);
     }
 
+    /// <summary>Creates a <c>wxSimplebook</c> child of <paramref name="parent"/>. Add pages with
+    /// <see cref="AddPage"/> and switch with <see cref="SelectedIndex"/>.</summary>
     public SimpleBook(Window parent, int id = WindowId.Any) : base(parent, id)
         => Initialize(GetType() == typeof(SimpleBook)
             ? NativeMethods.wxsharp_simplebook_create(parent.Handle, id, Token)
             : NativeMethods.wxsharp_custom_simplebook_create(parent.Handle, id, Token));
+    /// <summary>The number of pages.</summary>
     public int Count => NativeMethods.wxsharp_notebook_count(Handle);
+    /// <summary>The index of the visible page, or -1 when there is none. Setting it switches pages.</summary>
     public int SelectedIndex
     {
         get => NativeMethods.wxsharp_notebook_get_selection(Handle);
         set => _ = NativeMethods.wxsharp_notebook_set_selection(Handle, value);
     }
+    /// <summary>Appends <paramref name="page"/> as a new page. Pass <paramref name="select"/> to make it the
+    /// visible page. The book takes ownership of the page.</summary>
     public bool AddPage(Window page, string text = "", bool select = false) => NativeMethods.wxsharp_notebook_add_page(Handle, page.Handle, text, select);
+    /// <summary>Removes the page at <paramref name="index"/> and destroys it.</summary>
     public bool RemovePage(int index) => NativeMethods.wxsharp_notebook_delete_page(Handle, index);
 }

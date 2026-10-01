@@ -22,6 +22,7 @@ public enum DirDialogStyle
 [Flags]
 public enum TextEntryDialogStyle
 {
+    /// <summary>wxWidgets' own default: a single-line field.</summary>
     Default = 0,
     /// <summary>A box that takes more than one line.</summary>
     MultiLine = 1,
@@ -43,6 +44,10 @@ public enum TextEntryDialogStyle
 /// </code></example>
 public sealed unsafe class FileDialog : Dialog
 {
+    /// <summary>Creates a file open/save dialog. Show it with <see cref="Dialog.ShowModal"/>, then read
+    /// <see cref="Path"/> (or <see cref="GetPaths"/> for a multiple selection).</summary>
+    /// <param name="wildcard">The filter string in wxWidgets' form, e.g. <c>"Audio|*.mp3;*.wav|All|*.*"</c>.</param>
+    /// <param name="style">Open vs. save and other <c>wxFD_</c> options.</param>
     public FileDialog(Window? parent = null, string message = "Choose a file", string directory = "",
         string fileName = "", string wildcard = "", FileDialogStyle style = FileDialogStyle.Open)
         : base(parent, WindowId.Any, message, null, null, DialogStyle.Default, deferNativeCreation: true)
@@ -130,6 +135,9 @@ public sealed unsafe class FileDialog : Dialog
 /// <summary>Asks for a folder, following <c>wxDirDialog</c>.</summary>
 public sealed unsafe class DirDialog : Dialog
 {
+    /// <summary>Creates a folder-chooser dialog. Show it with <see cref="Dialog.ShowModal"/>, then read
+    /// <see cref="Path"/>.</summary>
+    /// <param name="defaultPath">The folder selected when the dialog opens.</param>
     public DirDialog(Window? parent = null, string message = "Choose a folder", string defaultPath = "",
         DirDialogStyle style = DirDialogStyle.Default)
         : base(parent, WindowId.Any, message, null, null, DialogStyle.Default, deferNativeCreation: true)
@@ -172,6 +180,11 @@ public sealed unsafe class DirDialog : Dialog
 /// <summary>Asks for a line of text, following <c>wxTextEntryDialog</c>.</summary>
 public sealed unsafe class TextEntryDialog : Dialog
 {
+    /// <summary>Creates a single-line (or multi-line) text prompt. Show it with
+    /// <see cref="Dialog.ShowModal"/>, then read <see cref="Value"/>.</summary>
+    /// <param name="message">The prompt shown above the field.</param>
+    /// <param name="caption">The dialog's title.</param>
+    /// <param name="value">The field's initial text.</param>
     public TextEntryDialog(Window? parent = null, string message = "", string caption = "Input",
         string value = "", TextEntryDialogStyle style = TextEntryDialogStyle.Default)
         : base(parent, WindowId.Any, caption, null, null, DialogStyle.Default, deferNativeCreation: true)
@@ -200,6 +213,10 @@ public sealed unsafe class TextEntryDialog : Dialog
 /// <summary>Asks for a number within a range, following <c>wxNumberEntryDialog</c>.</summary>
 public sealed unsafe class NumberEntryDialog : Dialog
 {
+    /// <summary>Creates a dialog that asks for an integer in <paramref name="minimum"/>..<paramref name="maximum"/>.
+    /// Show it with <see cref="Dialog.ShowModal"/>, then read <see cref="Value"/>.</summary>
+    /// <param name="prompt">The label beside the number field.</param>
+    /// <param name="value">The number shown when the dialog opens.</param>
     public NumberEntryDialog(Window? parent = null, string message = "", string prompt = "",
         string caption = "Input", long value = 0, long minimum = 0, long maximum = 100)
         : base(parent, WindowId.Any, caption, null, null, DialogStyle.Default, deferNativeCreation: true)
@@ -256,6 +273,8 @@ public sealed unsafe class ColourDialog : Dialog
 /// <summary>Asks for a font, following <c>wxFontDialog</c>.</summary>
 public sealed unsafe class FontDialog : Dialog
 {
+    /// <summary>Creates a font-chooser dialog, optionally starting from <paramref name="initial"/>. Show it
+    /// with <see cref="Dialog.ShowModal"/>, then read <see cref="GetChosenFont"/>.</summary>
     public FontDialog(Window? parent = null, Font? initial = null)
         : base(parent, WindowId.Any, "", null, null, DialogStyle.Default, deferNativeCreation: true)
     {

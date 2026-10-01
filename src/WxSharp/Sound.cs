@@ -73,6 +73,8 @@ public sealed class Sound : IDisposable
         NativeMethods.wxsharp_sound_stop();
     }
 
+    /// <summary>Releases the native <c>wxSound</c>. Does not stop playback already in progress; use the
+    /// static <see cref="Stop"/> for that.</summary>
     public void Dispose()
     {
         if (_handle != 0) NativeMethods.wxsharp_sound_destroy(_handle);
