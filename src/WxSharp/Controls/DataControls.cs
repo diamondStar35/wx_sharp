@@ -529,6 +529,7 @@ public class TreeCtrl : Control
         _itemData?.Clear();
         NativeMethods.wxsharp_tree_delete_all(Handle);
     }
+    /// <summary>An item's label.</summary>
     public unsafe string GetText(TreeItemId item)
     {
         var length = NativeMethods.wxsharp_tree_get_text(Handle, item.Value, null, 0); if (length <= 0) return string.Empty;

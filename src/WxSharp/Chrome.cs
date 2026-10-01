@@ -7,6 +7,7 @@ namespace WxSharp;
 /// <summary>What kind of entry a menu or toolbar item is.</summary>
 public enum MenuItemKind
 {
+    /// <summary>An ordinary command item.</summary>
     Normal = 0,
     /// <summary>A checkable item that toggles independently.</summary>
     Check = 1,
@@ -35,43 +36,81 @@ public static class StandardId
         return Cache[which];
     }
 
+    /// <summary><c>wxID_ANY</c>: let wxWidgets allocate the id.</summary>
     public static int Any => Get(0);
+    /// <summary><c>wxID_OK</c>.</summary>
     public static int Ok => Get(1);
+    /// <summary><c>wxID_CANCEL</c>.</summary>
     public static int Cancel => Get(2);
+    /// <summary><c>wxID_YES</c>.</summary>
     public static int Yes => Get(3);
+    /// <summary><c>wxID_NO</c>.</summary>
     public static int No => Get(4);
+    /// <summary><c>wxID_APPLY</c>.</summary>
     public static int Apply => Get(5);
+    /// <summary><c>wxID_CLOSE</c>.</summary>
     public static int Close => Get(6);
+    /// <summary><c>wxID_HELP</c>.</summary>
     public static int Help => Get(7);
+    /// <summary><c>wxID_EXIT</c>. Placed in the application menu on macOS.</summary>
     public static int Exit => Get(8);
+    /// <summary><c>wxID_NEW</c>.</summary>
     public static int New => Get(9);
+    /// <summary><c>wxID_OPEN</c>.</summary>
     public static int Open => Get(10);
+    /// <summary><c>wxID_SAVE</c>.</summary>
     public static int Save => Get(11);
+    /// <summary><c>wxID_SAVEAS</c>.</summary>
     public static int SaveAs => Get(12);
+    /// <summary><c>wxID_PREFERENCES</c>. Placed in the application menu on macOS.</summary>
     public static int Preferences => Get(13);
+    /// <summary><c>wxID_ABOUT</c>. Placed in the application menu on macOS.</summary>
     public static int About => Get(14);
+    /// <summary><c>wxID_UNDO</c>.</summary>
     public static int Undo => Get(15);
+    /// <summary><c>wxID_REDO</c>.</summary>
     public static int Redo => Get(16);
+    /// <summary><c>wxID_CUT</c>.</summary>
     public static int Cut => Get(17);
+    /// <summary><c>wxID_COPY</c>.</summary>
     public static int Copy => Get(18);
+    /// <summary><c>wxID_PASTE</c>.</summary>
     public static int Paste => Get(19);
+    /// <summary><c>wxID_DELETE</c>.</summary>
     public static int Delete => Get(20);
+    /// <summary><c>wxID_SELECTALL</c>.</summary>
     public static int SelectAll => Get(21);
+    /// <summary><c>wxID_FIND</c>.</summary>
     public static int Find => Get(22);
+    /// <summary><c>wxID_REPLACE</c>.</summary>
     public static int Replace => Get(23);
+    /// <summary><c>wxID_ADD</c>.</summary>
     public static int Add => Get(24);
+    /// <summary><c>wxID_REMOVE</c>.</summary>
     public static int Remove => Get(25);
+    /// <summary><c>wxID_EDIT</c>.</summary>
     public static int Edit => Get(26);
+    /// <summary><c>wxID_REFRESH</c>.</summary>
     public static int Refresh => Get(27);
+    /// <summary><c>wxID_PROPERTIES</c>.</summary>
     public static int Properties => Get(28);
+    /// <summary><c>wxID_PRINT</c>.</summary>
     public static int Print => Get(29);
+    /// <summary><c>wxID_STOP</c>.</summary>
     public static int Stop => Get(30);
+    /// <summary><c>wxID_CLEAR</c>.</summary>
     public static int Clear => Get(31);
+    /// <summary><c>wxID_UP</c>.</summary>
     public static int Up => Get(32);
+    /// <summary><c>wxID_DOWN</c>.</summary>
     public static int Down => Get(33);
+    /// <summary><c>wxID_BACKWARD</c>.</summary>
     public static int Backward => Get(34);
+    /// <summary><c>wxID_FORWARD</c>.</summary>
     public static int Forward => Get(35);
+    /// <summary><c>wxID_REVERT</c>.</summary>
     public static int Revert => Get(37);
+    /// <summary><c>wxID_NONE</c>: no command.</summary>
     public static int None => Get(38);
 }
 
@@ -99,9 +138,13 @@ public static class IdManager
 [Flags]
 public enum AcceleratorModifiers
 {
+    /// <summary>No modifier key.</summary>
     None = 0,
+    /// <summary>The Alt (Option) key.</summary>
     Alt = 1,
+    /// <summary>The Control key (Command on macOS).</summary>
     Control = 2,
+    /// <summary>The Shift key.</summary>
     Shift = 4,
     /// <summary>The Windows key. Accepted by <see cref="Window.RegisterHotKey"/> but not by an accelerator
     /// table, which has no way to express it. wxWidgets defines <c>wxMOD_WIN</c> as <c>wxMOD_META</c>, so this
@@ -167,6 +210,7 @@ public sealed class MenuItem
     /// <summary>The command ID this item sends when chosen.</summary>
     public int Id { get; }
 
+    /// <summary>Whether this is a normal, check, radio or separator item.</summary>
     public MenuItemKind Kind => (MenuItemKind)NativeMethods.wxsharp_menuitem_get_kind(Handle);
 
     /// <summary>The item's text, including its <c>&amp;</c> mnemonic and any <c>"\tCtrl+O"</c> accelerator
@@ -274,6 +318,7 @@ public sealed class Menu : IDisposable
 
     internal nint Handle => _handle != 0 ? _handle : throw new ObjectDisposedException(nameof(Menu));
 
+    /// <summary>Creates an empty menu, optionally with a title.</summary>
     public Menu(string title = "")
     {
         App.RequireCurrent();
@@ -339,6 +384,7 @@ public sealed class Menu : IDisposable
         return item;
     }
 
+    /// <summary>Appends a separator line.</summary>
     public MenuItem AppendSeparator() => Track(NativeMethods.wxsharp_menu_append_separator(Handle));
 
     /// <summary>Inserts an item at <paramref name="position"/>, shifting the rest down.</summary>
@@ -396,6 +442,7 @@ public sealed class Menu : IDisposable
     /// usually better.</summary>
     public void Check(int id, bool check = true) => NativeMethods.wxsharp_menu_check(Handle, id, check);
 
+    /// <summary>Whether the item with <paramref name="id"/> is checked.</summary>
     public bool IsChecked(int id) => NativeMethods.wxsharp_menu_is_checked(Handle, id);
 
     private MenuItem Track(nint handle)
@@ -440,6 +487,7 @@ public sealed class MenuBar : IDisposable
         _owned = owned;
     }
 
+    /// <summary>Creates an empty menu bar. Attach it to a <see cref="Frame"/> with its menu-bar property.</summary>
     public MenuBar()
     {
         App.RequireCurrent();
@@ -527,8 +575,11 @@ public sealed class MenuBar : IDisposable
     }
 }
 
+/// <summary>A frame's status bar, following <c>wxStatusBar</c>. Divided into one or more text fields.</summary>
 public class StatusBar : Control
 {
+    /// <summary>Creates a status bar on <paramref name="frame"/> with <paramref name="fields"/> fields and
+    /// attaches it to the frame.</summary>
     public StatusBar(Frame frame, int fields = 1) : base(frame, WindowId.Any)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(fields);
@@ -544,7 +595,9 @@ public class StatusBar : Control
             : handle);
         frame.AdoptStatusBar(this);
     }
+    /// <summary>Sets the text of a field (0 by default).</summary>
     public void SetText(string text, int field = 0) => NativeMethods.wxsharp_statusbar_set_text(Handle, text, field);
+    /// <summary>The text of a field (0 by default).</summary>
     public unsafe string GetText(int field = 0)
     {
         var length = NativeMethods.wxsharp_statusbar_get_text(Handle, field, null, 0); if (length <= 0) return string.Empty;
@@ -553,6 +606,7 @@ public class StatusBar : Control
     }
 }
 
+/// <summary>A frame's toolbar, following <c>wxToolBar</c>. Add tools, then call <see cref="Realize"/>.</summary>
 public class ToolBar : Control
 {
     /// <summary>The pointer moved onto a tool, or off every tool (with an ID of -1).</summary>
@@ -562,6 +616,7 @@ public class ToolBar : Control
         remove => RemoveHandler(WxEvents.ToolEntered, value);
     }
 
+    /// <summary>A tool was right-clicked.</summary>
     public event EventHandler<CommandEventArgs> ToolRightClicked
     {
         add => AddHandler(WxEvents.ToolRightClicked, value);
@@ -575,6 +630,7 @@ public class ToolBar : Control
         remove => RemoveHandler(WxEvents.ToolDropDown, value);
     }
 
+    /// <summary>Creates a toolbar on <paramref name="frame"/> and attaches it to the frame.</summary>
     public ToolBar(Frame frame) : base(frame, WindowId.Any)
     {
         Initialize(NativeMethods.wxsharp_toolbar_create(frame.Handle, Token));
@@ -589,10 +645,16 @@ public class ToolBar : Control
             : handle);
         frame.AdoptToolBar(this);
     }
+    /// <summary>Adds a tool button sending command <paramref name="id"/>. Call <see cref="Realize"/> after
+    /// adding tools.</summary>
     public void AddTool(int id, string label, string help = "", MenuItemKind kind = MenuItemKind.Normal)
         => NativeMethods.wxsharp_toolbar_add_tool(Handle, id, label, help, (int)kind);
+    /// <summary>Adds a separator between tools.</summary>
     public void AddSeparator() => NativeMethods.wxsharp_toolbar_add_separator(Handle);
+    /// <summary>Lays out the tools added so far. Call after adding or changing tools.</summary>
     public void Realize() => NativeMethods.wxsharp_toolbar_realize(Handle);
+    /// <summary>Enables or disables the tool with <paramref name="id"/>.</summary>
     public void EnableTool(int id, bool enable = true) => NativeMethods.wxsharp_toolbar_enable(Handle, id, enable);
+    /// <summary>Toggles the pressed state of a check tool.</summary>
     public void ToggleTool(int id, bool toggle = true) => NativeMethods.wxsharp_toolbar_toggle(Handle, id, toggle);
 }
