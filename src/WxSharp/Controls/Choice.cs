@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace WxSharp;
 
@@ -25,6 +26,31 @@ public class Choice : Control
 
     /// <summary>Appends an item to the end.</summary>
     public void Add(string item) => NativeMethods.wxsharp_choice_append(Handle, item);
+
+    /// <summary>Replaces every item in one go, following <c>wxChoice.Set</c>. The whole list crosses the
+    /// boundary once as a single wxArrayString rather than one call per item.</summary>
+    public void Set(IEnumerable<string> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        Verify();
+        unsafe { ItemsInterop.Invoke(Handle, items, &NativeMethods.wxsharp_choice_set); }
+    }
+
+    /// <summary>Appends many items at once in a single boundary crossing.</summary>
+    public void AppendRange(IEnumerable<string> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        Verify();
+        unsafe { ItemsInterop.Invoke(Handle, items, &NativeMethods.wxsharp_choice_append_many); }
+    }
+
+    /// <summary>Inserts many items before <paramref name="index"/> in one go.</summary>
+    public void InsertRange(IEnumerable<string> items, int index)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        Verify();
+        unsafe { ItemsInterop.Invoke(Handle, items, index, &NativeMethods.wxsharp_choice_insert_many); }
+    }
 
     /// <summary>Inserts an item before <paramref name="index"/>.</summary>
     public void Insert(string item, int index) => NativeMethods.wxsharp_choice_insert(Handle, item, index);

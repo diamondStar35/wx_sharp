@@ -11,6 +11,26 @@ wxsharp_handle wxsharp_choice_create(wxsharp_handle parent, int id, int style, l
 
 void wxsharp_choice_append(wxsharp_handle ctrl, const char* item) { static_cast<wxChoice*>(ctrl)->Append(Str(item)); }
 void wxsharp_choice_insert(wxsharp_handle ctrl, const char* item, int index) { static_cast<wxChoice*>(ctrl)->Insert(Str(item), index); }
+
+// Bulk item operations - see the listbox versions. One ABI crossing, one wxArrayString. Freeze/Thaw is left
+// to the caller rather than forced here.
+void wxsharp_choice_set(wxsharp_handle ctrl, const char** items, int count)
+{
+    static_cast<wxChoice*>(ctrl)->Set(StrArray(items, count));
+}
+
+void wxsharp_choice_append_many(wxsharp_handle ctrl, const char** items, int count)
+{
+    if (count <= 0) return;
+    static_cast<wxChoice*>(ctrl)->Append(StrArray(items, count));
+}
+
+void wxsharp_choice_insert_many(wxsharp_handle ctrl, const char** items, int count, int index)
+{
+    if (count <= 0) return;
+    static_cast<wxChoice*>(ctrl)->Insert(StrArray(items, count), static_cast<unsigned int>(index));
+}
+
 void wxsharp_choice_delete(wxsharp_handle ctrl, int index) { static_cast<wxChoice*>(ctrl)->Delete(index); }
 void wxsharp_choice_clear(wxsharp_handle ctrl) { static_cast<wxChoice*>(ctrl)->Clear(); }
 int wxsharp_choice_count(wxsharp_handle ctrl) { return static_cast<int>(static_cast<wxChoice*>(ctrl)->GetCount()); }

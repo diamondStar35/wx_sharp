@@ -11,6 +11,28 @@ wxsharp_handle wxsharp_listbox_create(wxsharp_handle parent, int id, int style, 
 
 void wxsharp_listbox_append(wxsharp_handle ctrl, const char* item) { static_cast<wxListBox*>(ctrl)->Append(Str(item)); }
 void wxsharp_listbox_insert(wxsharp_handle ctrl, const char* item, int index) { static_cast<wxListBox*>(ctrl)->Insert(Str(item), index); }
+
+// Bulk item operations. The whole list crosses the ABI in a single call and reaches wxWidgets as one
+// wxArrayString, which it preallocates and fills natively - far cheaper than one Append per item. A caller
+// that is refreshing an already-shown list and wants it to settle as a single change can wrap these in the
+// window's Freeze/Thaw; it is not forced here, where the control is usually still being built.
+void wxsharp_listbox_set(wxsharp_handle ctrl, const char** items, int count)
+{
+    static_cast<wxListBox*>(ctrl)->Set(StrArray(items, count));
+}
+
+void wxsharp_listbox_append_many(wxsharp_handle ctrl, const char** items, int count)
+{
+    if (count <= 0) return;
+    static_cast<wxListBox*>(ctrl)->Append(StrArray(items, count));
+}
+
+void wxsharp_listbox_insert_many(wxsharp_handle ctrl, const char** items, int count, int index)
+{
+    if (count <= 0) return;
+    static_cast<wxListBox*>(ctrl)->Insert(StrArray(items, count), static_cast<unsigned int>(index));
+}
+
 void wxsharp_listbox_delete(wxsharp_handle ctrl, int index) { static_cast<wxListBox*>(ctrl)->Delete(index); }
 void wxsharp_listbox_clear(wxsharp_handle ctrl) { static_cast<wxListBox*>(ctrl)->Clear(); }
 int wxsharp_listbox_count(wxsharp_handle ctrl) { return static_cast<int>(static_cast<wxListBox*>(ctrl)->GetCount()); }

@@ -1046,6 +1046,9 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_choice_create(wxsharp_handle parent, int id, int style, long long token);
     WXSHARP_API void wxsharp_choice_append(wxsharp_handle ctrl, const char* item);
     WXSHARP_API void wxsharp_choice_insert(wxsharp_handle ctrl, const char* item, int index);
+    WXSHARP_API void wxsharp_choice_set(wxsharp_handle ctrl, const char** items, int count);
+    WXSHARP_API void wxsharp_choice_append_many(wxsharp_handle ctrl, const char** items, int count);
+    WXSHARP_API void wxsharp_choice_insert_many(wxsharp_handle ctrl, const char** items, int count, int index);
     WXSHARP_API void wxsharp_choice_delete(wxsharp_handle ctrl, int index);
     WXSHARP_API void wxsharp_choice_clear(wxsharp_handle ctrl);
     WXSHARP_API int  wxsharp_choice_count(wxsharp_handle ctrl);
@@ -1060,6 +1063,9 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_listbox_create(wxsharp_handle parent, int id, int style, long long token);
     WXSHARP_API void wxsharp_listbox_append(wxsharp_handle ctrl, const char* item);
     WXSHARP_API void wxsharp_listbox_insert(wxsharp_handle ctrl, const char* item, int index);
+    WXSHARP_API void wxsharp_listbox_set(wxsharp_handle ctrl, const char** items, int count);
+    WXSHARP_API void wxsharp_listbox_append_many(wxsharp_handle ctrl, const char** items, int count);
+    WXSHARP_API void wxsharp_listbox_insert_many(wxsharp_handle ctrl, const char** items, int count, int index);
     WXSHARP_API void wxsharp_listbox_delete(wxsharp_handle ctrl, int index);
     WXSHARP_API void wxsharp_listbox_clear(wxsharp_handle ctrl);
     WXSHARP_API int  wxsharp_listbox_count(wxsharp_handle ctrl);
