@@ -308,9 +308,13 @@ internal delegate WxEventArgs EventArgsFactory(EvtHandler source, in NativeEvent
 [Flags]
 public enum KeyModifiers
 {
+    /// <summary>No modifier keys held.</summary>
     None = 0,
+    /// <summary>The Control key (Command on macOS). See <see cref="RawControl"/> for the physical key.</summary>
     Control = 1,
+    /// <summary>The Shift key.</summary>
     Shift = 2,
+    /// <summary>The Alt (Option) key.</summary>
     Alt = 4,
     /// <summary>The Windows key, or Command on macOS.</summary>
     Meta = 8,
@@ -319,6 +323,8 @@ public enum KeyModifiers
     RawControl = 16,
 }
 
+/// <summary>Base class for all WxSharp event arguments, following <c>wxEvent</c>. Carries the source and
+/// command ID, and the <see cref="Skip"/> mechanism that decides whether processing continues.</summary>
 public class WxEventArgs : EventArgs
 {
     /// <summary>What raised the event, following <c>wxEvent.GetEventObject</c>. Usually the window the
@@ -328,6 +334,8 @@ public class WxEventArgs : EventArgs
 
     /// <summary>The window that raised the event, or null for an application-level event.</summary>
     public Window? SourceWindow => Source as Window;
+    /// <summary>The command ID the event carries, following <c>wxEvent.GetId</c>. Identifies which control
+    /// or menu item it came from.</summary>
     public int Id { get; }
 
     /// <summary>Whether this handler asked for normal processing to continue. False unless
@@ -368,6 +376,8 @@ public abstract class NotifyEventArgs : WxEventArgs
     internal NotifyEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) { }
 }
 
+/// <summary>Identifies one kind of event and knows how to build its arguments. Pass one to
+/// <see cref="Window.Bind{T}"/>; the <see cref="WxEvents"/> catalogue holds the full set.</summary>
 public sealed class EventType<TEventArgs> where TEventArgs : WxEventArgs
 {
     internal int EventId { get; }
@@ -375,6 +385,8 @@ public sealed class EventType<TEventArgs> where TEventArgs : WxEventArgs
     internal EventType(int eventId, EventArgsFactory factory) { EventId = eventId; Factory = factory; }
 }
 
+/// <summary>A live subscription returned by <see cref="EvtHandler.Bind{T}"/>. Dispose it to unsubscribe;
+/// it is also undone automatically when the owning window is destroyed.</summary>
 public sealed class EventBinding : IDisposable
 {
     private EvtHandler? _handler;
@@ -384,6 +396,7 @@ public sealed class EventBinding : IDisposable
     {
         _handler = handler; EventId = eventId; Token = token;
     }
+    /// <summary>Removes this subscription so its handler stops being called. Safe to call more than once.</summary>
     public void Dispose()
     {
         var handler = _handler;
@@ -395,6 +408,8 @@ public sealed class EventBinding : IDisposable
 
 // ---- Event argument types ---------------------------------------------------------------------------------
 
+/// <summary>Arguments for a command event — button clicks, menu selections, list and text changes, and the
+/// rest. Following <c>wxCommandEvent</c>.</summary>
 public sealed class CommandEventArgs : WxEventArgs
 {
     /// <summary>The event's integer payload: a list index, a checkbox state, a spin value - whatever the
@@ -421,7 +436,9 @@ public sealed class CommandEventArgs : WxEventArgs
 /// <summary>A page change in a notebook or other book control.</summary>
 public sealed class BookEventArgs : NotifyEventArgs
 {
+    /// <summary>The index of the page being switched to.</summary>
     public int Selection { get; }
+    /// <summary>The index of the page being switched away from.</summary>
     public int PreviousSelection { get; }
     internal BookEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
@@ -446,10 +463,14 @@ public sealed class CloseEventArgs : WxEventArgs
     internal CloseEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => CanVeto = e.CanVeto != 0;
 }
 
+/// <summary>Arguments for a keyboard event, following <c>wxKeyEvent</c>.</summary>
 public sealed class KeyEventArgs : WxEventArgs
 {
+    /// <summary>The raw wxWidgets key code. Use <see cref="Code"/> for the typed <see cref="Key"/>.</summary>
     public int KeyCode { get; }
+    /// <summary>The key as a <see cref="Key"/> value.</summary>
     public Key Code => (Key)KeyCode;
+    /// <summary>The modifier keys held down when the key event occurred.</summary>
     public KeyModifiers Modifiers { get; }
 
     /// <summary>The character the key produces, or <c>'\0'</c> for a key with no character (an arrow, a
@@ -462,9 +483,13 @@ public sealed class KeyEventArgs : WxEventArgs
     /// <summary>Where the pointer was when the key was pressed, in client coordinates.</summary>
     public Point Position { get; }
 
+    /// <summary>Whether Control (Command on macOS) was held.</summary>
     public bool Control => (Modifiers & KeyModifiers.Control) != 0;
+    /// <summary>Whether Shift was held.</summary>
     public bool Shift => (Modifiers & KeyModifiers.Shift) != 0;
+    /// <summary>Whether Alt (Option) was held.</summary>
     public bool Alt => (Modifiers & KeyModifiers.Alt) != 0;
+    /// <summary>Whether the Meta (Windows/Command) key was held.</summary>
     public bool Meta => (Modifiers & KeyModifiers.Meta) != 0;
 
     internal KeyEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
@@ -477,12 +502,27 @@ public sealed class KeyEventArgs : WxEventArgs
     }
 }
 
-public enum MouseButton { None = 0, Left = 1, Right = 2, Middle = 3 }
+/// <summary>Which mouse button an event concerns, following the <c>wxMOUSE_BTN_*</c> values.</summary>
+public enum MouseButton
+{
+    /// <summary>No button (a move or wheel event).</summary>
+    None = 0,
+    /// <summary>The left button.</summary>
+    Left = 1,
+    /// <summary>The right button.</summary>
+    Right = 2,
+    /// <summary>The middle button.</summary>
+    Middle = 3,
+}
 
+/// <summary>Arguments for a mouse event, following <c>wxMouseEvent</c>.</summary>
 public sealed class MouseEventArgs : WxEventArgs
 {
+    /// <summary>The pointer position in client coordinates.</summary>
     public Point Position { get; }
+    /// <summary>Which button the event concerns.</summary>
     public MouseButton Button { get; }
+    /// <summary>The modifier keys held during the event.</summary>
     public KeyModifiers Modifiers { get; }
 
     /// <summary>How far the wheel turned. Positive is away from the user.</summary>
@@ -491,8 +531,11 @@ public sealed class MouseEventArgs : WxEventArgs
     /// <summary>The rotation that counts as one notch, for turning <see cref="WheelRotation"/> into lines.</summary>
     public int WheelDelta { get; }
 
+    /// <summary>Whether Control (Command on macOS) was held.</summary>
     public bool Control => (Modifiers & KeyModifiers.Control) != 0;
+    /// <summary>Whether Shift was held.</summary>
     public bool Shift => (Modifiers & KeyModifiers.Shift) != 0;
+    /// <summary>Whether Alt (Option) was held.</summary>
     public bool Alt => (Modifiers & KeyModifiers.Alt) != 0;
 
     internal MouseEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
@@ -522,30 +565,40 @@ public sealed class ContextMenuEventArgs : WxEventArgs
     }
 }
 
+/// <summary>Arguments for a resize event, following <c>wxSizeEvent</c>.</summary>
 public sealed class SizeEventArgs : WxEventArgs
 {
+    /// <summary>The window's new size.</summary>
     public Size Size { get; }
     internal SizeEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Size = new Size(e.Width, e.Height);
 }
 
+/// <summary>Arguments for a move event, following <c>wxMoveEvent</c>.</summary>
 public sealed class MoveEventArgs : WxEventArgs
 {
+    /// <summary>The window's new top-left position.</summary>
     public Point Position { get; }
     internal MoveEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Position = new Point(e.X, e.Y);
 }
 
+/// <summary>Arguments for an activation event, following <c>wxActivateEvent</c>.</summary>
 public sealed class ActivateEventArgs : WxEventArgs
 {
+    /// <summary>True when the window is being activated, false when deactivated.</summary>
     public bool Active { get; }
     internal ActivateEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Active = e.Active != 0;
 }
 
+/// <summary>Arguments for a show/hide event, following <c>wxShowEvent</c>.</summary>
 public sealed class ShowEventArgs : WxEventArgs
 {
+    /// <summary>True when the window is being shown, false when hidden.</summary>
     public bool Shown { get; }
     internal ShowEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Shown = e.Active != 0;
 }
 
+/// <summary>Arguments for a paint event, following <c>wxPaintEvent</c>. Issue drawing calls from the
+/// handler.</summary>
 public sealed class PaintEventArgs : WxEventArgs
 {
     internal PaintEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) { }
@@ -554,7 +607,9 @@ public sealed class PaintEventArgs : WxEventArgs
 /// <summary>An event from a <see cref="ListCtrl"/>.</summary>
 public sealed class ListEventArgs : NotifyEventArgs
 {
+    /// <summary>The zero-based index of the item the event concerns.</summary>
     public long Index { get; }
+    /// <summary>The column the event concerns, for a report-view list.</summary>
     public int Column { get; }
 
     /// <summary>The item's label, for the label-editing events.</summary>
@@ -575,12 +630,15 @@ public sealed class ListEventArgs : NotifyEventArgs
 /// <summary>An event from a <see cref="TreeCtrl"/>.</summary>
 public sealed class TreeEventArgs : NotifyEventArgs
 {
+    /// <summary>The tree item the event concerns.</summary>
     public TreeItemId Item { get; }
 
     /// <summary>The previously selected item, for the selection-changing events.</summary>
     public TreeItemId PreviousItem { get; }
 
+    /// <summary>The item's label, for the label-editing events.</summary>
     public string Label { get; }
+    /// <summary>The key pressed, for <see cref="WxEvents.TreeKeyDown"/>.</summary>
     public Key Code { get; }
 
     internal TreeEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
@@ -595,7 +653,9 @@ public sealed class TreeEventArgs : NotifyEventArgs
 /// <summary>An event from a data-view control.</summary>
 public sealed class DataViewEventArgs : WxEventArgs
 {
+    /// <summary>The data-view item the event concerns.</summary>
     public DataViewItem Item { get; }
+    /// <summary>The column the event concerns, or null-equivalent for a whole-row event.</summary>
     public int Column { get; }
     internal DataViewEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
@@ -607,7 +667,9 @@ public sealed class DataViewEventArgs : WxEventArgs
 /// <summary>A value change from a spin control or a scrollbar.</summary>
 public sealed class SpinEventArgs : WxEventArgs
 {
+    /// <summary>The control's new integer value.</summary>
     public int Value { get; }
+    /// <summary>The control's new value as a double, for a <c>wxSpinCtrlDouble</c>.</summary>
     public double DoubleValue { get; }
     internal SpinEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
@@ -616,21 +678,29 @@ public sealed class SpinEventArgs : WxEventArgs
     }
 }
 
+/// <summary>Arguments for a scrollbar or scroll-event, following <c>wxScrollEvent</c>.</summary>
 public sealed class ScrollEventArgs : WxEventArgs
 {
+    /// <summary>The scroll position the event reports.</summary>
     public int Position { get; }
     internal ScrollEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Position = e.IntValue;
 }
 
+/// <summary>Arguments for a splitter-window event, following <c>wxSplitterEvent</c>. Veto to refuse the
+/// change.</summary>
 public sealed class SplitterEventArgs : NotifyEventArgs
 {
+    /// <summary>The sash position the event reports, in pixels.</summary>
     public int SashPosition { get; }
     internal SplitterEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => SashPosition = e.IntValue;
 }
 
+/// <summary>Arguments for a grid event, following <c>wxGridEvent</c>.</summary>
 public sealed class GridEventArgs : WxEventArgs
 {
+    /// <summary>The row the event concerns.</summary>
     public int Row { get; }
+    /// <summary>The column the event concerns.</summary>
     public int Column { get; }
     internal GridEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
@@ -648,8 +718,10 @@ public sealed class DateEventArgs : WxEventArgs
         => Date = e.Active != 0 ? DateTimeOffset.FromUnixTimeMilliseconds(e.Item).UtcDateTime : null;
 }
 
+/// <summary>Arguments for a hyperlink-clicked event, following <c>wxHyperlinkEvent</c>.</summary>
 public sealed class HyperlinkEventArgs : WxEventArgs
 {
+    /// <summary>The URL that was clicked.</summary>
     public string Url { get; }
     internal HyperlinkEventArgs(EvtHandler source, in NativeEvent e) : base(source, e) => Url = e.GetText();
 }
@@ -694,9 +766,13 @@ public sealed class UpdateUIEventArgs : WxEventArgs
     /// text replaces all of it.</summary>
     public string Text { get => _text; set => SetText(value); }
 
+    /// <summary>Enables or disables the command. Shorthand for setting <see cref="Enabled"/>.</summary>
     public void Enable(bool enable = true) { _enabled = enable; NativeMethods.wxsharp_updateui_enable(enable); }
+    /// <summary>Ticks or unticks a check/radio command. Shorthand for setting <see cref="Checked"/>.</summary>
     public void Check(bool check = true) { _checked = check; NativeMethods.wxsharp_updateui_check(check); }
+    /// <summary>Shows or hides the command. Shorthand for setting <see cref="Shown"/>.</summary>
     public void Show(bool show = true) { _shown = show; NativeMethods.wxsharp_updateui_show(show); }
+    /// <summary>Sets the command's label. Shorthand for setting <see cref="Text"/>.</summary>
     public void SetText(string text)
     {
         _text = text ?? string.Empty;
@@ -860,182 +936,336 @@ public static class WxEvents
     private static WxEventArgs TextUrlArgs(EvtHandler w, in NativeEvent e) => new TextUrlEventArgs(w, e);
 
     // Window lifecycle and geometry.
+    /// <summary>Fires when a top-level window is asked to close (<c>wxEVT_CLOSE_WINDOW</c>). Veto on the
+    /// args to keep it open.</summary>
     public static EventType<CloseEventArgs> Closing { get; } = Make<CloseEventArgs>(EventId.Close, Close);
+    /// <summary>Fires when the window is shown or hidden (<c>wxEVT_SHOW</c>).</summary>
     public static EventType<ShowEventArgs> Shown { get; } = Make<ShowEventArgs>(EventId.Show, Show);
+    /// <summary>Fires when the window is activated or deactivated (<c>wxEVT_ACTIVATE</c>).</summary>
     public static EventType<ActivateEventArgs> Activated { get; } = Make<ActivateEventArgs>(EventId.Activate, Activate);
+    /// <summary>Fires when the window is resized (<c>wxEVT_SIZE</c>). Skip it to let layout run.</summary>
     public static EventType<SizeEventArgs> SizeChanged { get; } = Make<SizeEventArgs>(EventId.Size, Resize);
+    /// <summary>Fires when the window moves (<c>wxEVT_MOVE</c>).</summary>
     public static EventType<MoveEventArgs> Moved { get; } = Make<MoveEventArgs>(EventId.Move, Move);
+    /// <summary>Fires when the window is maximized (<c>wxEVT_MAXIMIZE</c>).</summary>
     public static EventType<WxEventArgs> Maximized { get; } = Make<WxEventArgs>(EventId.Maximize, Plain);
+    /// <summary>Fires when the window is minimized or restored (<c>wxEVT_ICONIZE</c>).</summary>
     public static EventType<ActivateEventArgs> Iconized { get; } = Make<ActivateEventArgs>(EventId.Iconize, Activate);
+    /// <summary>Fires when the window is being destroyed (<c>wxEVT_DESTROY</c>).</summary>
     public static EventType<WxEventArgs> Destroyed { get; } = Make<WxEventArgs>(EventId.Destroy, Plain);
+    /// <summary>Fires when the window gains keyboard focus (<c>wxEVT_SET_FOCUS</c>).</summary>
     public static EventType<WxEventArgs> GotFocus { get; } = Make<WxEventArgs>(EventId.SetFocus, Plain);
+    /// <summary>Fires when the window loses keyboard focus (<c>wxEVT_KILL_FOCUS</c>).</summary>
     public static EventType<WxEventArgs> LostFocus { get; } = Make<WxEventArgs>(EventId.KillFocus, Plain);
+    /// <summary>Fires when the window must repaint (<c>wxEVT_PAINT</c>). Draw from the handler.</summary>
     public static EventType<PaintEventArgs> Paint { get; } = Make<PaintEventArgs>(EventId.Paint, Repaint);
+    /// <summary>Fires when a context menu is requested, by right-click or the menu key
+    /// (<c>wxEVT_CONTEXT_MENU</c>).</summary>
     public static EventType<ContextMenuEventArgs> ContextMenu { get; } = Make<ContextMenuEventArgs>(EventId.ContextMenu, Context);
 
     /// <summary>Asks what state a command should be in. Bind it with the command's ID and answer from the
     /// application's own state; wxWidgets applies the answer everywhere that command appears.</summary>
     public static EventType<UpdateUIEventArgs> UpdateUI { get; } = Make<UpdateUIEventArgs>(EventId.UpdateUI, UpdateUIArgs);
+    /// <summary>Fires when the application is idle (<c>wxEVT_IDLE</c>). Where background work and update-UI
+    /// processing happen.</summary>
     public static EventType<IdleEventArgs> Idle { get; } = Make<IdleEventArgs>(EventId.Idle, IdleArgs);
+    /// <summary>Fires when focus moves to a descendant window (<c>wxEVT_CHILD_FOCUS</c>).</summary>
     public static EventType<WxEventArgs> ChildFocus { get; } = Make<WxEventArgs>(EventId.ChildFocus, Plain);
+    /// <summary>Fires on Tab/Shift+Tab navigation between controls (<c>wxEVT_NAVIGATION_KEY</c>).</summary>
     public static EventType<NavigationKeyEventArgs> NavigationKey { get; } = Make<NavigationKeyEventArgs>(EventId.NavigationKey, NavigationArgs);
     /// <summary>The mouse capture was taken away. Any window that calls <see cref="Window.CaptureMouse"/>
     /// must handle this; wxWidgets asserts if it does not.</summary>
     public static EventType<WxEventArgs> MouseCaptureLost { get; } = Make<WxEventArgs>(EventId.MouseCaptureLost, Plain);
+    /// <summary>Fires when another window takes the mouse capture (<c>wxEVT_MOUSE_CAPTURE_CHANGED</c>).</summary>
     public static EventType<WxEventArgs> MouseCaptureChanged { get; } = Make<WxEventArgs>(EventId.MouseCaptureChanged, Plain);
+    /// <summary>Fires when files are dropped on a window that accepts them (<c>wxEVT_DROP_FILES</c>).</summary>
     public static EventType<DropFilesEventArgs> DropFiles { get; } = Make<DropFilesEventArgs>(EventId.DropFiles, DropFilesArgs);
+    /// <summary>Fires when a registered system-wide hot key is pressed (<c>wxEVT_HOTKEY</c>).</summary>
     public static EventType<KeyEventArgs> HotKey { get; } = Make<KeyEventArgs>(EventId.HotKey, Key);
+    /// <summary>Fires when context help is requested (<c>wxEVT_HELP</c>).</summary>
     public static EventType<HelpEventArgs> Help { get; } = Make<HelpEventArgs>(EventId.Help, HelpArgs);
     /// <summary>A menu is about to open. The moment to rebuild a dynamic menu, before the user sees it.</summary>
     public static EventType<MenuEventArgs> MenuOpened { get; } = Make<MenuEventArgs>(EventId.MenuOpen, MenuArgs);
+    /// <summary>Fires when a menu has closed (<c>wxEVT_MENU_CLOSE</c>).</summary>
     public static EventType<MenuEventArgs> MenuClosed { get; } = Make<MenuEventArgs>(EventId.MenuClose, MenuArgs);
     /// <summary>An item is highlighted as the user moves through a menu. Paired with the item's help string,
     /// this is what puts a description in the status bar.</summary>
     public static EventType<MenuEventArgs> MenuHighlighted { get; } = Make<MenuEventArgs>(EventId.MenuHighlight, MenuArgs);
 
     // Mouse.
+    /// <summary>Left button pressed (<c>wxEVT_LEFT_DOWN</c>).</summary>
     public static EventType<MouseEventArgs> MouseDown { get; } = Make<MouseEventArgs>(EventId.LeftDown, Mouse);
+    /// <summary>Left button released (<c>wxEVT_LEFT_UP</c>).</summary>
     public static EventType<MouseEventArgs> MouseUp { get; } = Make<MouseEventArgs>(EventId.LeftUp, Mouse);
+    /// <summary>Left button double-clicked (<c>wxEVT_LEFT_DCLICK</c>).</summary>
     public static EventType<MouseEventArgs> DoubleClicked { get; } = Make<MouseEventArgs>(EventId.LeftDoubleClick, Mouse);
+    /// <summary>Right button pressed (<c>wxEVT_RIGHT_DOWN</c>).</summary>
     public static EventType<MouseEventArgs> RightDown { get; } = Make<MouseEventArgs>(EventId.RightDown, Mouse);
+    /// <summary>Right button released (<c>wxEVT_RIGHT_UP</c>).</summary>
     public static EventType<MouseEventArgs> RightUp { get; } = Make<MouseEventArgs>(EventId.RightUp, Mouse);
+    /// <summary>Right button double-clicked (<c>wxEVT_RIGHT_DCLICK</c>).</summary>
     public static EventType<MouseEventArgs> RightDoubleClicked { get; } = Make<MouseEventArgs>(EventId.RightDoubleClick, Mouse);
+    /// <summary>Middle button pressed (<c>wxEVT_MIDDLE_DOWN</c>).</summary>
     public static EventType<MouseEventArgs> MiddleDown { get; } = Make<MouseEventArgs>(EventId.MiddleDown, Mouse);
+    /// <summary>Middle button released (<c>wxEVT_MIDDLE_UP</c>).</summary>
     public static EventType<MouseEventArgs> MiddleUp { get; } = Make<MouseEventArgs>(EventId.MiddleUp, Mouse);
+    /// <summary>Middle button double-clicked (<c>wxEVT_MIDDLE_DCLICK</c>).</summary>
     public static EventType<MouseEventArgs> MiddleDoubleClicked { get; } = Make<MouseEventArgs>(EventId.MiddleDoubleClick, Mouse);
+    /// <summary>Pointer moved over the window (<c>wxEVT_MOTION</c>).</summary>
     public static EventType<MouseEventArgs> MouseMoved { get; } = Make<MouseEventArgs>(EventId.Motion, Mouse);
+    /// <summary>Pointer entered the window (<c>wxEVT_ENTER_WINDOW</c>).</summary>
     public static EventType<MouseEventArgs> MouseEntered { get; } = Make<MouseEventArgs>(EventId.EnterWindow, Mouse);
+    /// <summary>Pointer left the window (<c>wxEVT_LEAVE_WINDOW</c>).</summary>
     public static EventType<MouseEventArgs> MouseLeft { get; } = Make<MouseEventArgs>(EventId.LeaveWindow, Mouse);
+    /// <summary>Mouse wheel turned (<c>wxEVT_MOUSEWHEEL</c>).</summary>
     public static EventType<MouseEventArgs> MouseWheel { get; } = Make<MouseEventArgs>(EventId.MouseWheel, Mouse);
 
     // Keyboard. CharHook reaches a top-level window before the focused control sees the key, which is where
     // application-wide shortcuts belong; Char reports the character a key produces after translation.
+    /// <summary>A key seen by the top-level window before the focused control (<c>wxEVT_CHAR_HOOK</c>).
+    /// Where application-wide shortcuts belong; skip it to let the key reach the control.</summary>
     public static EventType<KeyEventArgs> CharHook { get; } = Make<KeyEventArgs>(EventId.CharHook, Key);
+    /// <summary>A key was pressed down while this control had focus (<c>wxEVT_KEY_DOWN</c>). Reports the key,
+    /// not the character; use <see cref="Char"/> for text input.</summary>
     public static EventType<KeyEventArgs> KeyDown { get; } = Make<KeyEventArgs>(EventId.KeyDown, Key);
+    /// <summary>A key was released (<c>wxEVT_KEY_UP</c>).</summary>
     public static EventType<KeyEventArgs> KeyUp { get; } = Make<KeyEventArgs>(EventId.KeyUp, Key);
+    /// <summary>A character was produced by a key press, after translation (<c>wxEVT_CHAR</c>). This is the
+    /// one to use for text the user typed.</summary>
     public static EventType<KeyEventArgs> Char { get; } = Make<KeyEventArgs>(EventId.Char, Key);
 
     // Control commands.
+    /// <summary>A button was clicked (<c>wxEVT_BUTTON</c>).</summary>
     public static EventType<CommandEventArgs> ButtonClicked { get; } = Make<CommandEventArgs>(EventId.Button, Command);
+    /// <summary>A checkbox was toggled (<c>wxEVT_CHECKBOX</c>).</summary>
     public static EventType<CommandEventArgs> CheckBoxToggled { get; } = Make<CommandEventArgs>(EventId.CheckBox, Command);
+    /// <summary>A choice (drop-down) selection changed (<c>wxEVT_CHOICE</c>).</summary>
     public static EventType<CommandEventArgs> ChoiceSelected { get; } = Make<CommandEventArgs>(EventId.Choice, Command);
+    /// <summary>A list box selection changed (<c>wxEVT_LISTBOX</c>).</summary>
     public static EventType<CommandEventArgs> ListBoxSelected { get; } = Make<CommandEventArgs>(EventId.ListBox, Command);
+    /// <summary>A list box row was double-clicked or activated (<c>wxEVT_LISTBOX_DCLICK</c>).</summary>
     public static EventType<CommandEventArgs> ListBoxDoubleClicked { get; } = Make<CommandEventArgs>(EventId.ListBoxDoubleClick, Command);
+    /// <summary>A text control's contents changed (<c>wxEVT_TEXT</c>).</summary>
     public static EventType<CommandEventArgs> TextChanged { get; } = Make<CommandEventArgs>(EventId.Text, Command);
+    /// <summary>Enter was pressed in a text control (<c>wxEVT_TEXT_ENTER</c>).</summary>
     public static EventType<CommandEventArgs> TextEntered { get; } = Make<CommandEventArgs>(EventId.TextEnter, Command);
+    /// <summary>A menu item or toolbar button was invoked (<c>wxEVT_MENU</c>). Bind with the command ID.</summary>
     public static EventType<CommandEventArgs> MenuCommand { get; } = Make<CommandEventArgs>(EventId.Menu, Command);
+    /// <summary>A slider's value changed (<c>wxEVT_SLIDER</c>).</summary>
     public static EventType<CommandEventArgs> SliderChanged { get; } = Make<CommandEventArgs>(EventId.Slider, Command);
+    /// <summary>A radio button was selected (<c>wxEVT_RADIOBUTTON</c>).</summary>
     public static EventType<CommandEventArgs> RadioButtonSelected { get; } = Make<CommandEventArgs>(EventId.RadioButton, Command);
+    /// <summary>A radio box selection changed (<c>wxEVT_RADIOBOX</c>).</summary>
     public static EventType<CommandEventArgs> RadioBoxSelected { get; } = Make<CommandEventArgs>(EventId.RadioBox, Command);
+    /// <summary>A combo box selection changed (<c>wxEVT_COMBOBOX</c>).</summary>
     public static EventType<CommandEventArgs> ComboBoxSelected { get; } = Make<CommandEventArgs>(EventId.ComboBox, Command);
+    /// <summary>A combo box's drop-down list opened (<c>wxEVT_COMBOBOX_DROPDOWN</c>).</summary>
     public static EventType<CommandEventArgs> ComboBoxDropDown { get; } = Make<CommandEventArgs>(EventId.ComboBoxDropDown, Command);
+    /// <summary>A combo box's drop-down list closed (<c>wxEVT_COMBOBOX_CLOSEUP</c>).</summary>
     public static EventType<CommandEventArgs> ComboBoxCloseUp { get; } = Make<CommandEventArgs>(EventId.ComboBoxCloseUp, Command);
+    /// <summary>A toggle button changed state (<c>wxEVT_TOGGLEBUTTON</c>).</summary>
     public static EventType<CommandEventArgs> ToggleButtonToggled { get; } = Make<CommandEventArgs>(EventId.ToggleButton, Command);
+    /// <summary>An item in a checklist box was ticked or unticked (<c>wxEVT_CHECKLISTBOX</c>).</summary>
     public static EventType<CommandEventArgs> CheckListBoxToggled { get; } = Make<CommandEventArgs>(EventId.CheckListBox, Command);
+    /// <summary>A spin control's value changed (<c>wxEVT_SPINCTRL</c>).</summary>
     public static EventType<SpinEventArgs> SpinChanged { get; } = Make<SpinEventArgs>(EventId.SpinCtrl, Spin_);
+    /// <summary>A floating-point spin control's value changed (<c>wxEVT_SPINCTRLDOUBLE</c>).</summary>
     public static EventType<SpinEventArgs> SpinDoubleChanged { get; } = Make<SpinEventArgs>(EventId.SpinCtrlDouble, Spin_);
+    /// <summary>A scrollbar thumb is being dragged (<c>wxEVT_SCROLL_THUMBTRACK</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollThumbTrack { get; } = Make<ScrollEventArgs>(EventId.ScrollThumbTrack, Scroll);
+    /// <summary>A scrollbar settled on a new position (<c>wxEVT_SCROLL_CHANGED</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollChanged { get; } = Make<ScrollEventArgs>(EventId.ScrollChanged, Scroll);
+    /// <summary>A hyperlink control was clicked (<c>wxEVT_HYPERLINK</c>).</summary>
     public static EventType<HyperlinkEventArgs> HyperlinkClicked { get; } = Make<HyperlinkEventArgs>(EventId.Hyperlink, Link);
+    /// <summary>The search button of a search control was pressed (<c>wxEVT_SEARCH</c>).</summary>
     public static EventType<CommandEventArgs> Search { get; } = Make<CommandEventArgs>(EventId.Search, Command);
+    /// <summary>The cancel button of a search control was pressed (<c>wxEVT_SEARCH_CANCEL</c>).</summary>
     public static EventType<CommandEventArgs> SearchCancelled { get; } = Make<CommandEventArgs>(EventId.SearchCancel, Command);
+    /// <summary>A date picker's value changed (<c>wxEVT_DATE_CHANGED</c>).</summary>
     public static EventType<DateEventArgs> DateChanged { get; } = Make<DateEventArgs>(EventId.DateChanged, Date);
+    /// <summary>A time picker's value changed (<c>wxEVT_TIME_CHANGED</c>).</summary>
     public static EventType<DateEventArgs> TimeChanged { get; } = Make<DateEventArgs>(EventId.TimeChanged, Date);
+    /// <summary>A <see cref="WxSharp.Timer"/> ticked (<c>wxEVT_TIMER</c>). Usually consumed via the timer's
+    /// own event; bind here only for a shared handler by ID.</summary>
     public static EventType<CommandEventArgs> Timer { get; } = Make<CommandEventArgs>(EventId.Timer, Command);
+    /// <summary>The system clipboard's contents changed (<c>wxEVT_CLIPBOARD_CHANGED</c>).</summary>
     public static EventType<WxEventArgs> ClipboardChanged { get; } = Make<WxEventArgs>(EventId.ClipboardChanged, Plain);
+    /// <summary>A spin button was turned (<c>wxEVT_SPIN</c>).</summary>
     public static EventType<SpinEventArgs> Spin { get; } = Make<SpinEventArgs>(EventId.Spin, Spin_);
+    /// <summary>A spin button's up arrow was pressed (<c>wxEVT_SPIN_UP</c>).</summary>
     public static EventType<SpinEventArgs> SpinUp { get; } = Make<SpinEventArgs>(EventId.SpinUp, Spin_);
+    /// <summary>A spin button's down arrow was pressed (<c>wxEVT_SPIN_DOWN</c>).</summary>
     public static EventType<SpinEventArgs> SpinDown { get; } = Make<SpinEventArgs>(EventId.SpinDown, Spin_);
+    /// <summary>A standalone scrollbar moved (<c>wxEVT_SCROLL</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollBarChanged { get; } = Make<ScrollEventArgs>(EventId.ScrollBar, Scroll);
+    /// <summary>A scrollbar was moved to the top/left (<c>wxEVT_SCROLL_TOP</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollToTop { get; } = Make<ScrollEventArgs>(EventId.ScrollTop, Scroll);
+    /// <summary>A scrollbar was moved to the bottom/right (<c>wxEVT_SCROLL_BOTTOM</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollToBottom { get; } = Make<ScrollEventArgs>(EventId.ScrollBottom, Scroll);
+    /// <summary>A scrollbar line-up/left button was pressed (<c>wxEVT_SCROLL_LINEUP</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollLineUp { get; } = Make<ScrollEventArgs>(EventId.ScrollLineUp, Scroll);
+    /// <summary>A scrollbar line-down/right button was pressed (<c>wxEVT_SCROLL_LINEDOWN</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollLineDown { get; } = Make<ScrollEventArgs>(EventId.ScrollLineDown, Scroll);
+    /// <summary>A scrollbar page-up/left region was clicked (<c>wxEVT_SCROLL_PAGEUP</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollPageUp { get; } = Make<ScrollEventArgs>(EventId.ScrollPageUp, Scroll);
+    /// <summary>A scrollbar page-down/right region was clicked (<c>wxEVT_SCROLL_PAGEDOWN</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollPageDown { get; } = Make<ScrollEventArgs>(EventId.ScrollPageDown, Scroll);
+    /// <summary>A scrollbar thumb was released after dragging (<c>wxEVT_SCROLL_THUMBRELEASE</c>).</summary>
     public static EventType<ScrollEventArgs> ScrollThumbReleased { get; } = Make<ScrollEventArgs>(EventId.ScrollThumbRelease, Scroll);
+    /// <summary>The user tried to type past a text control's length limit (<c>wxEVT_TEXT_MAXLEN</c>).</summary>
     public static EventType<CommandEventArgs> TextMaxLengthReached { get; } = Make<CommandEventArgs>(EventId.TextMaxLength, Command);
+    /// <summary>A URL in a rich text control was clicked (<c>wxEVT_TEXT_URL</c>).</summary>
     public static EventType<TextUrlEventArgs> TextUrlClicked { get; } = Make<TextUrlEventArgs>(EventId.TextUrl, TextUrlArgs);
+    /// <summary>Text was copied to the clipboard from a control (<c>wxEVT_TEXT_COPY</c>).</summary>
     public static EventType<CommandEventArgs> TextCopy { get; } = Make<CommandEventArgs>(EventId.TextCopy, Command);
+    /// <summary>Text was cut to the clipboard from a control (<c>wxEVT_TEXT_CUT</c>).</summary>
     public static EventType<CommandEventArgs> TextCut { get; } = Make<CommandEventArgs>(EventId.TextCut, Command);
+    /// <summary>Text was pasted into a control (<c>wxEVT_TEXT_PASTE</c>).</summary>
     public static EventType<CommandEventArgs> TextPaste { get; } = Make<CommandEventArgs>(EventId.TextPaste, Command);
+    /// <summary>The pointer entered a toolbar tool (<c>wxEVT_TOOL_ENTER</c>).</summary>
     public static EventType<CommandEventArgs> ToolEntered { get; } = Make<CommandEventArgs>(EventId.ToolEnter, Command);
+    /// <summary>A toolbar tool was right-clicked (<c>wxEVT_TOOL_RCLICKED</c>).</summary>
     public static EventType<CommandEventArgs> ToolRightClicked { get; } = Make<CommandEventArgs>(EventId.ToolRightClick, Command);
+    /// <summary>A toolbar tool's drop-down arrow was pressed (<c>wxEVT_TOOL_DROPDOWN</c>).</summary>
     public static EventType<CommandEventArgs> ToolDropDown { get; } = Make<CommandEventArgs>(EventId.ToolDropDown, Command);
 
     // Book controls.
+    /// <summary>A notebook's visible page changed (<c>wxEVT_NOTEBOOK_PAGE_CHANGED</c>).</summary>
     public static EventType<BookEventArgs> NotebookPageChanged { get; } = Make<BookEventArgs>(EventId.NotebookPageChanged, Book);
+    /// <summary>A notebook's page is about to change (<c>wxEVT_NOTEBOOK_PAGE_CHANGING</c>). Veto to keep the
+    /// current page.</summary>
     public static EventType<BookEventArgs> NotebookPageChanging { get; } = Make<BookEventArgs>(EventId.NotebookPageChanging, Book);
+    /// <summary>A book control's visible page changed (<c>wxEVT_BOOKCTRL_PAGE_CHANGED</c>).</summary>
     public static EventType<BookEventArgs> BookPageChanged { get; } = Make<BookEventArgs>(EventId.BookPageChanged, Book);
+    /// <summary>A book control's page is about to change (<c>wxEVT_BOOKCTRL_PAGE_CHANGING</c>). Veto to keep
+    /// the current page.</summary>
     public static EventType<BookEventArgs> BookPageChanging { get; } = Make<BookEventArgs>(EventId.BookPageChanging, Book);
 
     // wxListCtrl.
+    /// <summary>A list item was selected (<c>wxEVT_LIST_ITEM_SELECTED</c>).</summary>
     public static EventType<ListEventArgs> ListItemSelected { get; } = Make<ListEventArgs>(EventId.ListItemSelected, List);
+    /// <summary>A list item was deselected (<c>wxEVT_LIST_ITEM_DESELECTED</c>).</summary>
     public static EventType<ListEventArgs> ListItemDeselected { get; } = Make<ListEventArgs>(EventId.ListItemDeselected, List);
+    /// <summary>A list item was activated by double-click or Enter (<c>wxEVT_LIST_ITEM_ACTIVATED</c>).</summary>
     public static EventType<ListEventArgs> ListItemActivated { get; } = Make<ListEventArgs>(EventId.ListItemActivated, List);
+    /// <summary>Keyboard focus moved to a list item (<c>wxEVT_LIST_ITEM_FOCUSED</c>).</summary>
     public static EventType<ListEventArgs> ListItemFocused { get; } = Make<ListEventArgs>(EventId.ListItemFocused, List);
+    /// <summary>A list item was right-clicked (<c>wxEVT_LIST_ITEM_RIGHT_CLICK</c>).</summary>
     public static EventType<ListEventArgs> ListItemRightClicked { get; } = Make<ListEventArgs>(EventId.ListItemRightClick, List);
+    /// <summary>A column header was clicked (<c>wxEVT_LIST_COL_CLICK</c>).</summary>
     public static EventType<ListEventArgs> ListColumnClicked { get; } = Make<ListEventArgs>(EventId.ListColumnClick, List);
+    /// <summary>A key was pressed in the list (<c>wxEVT_LIST_KEY_DOWN</c>).</summary>
     public static EventType<ListEventArgs> ListKeyDown { get; } = Make<ListEventArgs>(EventId.ListKeyDown, List);
+    /// <summary>Label editing began on an item (<c>wxEVT_LIST_BEGIN_LABEL_EDIT</c>). Veto to forbid it.</summary>
     public static EventType<ListEventArgs> ListBeginLabelEdit { get; } = Make<ListEventArgs>(EventId.ListBeginLabelEdit, List);
+    /// <summary>Label editing finished (<c>wxEVT_LIST_END_LABEL_EDIT</c>). Veto to reject the new label.</summary>
     public static EventType<ListEventArgs> ListEndLabelEdit { get; } = Make<ListEventArgs>(EventId.ListEndLabelEdit, List);
+    /// <summary>A drag of an item began with the left button (<c>wxEVT_LIST_BEGIN_DRAG</c>).</summary>
     public static EventType<ListEventArgs> ListBeginDrag { get; } = Make<ListEventArgs>(EventId.ListBeginDrag, List);
+    /// <summary>A drag of an item began with the right button (<c>wxEVT_LIST_BEGIN_RDRAG</c>).</summary>
     public static EventType<ListEventArgs> ListBeginRightDrag { get; } = Make<ListEventArgs>(EventId.ListBeginRightDrag, List);
+    /// <summary>A list item was middle-clicked (<c>wxEVT_LIST_ITEM_MIDDLE_CLICK</c>).</summary>
     public static EventType<ListEventArgs> ListItemMiddleClicked { get; } = Make<ListEventArgs>(EventId.ListItemMiddleClick, List);
+    /// <summary>A checklist item was ticked (<c>wxEVT_LIST_ITEM_CHECKED</c>).</summary>
     public static EventType<ListEventArgs> ListItemChecked { get; } = Make<ListEventArgs>(EventId.ListItemChecked, List);
+    /// <summary>A checklist item was unticked (<c>wxEVT_LIST_ITEM_UNCHECKED</c>).</summary>
     public static EventType<ListEventArgs> ListItemUnchecked { get; } = Make<ListEventArgs>(EventId.ListItemUnchecked, List);
+    /// <summary>A column header was right-clicked (<c>wxEVT_LIST_COL_RIGHT_CLICK</c>).</summary>
     public static EventType<ListEventArgs> ListColumnRightClicked { get; } = Make<ListEventArgs>(EventId.ListColumnRightClick, List);
+    /// <summary>A column divider began being dragged to resize (<c>wxEVT_LIST_COL_BEGIN_DRAG</c>).</summary>
     public static EventType<ListEventArgs> ListColumnBeginDrag { get; } = Make<ListEventArgs>(EventId.ListColumnBeginDrag, List);
+    /// <summary>A column resize drag finished (<c>wxEVT_LIST_COL_END_DRAG</c>).</summary>
     public static EventType<ListEventArgs> ListColumnEndDrag { get; } = Make<ListEventArgs>(EventId.ListColumnEndDrag, List);
+    /// <summary>A list item was deleted (<c>wxEVT_LIST_DELETE_ITEM</c>).</summary>
     public static EventType<ListEventArgs> ListItemDeleted { get; } = Make<ListEventArgs>(EventId.ListDeleteItem, List);
+    /// <summary>All list items were deleted (<c>wxEVT_LIST_DELETE_ALL_ITEMS</c>).</summary>
     public static EventType<ListEventArgs> ListAllItemsDeleted { get; } = Make<ListEventArgs>(EventId.ListDeleteAllItems, List);
+    /// <summary>A list item was inserted (<c>wxEVT_LIST_INSERT_ITEM</c>).</summary>
     public static EventType<ListEventArgs> ListItemInserted { get; } = Make<ListEventArgs>(EventId.ListInsertItem, List);
     /// <summary>A virtual list is about to draw a range of rows and is asking for them to be prepared.</summary>
     public static EventType<ListEventArgs> ListCacheHint { get; } = Make<ListEventArgs>(EventId.ListCacheHint, List);
 
     // wxTreeCtrl.
+    /// <summary>The selected tree item changed (<c>wxEVT_TREE_SEL_CHANGED</c>).</summary>
     public static EventType<TreeEventArgs> TreeSelectionChanged { get; } = Make<TreeEventArgs>(EventId.TreeSelectionChanged, Tree);
+    /// <summary>The tree selection is about to change (<c>wxEVT_TREE_SEL_CHANGING</c>). Veto to prevent it.</summary>
     public static EventType<TreeEventArgs> TreeSelectionChanging { get; } = Make<TreeEventArgs>(EventId.TreeSelectionChanging, Tree);
+    /// <summary>A tree item was activated by double-click or Enter (<c>wxEVT_TREE_ITEM_ACTIVATED</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemActivated { get; } = Make<TreeEventArgs>(EventId.TreeItemActivated, Tree);
+    /// <summary>A tree item was expanded (<c>wxEVT_TREE_ITEM_EXPANDED</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemExpanded { get; } = Make<TreeEventArgs>(EventId.TreeItemExpanded, Tree);
+    /// <summary>A tree item is about to expand (<c>wxEVT_TREE_ITEM_EXPANDING</c>). Veto to prevent it.</summary>
     public static EventType<TreeEventArgs> TreeItemExpanding { get; } = Make<TreeEventArgs>(EventId.TreeItemExpanding, Tree);
+    /// <summary>A tree item was collapsed (<c>wxEVT_TREE_ITEM_COLLAPSED</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemCollapsed { get; } = Make<TreeEventArgs>(EventId.TreeItemCollapsed, Tree);
+    /// <summary>A tree item is about to collapse (<c>wxEVT_TREE_ITEM_COLLAPSING</c>). Veto to prevent it.</summary>
     public static EventType<TreeEventArgs> TreeItemCollapsing { get; } = Make<TreeEventArgs>(EventId.TreeItemCollapsing, Tree);
+    /// <summary>A tree item was right-clicked (<c>wxEVT_TREE_ITEM_RIGHT_CLICK</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemRightClicked { get; } = Make<TreeEventArgs>(EventId.TreeItemRightClick, Tree);
+    /// <summary>A key was pressed in the tree (<c>wxEVT_TREE_KEY_DOWN</c>).</summary>
     public static EventType<TreeEventArgs> TreeKeyDown { get; } = Make<TreeEventArgs>(EventId.TreeKeyDown, Tree);
+    /// <summary>Label editing began on a tree item (<c>wxEVT_TREE_BEGIN_LABEL_EDIT</c>). Veto to forbid it.</summary>
     public static EventType<TreeEventArgs> TreeBeginLabelEdit { get; } = Make<TreeEventArgs>(EventId.TreeBeginLabelEdit, Tree);
+    /// <summary>Label editing finished on a tree item (<c>wxEVT_TREE_END_LABEL_EDIT</c>). Veto to reject the
+    /// new label.</summary>
     public static EventType<TreeEventArgs> TreeEndLabelEdit { get; } = Make<TreeEventArgs>(EventId.TreeEndLabelEdit, Tree);
     /// <summary>A context menu was asked for on a tree item, by right-click or by the keyboard's menu key.</summary>
     public static EventType<TreeEventArgs> TreeItemMenu { get; } = Make<TreeEventArgs>(EventId.TreeItemMenu, Tree);
+    /// <summary>A drag of a tree item began (<c>wxEVT_TREE_BEGIN_DRAG</c>).</summary>
     public static EventType<TreeEventArgs> TreeBeginDrag { get; } = Make<TreeEventArgs>(EventId.TreeBeginDrag, Tree);
+    /// <summary>A tree item drag finished (<c>wxEVT_TREE_END_DRAG</c>).</summary>
     public static EventType<TreeEventArgs> TreeEndDrag { get; } = Make<TreeEventArgs>(EventId.TreeEndDrag, Tree);
+    /// <summary>A tree item was middle-clicked (<c>wxEVT_TREE_ITEM_MIDDLE_CLICK</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemMiddleClicked { get; } = Make<TreeEventArgs>(EventId.TreeItemMiddleClick, Tree);
+    /// <summary>A tree item was deleted (<c>wxEVT_TREE_DELETE_ITEM</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemDeleted { get; } = Make<TreeEventArgs>(EventId.TreeDeleteItem, Tree);
+    /// <summary>A tooltip is needed for a tree item (<c>wxEVT_TREE_ITEM_GETTOOLTIP</c>).</summary>
     public static EventType<TreeEventArgs> TreeItemToolTip { get; } = Make<TreeEventArgs>(EventId.TreeItemToolTip, Tree);
+    /// <summary>A tree item's state image was clicked (<c>wxEVT_TREE_STATE_IMAGE_CLICK</c>).</summary>
     public static EventType<TreeEventArgs> TreeStateImageClicked { get; } = Make<TreeEventArgs>(EventId.TreeStateImageClick, Tree);
 
     // wxDataViewCtrl.
+    /// <summary>The data-view selection changed (<c>wxEVT_DATAVIEW_SELECTION_CHANGED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewSelectionChanged { get; } = Make<DataViewEventArgs>(EventId.DataViewSelectionChanged, DataView);
+    /// <summary>A data-view item was activated (<c>wxEVT_DATAVIEW_ITEM_ACTIVATED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewItemActivated { get; } = Make<DataViewEventArgs>(EventId.DataViewItemActivated, DataView);
+    /// <summary>A context menu was requested on a data-view item (<c>wxEVT_DATAVIEW_ITEM_CONTEXT_MENU</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewItemContextMenu { get; } = Make<DataViewEventArgs>(EventId.DataViewItemContextMenu, DataView);
+    /// <summary>A data-view item was expanded (<c>wxEVT_DATAVIEW_ITEM_EXPANDED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewItemExpanded { get; } = Make<DataViewEventArgs>(EventId.DataViewItemExpanded, DataView);
+    /// <summary>A data-view item is about to expand (<c>wxEVT_DATAVIEW_ITEM_EXPANDING</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewItemExpanding { get; } = Make<DataViewEventArgs>(EventId.DataViewItemExpanding, DataView);
+    /// <summary>A data-view item was collapsed (<c>wxEVT_DATAVIEW_ITEM_COLLAPSED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewItemCollapsed { get; } = Make<DataViewEventArgs>(EventId.DataViewItemCollapsed, DataView);
+    /// <summary>A data-view item is about to collapse (<c>wxEVT_DATAVIEW_ITEM_COLLAPSING</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewItemCollapsing { get; } = Make<DataViewEventArgs>(EventId.DataViewItemCollapsing, DataView);
+    /// <summary>Editing of a data-view cell began (<c>wxEVT_DATAVIEW_ITEM_EDITING_STARTED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewEditingStarted { get; } = Make<DataViewEventArgs>(EventId.DataViewItemEditingStarted, DataView);
+    /// <summary>Editing of a data-view cell finished (<c>wxEVT_DATAVIEW_ITEM_EDITING_DONE</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewEditingDone { get; } = Make<DataViewEventArgs>(EventId.DataViewItemEditingDone, DataView);
+    /// <summary>A data-view cell value changed (<c>wxEVT_DATAVIEW_ITEM_VALUE_CHANGED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewValueChanged { get; } = Make<DataViewEventArgs>(EventId.DataViewItemValueChanged, DataView);
+    /// <summary>A data-view column header was clicked (<c>wxEVT_DATAVIEW_COLUMN_HEADER_CLICK</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewColumnHeaderClicked { get; } = Make<DataViewEventArgs>(EventId.DataViewColumnHeaderClick, DataView);
+    /// <summary>A data-view column header was right-clicked (<c>wxEVT_DATAVIEW_COLUMN_HEADER_RIGHT_CLICK</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewColumnHeaderRightClicked { get; } = Make<DataViewEventArgs>(EventId.DataViewColumnHeaderRightClick, DataView);
+    /// <summary>A data-view column was sorted (<c>wxEVT_DATAVIEW_COLUMN_SORTED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewColumnSorted { get; } = Make<DataViewEventArgs>(EventId.DataViewColumnSorted, DataView);
+    /// <summary>Data-view columns were reordered by dragging (<c>wxEVT_DATAVIEW_COLUMN_REORDERED</c>).</summary>
     public static EventType<DataViewEventArgs> DataViewColumnReordered { get; } = Make<DataViewEventArgs>(EventId.DataViewColumnReordered, DataView);
 
     // wxSplitterWindow and wxGrid.
+    /// <summary>The splitter's sash settled at a new position (<c>wxEVT_SPLITTER_SASH_POS_CHANGED</c>).</summary>
     public static EventType<SplitterEventArgs> SashPositionChanged { get; } = Make<SplitterEventArgs>(EventId.SplitterSashPositionChanged, Splitter);
+    /// <summary>The sash was double-clicked, which normally unsplits (<c>wxEVT_SPLITTER_DCLICK</c>). Veto to
+    /// keep the split.</summary>
     public static EventType<SplitterEventArgs> SashDoubleClicked { get; } = Make<SplitterEventArgs>(EventId.SplitterDoubleClick, Splitter);
     /// <summary>The sash is being dragged. Veto to refuse the new position.</summary>
     public static EventType<SplitterEventArgs> SashPositionChanging { get; } = Make<SplitterEventArgs>(EventId.SplitterSashPositionChanging, Splitter);
+    /// <summary>The splitter was unsplit back to a single pane (<c>wxEVT_SPLITTER_UNSPLIT</c>).</summary>
     public static EventType<SplitterEventArgs> Unsplit { get; } = Make<SplitterEventArgs>(EventId.SplitterUnsplit, Splitter);
+    /// <summary>A grid cell's value changed (<c>wxEVT_GRID_CELL_CHANGED</c>).</summary>
     public static EventType<GridEventArgs> GridCellChanged { get; } = Make<GridEventArgs>(EventId.GridCellChanged, Grid);
+    /// <summary>A grid cell was selected (<c>wxEVT_GRID_SELECT_CELL</c>).</summary>
     public static EventType<GridEventArgs> GridCellSelected { get; } = Make<GridEventArgs>(EventId.GridSelectCell, Grid);
 }
