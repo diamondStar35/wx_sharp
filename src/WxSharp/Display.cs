@@ -17,6 +17,9 @@ public readonly unsafe struct Display
     /// <summary>The display's index, which is only stable while the monitors are.</summary>
     public uint Index { get; }
 
+    /// <summary>Takes hold of the display at <paramref name="index"/>. Throws when the index is past the
+    /// number of attached monitors; indices are only valid until the display configuration changes.</summary>
+    /// <param name="index">The zero-based display index, below <see cref="Count"/>.</param>
     public Display(uint index)
     {
         _ = App.RequireCurrent();

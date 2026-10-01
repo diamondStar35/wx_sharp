@@ -14,15 +14,23 @@ public enum ScrollbarVisibility
     Always = 2,
 }
 
+/// <summary>A window with built-in scrollbars that scrolls a virtual area larger than itself. Wraps
+/// <c>wxScrolled</c> (<c>wxScrolledWindow</c>).</summary>
 public class ScrolledWindow : Window
 {
+    /// <summary>Creates a <c>wxScrolledWindow</c> child of <paramref name="parent"/>. Set the scroll step
+    /// and extent with <see cref="SetScrollbars"/> or <see cref="SetScrollRate"/>.</summary>
     public ScrolledWindow(Window parent, int id = WindowId.Any, ScrolledStyle style = ScrolledStyle.Default)
         : base(parent, id)
         => Initialize(GetType() == typeof(ScrolledWindow)
             ? NativeMethods.wxsharp_scrolled_create(parent.Handle, id, (int)style, Token)
             : NativeMethods.wxsharp_custom_scrolled_create(parent.Handle, id, (int)style, Token));
+    /// <summary>The scroll position, in scroll units, of the top-left visible pixel.</summary>
     public Point ViewStart { get { NativeMethods.wxsharp_scrolled_get_view_start(Handle, out var x, out var y); return new Point(x, y); } }
+    /// <summary>Sets the pixel size of one scroll step on each axis. Wraps <c>wxScrolled.SetScrollRate</c>.</summary>
     public void SetScrollRate(int xStep, int yStep) => NativeMethods.wxsharp_scrolled_set_rate(Handle, xStep, yStep);
+    /// <summary>Scrolls so the given position, in scroll units, is at the top-left. Wraps
+    /// <c>wxScrolled.Scroll</c>.</summary>
     public void Scroll(int x, int y) => NativeMethods.wxsharp_scrolled_scroll(Handle, x, y);
 
     /// <summary>Sets the scroll step and the extent to scroll over in one call, following
@@ -106,6 +114,7 @@ public class ScrolledWindow : Window
     }
 }
 
+/// <summary>A window split into two resizable panes by a draggable sash. Wraps <c>wxSplitterWindow</c>.</summary>
 public class SplitterWindow : Window
 {
     /// <summary>The sash was dragged to a new position.</summary>
@@ -136,7 +145,11 @@ public class SplitterWindow : Window
         remove => RemoveHandler(WxEvents.Unsplit, value);
     }
 
+    /// <summary>Which way the sash runs: <see cref="Orientation.Vertical"/> splits into left and right
+    /// panes, <see cref="Orientation.Horizontal"/> into top and bottom. Fixed when the splitter is created.</summary>
     public Orientation Orientation { get; }
+    /// <summary>Creates a <c>wxSplitterWindow</c> child of <paramref name="parent"/>. Fill it with
+    /// <see cref="Split"/> once the two pane windows exist.</summary>
     public SplitterWindow(Window parent, Orientation orientation = Orientation.Vertical, int id = WindowId.Any) : base(parent, id)
     {
         Orientation = orientation;
@@ -144,15 +157,22 @@ public class SplitterWindow : Window
             ? NativeMethods.wxsharp_splitter_create(parent.Handle, id, orientation == Orientation.Vertical, Token)
             : NativeMethods.wxsharp_custom_splitter_create(parent.Handle, id, orientation == Orientation.Vertical, Token));
     }
+    /// <summary>The sash offset in pixels from the top or left edge, depending on the orientation.</summary>
     public int SashPosition { get => NativeMethods.wxsharp_splitter_get_position(Handle); set => NativeMethods.wxsharp_splitter_set_position(Handle, value); }
+    /// <summary>Shows both windows side by side with the sash between them, splitting along the splitter's
+    /// orientation. <paramref name="position"/> is the initial sash offset. Returns false when already split.</summary>
     public bool Split(Window first, Window second, int position = 0)
     {
         ArgumentNullException.ThrowIfNull(first); ArgumentNullException.ThrowIfNull(second);
         return NativeMethods.wxsharp_splitter_split(Handle, first.Handle, second.Handle, position);
     }
+    /// <summary>Removes the split and shows a single pane. Pass the window to hide, or null to remove the
+    /// bottom or right pane. Returns false when the window was not split.</summary>
     public bool Unsplit(Window? remove = null) => NativeMethods.wxsharp_splitter_unsplit(Handle, remove?.Handle ?? 0);
 }
 
+/// <summary>A tabbed container that shows one child page at a time, with a tab for each. Wraps
+/// <c>wxNotebook</c>.</summary>
 public class Notebook : Control
 {
     /// <summary>The visible page changed.</summary>
@@ -170,24 +190,33 @@ public class Notebook : Control
         remove => RemoveHandler(WxEvents.NotebookPageChanging, value);
     }
 
+    /// <summary>Creates a <c>wxNotebook</c> child of <paramref name="parent"/>. Add pages with
+    /// <see cref="AddPage"/>.</summary>
     public Notebook(Window parent, int id = WindowId.Any) : base(parent, id)
         => Initialize(GetType() == typeof(Notebook)
             ? NativeMethods.wxsharp_notebook_create(parent.Handle, id, Token)
             : NativeMethods.wxsharp_custom_notebook_create(parent.Handle, id, Token));
+    /// <summary>The number of pages.</summary>
     public int Count => NativeMethods.wxsharp_notebook_count(Handle);
+    /// <summary>The index of the visible page, or -1 when there is none. Setting it switches pages.</summary>
     public int SelectedIndex
     {
         get => NativeMethods.wxsharp_notebook_get_selection(Handle);
         set => _ = NativeMethods.wxsharp_notebook_set_selection(Handle, value);
     }
+    /// <summary>Appends <paramref name="page"/> as a new tab labelled <paramref name="text"/>. Pass
+    /// <paramref name="select"/> to make it the visible page. The notebook takes ownership of the page.</summary>
     public bool AddPage(Window page, string text, bool select = false) => NativeMethods.wxsharp_notebook_add_page(Handle, page.Handle, text, select);
+    /// <summary>Removes the page at <paramref name="index"/> and destroys it.</summary>
     public bool RemovePage(int index) => NativeMethods.wxsharp_notebook_delete_page(Handle, index);
+    /// <summary>The label on the tab at <paramref name="index"/>.</summary>
     public unsafe string GetPageText(int index)
     {
         var length = NativeMethods.wxsharp_notebook_get_page_text(Handle, index, null, 0); if (length <= 0) return string.Empty;
         var bytes = new byte[length + 1]; fixed (byte* buffer = bytes) _ = NativeMethods.wxsharp_notebook_get_page_text(Handle, index, buffer, bytes.Length);
         return Utf8String.Decode(bytes, length);
     }
+    /// <summary>Sets the label on the tab at <paramref name="index"/>.</summary>
     public bool SetPageText(int index, string text) => NativeMethods.wxsharp_notebook_set_page_text(Handle, index, text);
 }
 

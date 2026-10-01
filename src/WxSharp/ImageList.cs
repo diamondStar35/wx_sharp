@@ -17,9 +17,13 @@ public enum ImageListKind
 /// <summary>Which of a tree item's images is being set, following <c>wxTreeItemIcon</c>.</summary>
 public enum TreeItemIcon
 {
+    /// <summary>The image drawn for an item in its normal, unselected state.</summary>
     Normal = 0,
+    /// <summary>The image drawn when the item is selected.</summary>
     Selected = 1,
+    /// <summary>The image drawn when the item is expanded.</summary>
     Expanded = 2,
+    /// <summary>The image drawn when the item is both selected and expanded.</summary>
     SelectedExpanded = 3,
 }
 

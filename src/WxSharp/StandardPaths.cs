@@ -5,12 +5,19 @@ namespace WxSharp;
 /// <summary>One of the user's own folders, following <c>wxStandardPaths.Dir</c>.</summary>
 public enum UserDirectory
 {
+    /// <summary>The user's cache directory, for data that can be regenerated.</summary>
     Cache = 0,
+    /// <summary>The user's documents folder.</summary>
     Documents = 1,
+    /// <summary>The user's desktop folder.</summary>
     Desktop = 2,
+    /// <summary>The user's downloads folder.</summary>
     Downloads = 3,
+    /// <summary>The user's music folder.</summary>
     Music = 4,
+    /// <summary>The user's pictures folder.</summary>
     Pictures = 5,
+    /// <summary>The user's videos folder.</summary>
     Videos = 6,
 }
 
@@ -18,6 +25,7 @@ public enum UserDirectory
 /// <c>wxStandardPaths.ResourceCat</c>.</summary>
 public enum ResourceCategory
 {
+    /// <summary>No particular category; the directory holding resources of every kind.</summary>
     None = 0,
     /// <summary>Gettext message catalogues, which is where <see cref="Locale"/> looks.</summary>
     Messages = 1,
