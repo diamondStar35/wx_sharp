@@ -12,16 +12,21 @@ namespace WxSharp;
 /// </remarks>
 public enum FontFamily
 {
+    /// <summary>Let wxWidgets choose a family.</summary>
     Default = 70,
+    /// <summary>A decorative or display family.</summary>
     Decorative = 71,
     /// <summary>A serif family.</summary>
     Roman = 72,
+    /// <summary>A handwriting/script family.</summary>
     Script = 73,
     /// <summary>A sans-serif family.</summary>
     Swiss = 74,
     /// <summary>A fixed-pitch family suited to code and tabular text.</summary>
     Modern = 75,
+    /// <summary>A monospaced teletype family.</summary>
     Teletype = 76,
+    /// <summary>Family not known.</summary>
     Unknown = 77,
 }
 
@@ -30,23 +35,36 @@ public enum FontFamily
 /// conventional stops.</summary>
 public enum FontWeight
 {
+    /// <summary>No valid weight.</summary>
     Invalid = 0,
+    /// <summary>Thin (weight 100).</summary>
     Thin = 100,
+    /// <summary>Extra light (weight 200).</summary>
     ExtraLight = 200,
+    /// <summary>Light (weight 300).</summary>
     Light = 300,
+    /// <summary>Normal (weight 400).</summary>
     Normal = 400,
+    /// <summary>Medium (weight 500).</summary>
     Medium = 500,
+    /// <summary>Semi-bold (weight 600).</summary>
     SemiBold = 600,
+    /// <summary>Bold (weight 700).</summary>
     Bold = 700,
+    /// <summary>Extra bold (weight 800).</summary>
     ExtraBold = 800,
+    /// <summary>Heavy (weight 900).</summary>
     Heavy = 900,
+    /// <summary>Extra heavy (weight 1000).</summary>
     ExtraHeavy = 1000,
 }
 
 /// <summary>Whether a font is upright or sloped, following <c>wxFontStyle</c>.</summary>
 public enum FontStyle
 {
+    /// <summary>Upright.</summary>
     Normal = 90,
+    /// <summary>A true italic face.</summary>
     Italic = 93,
     /// <summary>Sloped rather than a true italic face. Most platforms treat it as italic.</summary>
     Slant = 94,
@@ -56,12 +74,19 @@ public enum FontStyle
 /// default, so a heading stays proportionate to whatever size the user has chosen.</summary>
 public enum FontSymbolicSize
 {
+    /// <summary>Three steps below the system default.</summary>
     ExtraExtraSmall = -3,
+    /// <summary>Two steps below the system default.</summary>
     ExtraSmall = -2,
+    /// <summary>One step below the system default.</summary>
     Small = -1,
+    /// <summary>The system default size.</summary>
     Medium = 0,
+    /// <summary>One step above the system default.</summary>
     Large = 1,
+    /// <summary>Two steps above the system default.</summary>
     ExtraLarge = 2,
+    /// <summary>Three steps above the system default.</summary>
     ExtraExtraLarge = 3,
 }
 
@@ -69,15 +94,25 @@ public enum FontSymbolicSize
 [Flags]
 public enum FontFlag
 {
+    /// <summary>No flags; a normal upright font.</summary>
     Default = 0,
+    /// <summary>Italic face.</summary>
     Italic = 1 << 0,
+    /// <summary>Slanted face.</summary>
     Slant = 1 << 1,
+    /// <summary>Light weight.</summary>
     Light = 1 << 2,
+    /// <summary>Bold weight.</summary>
     Bold = 1 << 3,
+    /// <summary>Force anti-aliasing on.</summary>
     AntiAliased = 1 << 4,
+    /// <summary>Force anti-aliasing off.</summary>
     NotAntiAliased = 1 << 5,
+    /// <summary>Underlined.</summary>
     Underlined = 1 << 6,
+    /// <summary>Struck through.</summary>
     Strikethrough = 1 << 7,
+    /// <summary>All of the above bits combined.</summary>
     Mask = Italic | Slant | Light | Bold | AntiAliased | NotAntiAliased | Underlined | Strikethrough,
 }
 
@@ -92,7 +127,9 @@ public enum FontEncoding
     Default = 0,
     /// <summary>West European (Latin-1), wxWidgets' <c>wxFONTENCODING_ISO8859_1</c>.</summary>
     Iso88591 = 1,
+    /// <summary>Windows West European (<c>wxFONTENCODING_CP1252</c>).</summary>
     Cp1252 = 33,
+    /// <summary>UTF-8 (<c>wxFONTENCODING_UTF8</c>).</summary>
     Utf8 = 43,
 }
 
@@ -126,6 +163,7 @@ public sealed class FontInfo
     /// <summary>A font sized in pixels rather than points.</summary>
     public FontInfo(Size pixelSize) { PixelSizeValue = pixelSize; UsePixels = true; }
 
+    /// <summary>Copies another builder.</summary>
     public FontInfo(FontInfo other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -139,29 +177,43 @@ public sealed class FontInfo
         FlagsValue = other.FlagsValue;
     }
 
+    /// <summary>Sets the font family and returns this builder.</summary>
     public FontInfo Family(FontFamily family) { FamilyValue = family; return this; }
+    /// <summary>Sets the typeface name and returns this builder.</summary>
     public FontInfo FaceName(string faceName) { ArgumentNullException.ThrowIfNull(faceName); FaceNameValue = faceName; return this; }
+    /// <summary>Sets italic or slant from a <see cref="FontStyle"/> and returns this builder.</summary>
     public FontInfo Style(FontStyle style)
     {
         if (style == FontStyle.Italic) Italic();
         else if (style == FontStyle.Slant) Slant();
         return this;
     }
+    /// <summary>Sets the encoding and returns this builder.</summary>
     public FontInfo Encoding(FontEncoding encoding) { EncodingValue = encoding; return this; }
 
     /// <summary>Sets the numeric weight. Any value between <see cref="FontWeight.Thin"/> and
     /// <see cref="FontWeight.ExtraHeavy"/> is valid.</summary>
     public FontInfo Weight(int weight) { WeightValue = weight; return this; }
 
+    /// <summary>Sets the weight from a conventional stop and returns this builder.</summary>
     public FontInfo Weight(FontWeight weight) { WeightValue = (int)weight; return this; }
+    /// <summary>Makes the font bold (or normal) and returns this builder.</summary>
     public FontInfo Bold(bool bold = true) { WeightValue = (int)(bold ? FontWeight.Bold : FontWeight.Normal); return this; }
+    /// <summary>Makes the font light (or normal) and returns this builder.</summary>
     public FontInfo Light(bool light = true) { WeightValue = (int)(light ? FontWeight.Light : FontWeight.Normal); return this; }
+    /// <summary>Makes the font italic and returns this builder.</summary>
     public FontInfo Italic(bool italic = true) { SetFlag(FontFlag.Italic, italic); return this; }
+    /// <summary>Makes the font slanted and returns this builder.</summary>
     public FontInfo Slant(bool slant = true) { SetFlag(FontFlag.Slant, slant); return this; }
+    /// <summary>Forces anti-aliasing on and returns this builder.</summary>
     public FontInfo AntiAliased(bool antiAliased = true) { SetFlag(FontFlag.AntiAliased, antiAliased); return this; }
+    /// <summary>Underlines the font and returns this builder.</summary>
     public FontInfo Underlined(bool underlined = true) { SetFlag(FontFlag.Underlined, underlined); return this; }
+    /// <summary>Strikes the font through and returns this builder.</summary>
     public FontInfo Strikethrough(bool strikethrough = true) { SetFlag(FontFlag.Strikethrough, strikethrough); return this; }
 
+    /// <summary>Sets all <see cref="FontFlag"/> bits at once (also deriving the weight) and returns this
+    /// builder.</summary>
     public FontInfo AllFlags(int flags)
     {
         FlagsValue = flags;
@@ -170,21 +222,36 @@ public sealed class FontInfo
         return this;
     }
 
+    /// <summary>Sets all flags at once from a <see cref="FontFlag"/> value.</summary>
     public FontInfo AllFlags(FontFlag flags) => AllFlags((int)flags);
 
+    /// <summary>Whether the size is given in pixels rather than points.</summary>
     public bool IsUsingSizeInPixels() => UsePixels;
+    /// <summary>The point size, keeping any fraction.</summary>
     public double GetFractionalPointSize() => PointSizeValue;
+    /// <summary>The point size rounded to a whole number.</summary>
     public int GetPointSize() => (int)Math.Round(PointSizeValue, MidpointRounding.AwayFromZero);
+    /// <summary>The pixel size, when sizing in pixels.</summary>
     public Size GetPixelSize() => PixelSizeValue;
+    /// <summary>Whether a typeface name has been set.</summary>
     public bool HasFaceName() => !string.IsNullOrEmpty(FaceNameValue);
+    /// <summary>The font family.</summary>
     public FontFamily GetFamily() => FamilyValue;
+    /// <summary>The typeface name, or an empty string.</summary>
     public string GetFaceName() => FaceNameValue ?? string.Empty;
+    /// <summary>The style (normal, italic or slant).</summary>
     public FontStyle GetStyle() => StyleValue;
+    /// <summary>The numeric weight.</summary>
     public int GetNumericWeight() => WeightValue;
+    /// <summary>The weight as the nearest conventional stop.</summary>
     public FontWeight GetWeight() => GetWeightClosestToNumericValue(WeightValue);
+    /// <summary>Whether anti-aliasing was requested.</summary>
     public bool IsAntiAliased() => (FlagsValue & (int)FontFlag.AntiAliased) != 0;
+    /// <summary>Whether the font is underlined.</summary>
     public bool IsUnderlined() => UnderlinedValue;
+    /// <summary>Whether the font is struck through.</summary>
     public bool IsStrikethrough() => StrikethroughValue;
+    /// <summary>The encoding.</summary>
     public FontEncoding GetEncoding() => EncodingValue;
 
     private void SetFlag(FontFlag flag, bool enabled)
@@ -317,12 +384,14 @@ public sealed unsafe class Font : IDisposable
 
     // ---- Description ------------------------------------------------------------------------------------
 
+    /// <summary>The font family (serif, sans-serif, fixed-pitch, …).</summary>
     public FontFamily Family
     {
         get => (FontFamily)NativeMethods.wxsharp_font_get_family(Handle);
         set => NativeMethods.wxsharp_font_set_family(Handle, (int)value);
     }
 
+    /// <summary>Whether the font is upright, italic or slanted.</summary>
     public FontStyle Style
     {
         get => (FontStyle)NativeMethods.wxsharp_font_get_style(Handle);
@@ -359,6 +428,7 @@ public sealed unsafe class Font : IDisposable
         set => NativeMethods.wxsharp_font_set_strikethrough(Handle, value);
     }
 
+    /// <summary>The font's character encoding.</summary>
     public FontEncoding Encoding
     {
         get => (FontEncoding)NativeMethods.wxsharp_font_get_encoding(Handle);
@@ -420,9 +490,13 @@ public sealed unsafe class Font : IDisposable
 
     // ---- Derivations, which leave this font alone -------------------------------------------------------
 
+    /// <summary>A bold copy of this font.</summary>
     public Font Bold() => new(NativeMethods.wxsharp_font_bold(Handle));
+    /// <summary>An italic copy of this font.</summary>
     public Font Italic() => new(NativeMethods.wxsharp_font_italic(Handle));
+    /// <summary>An underlined copy of this font.</summary>
     public Font Underlined() => new(NativeMethods.wxsharp_font_underlined(Handle));
+    /// <summary>A struck-through copy of this font.</summary>
     public Font Strikethrough() => new(NativeMethods.wxsharp_font_strikethrough(Handle));
 
     /// <summary>A copy 20% larger, as <c>wxFont.Larger</c> is defined.</summary>
@@ -431,6 +505,7 @@ public sealed unsafe class Font : IDisposable
     /// <summary>A copy 20% smaller.</summary>
     public Font Smaller() => new(NativeMethods.wxsharp_font_smaller(Handle));
 
+    /// <summary>A copy scaled by <paramref name="factor"/>.</summary>
     public Font Scaled(float factor) => new(NativeMethods.wxsharp_font_scaled(Handle, factor));
 
     /// <summary>A copy with the weight, style and decoration cleared, keeping the family, size and face.</summary>
@@ -446,12 +521,19 @@ public sealed unsafe class Font : IDisposable
 
     // ---- Derivations that change this font --------------------------------------------------------------
 
+    /// <summary>Makes this font bold in place.</summary>
     public void MakeBold() => NativeMethods.wxsharp_font_make_bold(Handle);
+    /// <summary>Makes this font italic in place.</summary>
     public void MakeItalic() => NativeMethods.wxsharp_font_make_italic(Handle);
+    /// <summary>Underlines this font in place.</summary>
     public void MakeUnderlined() => NativeMethods.wxsharp_font_make_underlined(Handle);
+    /// <summary>Strikes this font through in place.</summary>
     public void MakeStrikethrough() => NativeMethods.wxsharp_font_make_strikethrough(Handle);
+    /// <summary>Enlarges this font by one step in place.</summary>
     public void MakeLarger() => NativeMethods.wxsharp_font_make_larger(Handle);
+    /// <summary>Shrinks this font by one step in place.</summary>
     public void MakeSmaller() => NativeMethods.wxsharp_font_make_smaller(Handle);
+    /// <summary>Scales this font by <paramref name="factor"/> in place.</summary>
     public void Scale(float factor) => NativeMethods.wxsharp_font_scale(Handle, factor);
 
     // ---- Statics ----------------------------------------------------------------------------------------
@@ -517,12 +599,15 @@ public sealed unsafe class Font : IDisposable
         => other is not null && (ReferenceEquals(this, other) ||
             NativeMethods.wxsharp_font_equals(Handle, other.Handle));
 
+    /// <summary>Whether <paramref name="obj"/> is a font describing the same font.</summary>
     public override bool Equals(object? obj) => Equals(obj as Font);
 
     // wxFont has no hash of its own, and its description is what equality is defined on.
+    /// <summary>A hash over the font's description, consistent with <see cref="Equals(Font?)"/>.</summary>
     public override int GetHashCode() => HashCode.Combine(PointSize, (int)Family, (int)Style, NumericWeight,
         IsUnderlined, IsStrikethrough, FaceName);
 
+    /// <summary>The font's human-readable description (its <see cref="NativeFontInfoUserDesc"/>).</summary>
     public override string ToString() => NativeFontInfoUserDesc;
 
     public void Dispose()
