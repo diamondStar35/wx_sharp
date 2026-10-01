@@ -49,11 +49,17 @@ public enum TextAttrFlags : uint
 /// <summary>How a paragraph is aligned, following <c>wxTextAttrAlignment</c>.</summary>
 public enum TextAttrAlignment
 {
+    /// <summary>Inherit the control's alignment.</summary>
     Default = 0,
+    /// <summary>Align to the left margin.</summary>
     Left = 1,
+    /// <summary>Centre between the margins.</summary>
     Centre = 2,
+    /// <summary>Centre between the margins (US spelling of <see cref="Centre"/>).</summary>
     Center = Centre,
+    /// <summary>Align to the right margin.</summary>
     Right = 3,
+    /// <summary>Stretch each line to both margins.</summary>
     Justified = 4,
 }
 
@@ -78,18 +84,21 @@ public sealed class TextAttr
     /// <summary>Whether this style overrides nothing at all.</summary>
     public bool IsDefault => Flags == TextAttrFlags.None;
 
+    /// <summary>The text (foreground) colour. Setting it marks the colour as overridden.</summary>
     public Colour TextColour
     {
         get => _textColour;
         set { _textColour = value; Flags |= TextAttrFlags.TextColour; }
     }
 
+    /// <summary>The text background colour. Setting it marks the background as overridden.</summary>
     public Colour BackgroundColour
     {
         get => _backgroundColour;
         set { _backgroundColour = value; Flags |= TextAttrFlags.BackgroundColour; }
     }
 
+    /// <summary>The paragraph alignment. Setting it marks alignment as overridden.</summary>
     public TextAttrAlignment Alignment
     {
         get => _alignment;
@@ -104,12 +113,15 @@ public sealed class TextAttr
         set { _leftIndent = value; Flags |= TextAttrFlags.LeftIndent; }
     }
 
+    /// <summary>How far the first line is shifted relative to the rest of the paragraph, in tenths of a
+    /// millimetre. A negative value makes a hanging indent.</summary>
     public int LeftSubIndent
     {
         get => _leftSubIndent;
         set { _leftSubIndent = value; Flags |= TextAttrFlags.LeftIndent; }
     }
 
+    /// <summary>The paragraph's right margin in tenths of a millimetre.</summary>
     public int RightIndent
     {
         get => _rightIndent;
@@ -133,6 +145,7 @@ public sealed class TextAttr
         else Flags |= which & TextAttrFlags.Font;
     }
 
+    /// <summary>Whether all of the bits in <paramref name="flag"/> are set on this style.</summary>
     public bool Has(TextAttrFlags flag) => (Flags & flag) == flag;
 
     internal unsafe NativeTextAttr ToNative()

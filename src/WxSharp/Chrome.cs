@@ -392,6 +392,7 @@ public sealed class Menu : IDisposable
         MenuItemKind kind = MenuItemKind.Normal)
         => Track(NativeMethods.wxsharp_menu_insert(Handle, position, id, text, help, (int)kind));
 
+    /// <summary>Inserts a submenu at <paramref name="position"/>. The parent menu takes ownership.</summary>
     public MenuItem InsertSubMenu(int position, Menu submenu, string text, string help = "")
     {
         ArgumentNullException.ThrowIfNull(submenu);
@@ -401,6 +402,7 @@ public sealed class Menu : IDisposable
         return item;
     }
 
+    /// <summary>Inserts a separator line at <paramref name="position"/>.</summary>
     public MenuItem InsertSeparator(int position)
         => Track(NativeMethods.wxsharp_menu_insert_separator(Handle, position));
 
@@ -457,6 +459,8 @@ public sealed class Menu : IDisposable
     /// <summary>Hands the native menu to a new owner - a menu bar, or a parent menu.</summary>
     internal nint TransferOwnership() { var value = Handle; _owned = false; return value; }
 
+    /// <summary>Destroys the native menu if it is still owned by managed code (not yet attached to a bar or
+    /// parent menu).</summary>
     public void Dispose()
     {
         // Only a menu still owned by managed code is destroyed here: once it has been attached to a menu bar
@@ -555,6 +559,7 @@ public sealed class MenuBar : IDisposable
         return Utf8String.Decode(buffer, length);
     }
 
+    /// <summary>Sets the label of the top-level menu at <paramref name="position"/>.</summary>
     public void SetLabelTop(int position, string label)
         => NativeMethods.wxsharp_menubar_set_label_top(Handle, position, label ?? string.Empty);
 
@@ -567,6 +572,8 @@ public sealed class MenuBar : IDisposable
 
     internal nint TransferOwnership() { var value = Handle; _owned = false; return value; }
 
+    /// <summary>Destroys the native menu bar if it is still owned by managed code (not yet attached to a
+    /// frame).</summary>
     public void Dispose()
     {
         if (_handle != 0 && _owned) NativeMethods.wxsharp_menubar_destroy(_handle);
