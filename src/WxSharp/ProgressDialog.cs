@@ -36,7 +36,7 @@ public enum ProgressDialogStyle
 public readonly record struct ProgressUpdate(bool Continue, bool Skipped);
 
 /// <summary>A dialog reporting the progress of a long operation, following <c>wxProgressDialog</c>. It is a
-/// window like any other, so <see cref="Window.Raise"/>, <see cref="Window.Title"/> and the rest are
+/// window like any other, so <see cref="Window.Raise"/>, its title and the rest are
 /// inherited rather than repeated here.</summary>
 public class ProgressDialog : Window
 {
@@ -44,6 +44,7 @@ public class ProgressDialog : Window
     /// counts as complete; report progress toward it with <c>Update</c>.</summary>
     /// <param name="title">The dialog's title bar text.</param>
     /// <param name="message">The message shown above the progress bar.</param>
+    /// <param name="maximum">The value that counts as complete.</param>
     /// <param name="parent">The window the dialog is modal to, or null.</param>
     /// <param name="style">Which buttons and features the dialog shows (Cancel, Skip, elapsed time, …).</param>
     public ProgressDialog(string title, string message, int maximum = 100, Window? parent = null,

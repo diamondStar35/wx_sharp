@@ -317,6 +317,8 @@ public class ListCtrl : Control
 
     /// <summary>Gives the control the images its items are drawn with, following
     /// <c>wxListCtrl.SetImageList</c> and <c>AssignImageList</c>.</summary>
+    /// <param name="images">The image list to use.</param>
+    /// <param name="kind">Which image list this is (small, normal or state).</param>
     /// <param name="transfer">True to hand the list to the control, which then destroys it. False to lend
     /// it, in which case you must keep it alive for as long as the control uses it.</param>
     public void SetImageList(ImageList images, ImageListKind kind = ImageListKind.Small, bool transfer = true)
@@ -595,6 +597,7 @@ public class TreeCtrl : Control
 
     /// <summary>Gives the control the images its items are drawn with, following
     /// <c>wxTreeCtrl.SetImageList</c> and <c>AssignImageList</c>.</summary>
+    /// <param name="images">The image list to use.</param>
     /// <param name="transfer">True to hand the list to the control, which then destroys it. False to lend
     /// it, in which case you must keep it alive for as long as the control uses it.</param>
     public void SetImageList(ImageList images, bool transfer = true)

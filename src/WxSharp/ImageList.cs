@@ -45,6 +45,8 @@ public sealed class ImageList : IDisposable
     internal nint Handle => _handle != 0 ? _handle : throw new ObjectDisposedException(nameof(ImageList));
 
     /// <summary>Creates a list of images of a fixed size.</summary>
+    /// <param name="width">The width of every image, in pixels.</param>
+    /// <param name="height">The height of every image, in pixels.</param>
     /// <param name="mask">Whether to keep each image's transparency mask.</param>
     /// <param name="initialCount">A hint at how many images will be added; not a limit.</param>
     public ImageList(int width, int height, bool mask = true, int initialCount = 1)

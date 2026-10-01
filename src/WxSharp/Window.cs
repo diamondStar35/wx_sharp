@@ -3,13 +3,45 @@ using System.Collections.Generic;
 
 namespace WxSharp;
 
-public static class WindowId { public const int Any = -1; }
+/// <summary>Window and command identifiers. <see cref="Any"/> lets wxWidgets allocate one.</summary>
+public static class WindowId
+{
+    /// <summary>Let wxWidgets choose the id (<c>wxID_ANY</c>).</summary>
+    public const int Any = -1;
+}
+
+/// <summary>How a window animates as it appears or disappears, following <c>wxShowEffect</c>.</summary>
+public enum ShowEffect
+{
+    /// <summary>No animation.</summary>
+    None = 0,
+    /// <summary>Roll out towards the left.</summary>
+    RollToLeft = 1,
+    /// <summary>Roll out towards the right.</summary>
+    RollToRight = 2,
+    /// <summary>Roll out towards the top.</summary>
+    RollToTop = 3,
+    /// <summary>Roll out towards the bottom.</summary>
+    RollToBottom = 4,
+    /// <summary>Slide in from/out to the left.</summary>
+    SlideToLeft = 5,
+    /// <summary>Slide in from/out to the right.</summary>
+    SlideToRight = 6,
+    /// <summary>Slide in from/out to the top.</summary>
+    SlideToTop = 7,
+    /// <summary>Slide in from/out to the bottom.</summary>
+    SlideToBottom = 8,
+    /// <summary>Fade in or out.</summary>
+    Blend = 9,
+    /// <summary>Expand or shrink.</summary>
+    Expand = 10,
+}
 
 /// <summary>Common base for every native wx window, container, and control.</summary>
 ///
 /// <remarks>
 /// There is one event path. The typed <c>event</c> members on this class and on every control are shorthand
-/// for <see cref="Bind{TEventArgs}"/>, and both end up in the same per-event subscriber list. An event type
+/// for <see cref="EvtHandler.Bind{TEventArgs}"/>, and both end up in the same per-event subscriber list. An event type
 /// is hooked natively the first time something subscribes to it on this window and unhooked when the last
 /// subscriber goes away, so an event nothing is listening for never crosses the boundary.
 ///
@@ -18,22 +50,6 @@ public static class WindowId { public const int Any = -1; }
 /// <see cref="WxEvents.ButtonClicked"/> on a frame catches its buttons, exactly as in Phoenix. The wrapper
 /// does not re-dispatch events to parents itself, and treats every event the same way.
 /// </remarks>
-/// <summary>How a window animates as it appears or disappears, following <c>wxShowEffect</c>.</summary>
-public enum ShowEffect
-{
-    None = 0,
-    RollToLeft = 1,
-    RollToRight = 2,
-    RollToTop = 3,
-    RollToBottom = 4,
-    SlideToLeft = 5,
-    SlideToRight = 6,
-    SlideToTop = 7,
-    SlideToBottom = 8,
-    Blend = 9,
-    Expand = 10,
-}
-
 public abstract partial class Window : EvtHandler, IDisposable
 {
     private readonly List<Window> _children = new();
@@ -47,7 +63,9 @@ public abstract partial class Window : EvtHandler, IDisposable
     private Accessible? _accessible;
     private Sizer? _sizer;
     internal override App OwnerApp { get; }
+    /// <summary>This window's command id.</summary>
     public int Id { get; private set; }
+    /// <summary>The parent window, or null for a top-level window.</summary>
     public Window? Parent { get; }
 
     internal event Action? Invalidated;
@@ -61,12 +79,14 @@ public abstract partial class Window : EvtHandler, IDisposable
         remove => RemoveHandler(WxEvents.Destroyed, value);
     }
 
+    /// <summary>Raised when this window gains keyboard focus.</summary>
     public event EventHandler<WxEventArgs> GotFocus
     {
         add => AddHandler(WxEvents.GotFocus, value);
         remove => RemoveHandler(WxEvents.GotFocus, value);
     }
 
+    /// <summary>Raised when this window loses keyboard focus.</summary>
     public event EventHandler<WxEventArgs> LostFocus
     {
         add => AddHandler(WxEvents.LostFocus, value);
@@ -81,6 +101,7 @@ public abstract partial class Window : EvtHandler, IDisposable
         remove => RemoveHandler(WxEvents.KeyDown, value);
     }
 
+    /// <summary>A key was released while this control had focus.</summary>
     public event EventHandler<KeyEventArgs> KeyUp
     {
         add => AddHandler(WxEvents.KeyUp, value);
@@ -102,48 +123,57 @@ public abstract partial class Window : EvtHandler, IDisposable
         remove => RemoveHandler(WxEvents.Char, value);
     }
 
+    /// <summary>The left mouse button was pressed over this window.</summary>
     public event EventHandler<MouseEventArgs> MouseDown
     {
         add => AddHandler(WxEvents.MouseDown, value);
         remove => RemoveHandler(WxEvents.MouseDown, value);
     }
 
+    /// <summary>The left mouse button was released over this window.</summary>
     public event EventHandler<MouseEventArgs> MouseUp
     {
         add => AddHandler(WxEvents.MouseUp, value);
         remove => RemoveHandler(WxEvents.MouseUp, value);
     }
 
+    /// <summary>The right mouse button was pressed. For a context menu, prefer <see cref="ContextMenu"/>,
+    /// which also covers the keyboard menu key.</summary>
     public event EventHandler<MouseEventArgs> RightClick
     {
         add => AddHandler(WxEvents.RightDown, value);
         remove => RemoveHandler(WxEvents.RightDown, value);
     }
 
+    /// <summary>The left mouse button was double-clicked.</summary>
     public event EventHandler<MouseEventArgs> DoubleClick
     {
         add => AddHandler(WxEvents.DoubleClicked, value);
         remove => RemoveHandler(WxEvents.DoubleClicked, value);
     }
 
+    /// <summary>The pointer entered this window.</summary>
     public event EventHandler<MouseEventArgs> MouseEnter
     {
         add => AddHandler(WxEvents.MouseEntered, value);
         remove => RemoveHandler(WxEvents.MouseEntered, value);
     }
 
+    /// <summary>The pointer left this window.</summary>
     public event EventHandler<MouseEventArgs> MouseLeave
     {
         add => AddHandler(WxEvents.MouseLeft, value);
         remove => RemoveHandler(WxEvents.MouseLeft, value);
     }
 
+    /// <summary>The pointer moved over this window.</summary>
     public event EventHandler<MouseEventArgs> MouseMove
     {
         add => AddHandler(WxEvents.MouseMoved, value);
         remove => RemoveHandler(WxEvents.MouseMoved, value);
     }
 
+    /// <summary>The mouse wheel turned over this window.</summary>
     public event EventHandler<MouseEventArgs> MouseWheel
     {
         add => AddHandler(WxEvents.MouseWheel, value);
@@ -158,12 +188,14 @@ public abstract partial class Window : EvtHandler, IDisposable
         remove => RemoveHandler(WxEvents.ContextMenu, value);
     }
 
+    /// <summary>Raised when this window is resized.</summary>
     public event EventHandler<SizeEventArgs> Resized
     {
         add => AddHandler(WxEvents.SizeChanged, value);
         remove => RemoveHandler(WxEvents.SizeChanged, value);
     }
 
+    /// <summary>Raised when this window moves.</summary>
     public event EventHandler<MoveEventArgs> Moved
     {
         add => AddHandler(WxEvents.Moved, value);
@@ -220,6 +252,9 @@ public abstract partial class Window : EvtHandler, IDisposable
 
     // ---- Construction and lifetime -------------------------------------------------------------------
 
+    /// <summary>Base constructor: registers the window with its <see cref="App"/> and links it to
+    /// <paramref name="parent"/>. A subclass follows this with <see cref="Initialize"/> once it has created
+    /// the native window.</summary>
     protected Window(Window? parent, int id)
     {
         OwnerApp = App.Current ?? throw new InvalidOperationException("Create an App before creating windows or controls.");
@@ -237,6 +272,8 @@ public abstract partial class Window : EvtHandler, IDisposable
 
     internal nint Handle { get { EnsureAlive(); return _handle; } }
 
+    /// <summary>Adopts the native window a subclass just created, completing construction. Throws if
+    /// <paramref name="handle"/> is zero (wxWidgets failed to create the window).</summary>
     protected void Initialize(nint handle)
     {
         if (handle == 0)
@@ -284,6 +321,7 @@ public abstract partial class Window : EvtHandler, IDisposable
         return window;
     }
 
+    /// <summary>Applies the optional position and size passed to a control's constructor.</summary>
     protected void ApplyInitialGeometry(Point? position, Size? size)
     {
         if (position is Point p) Position = p;
@@ -326,60 +364,81 @@ public abstract partial class Window : EvtHandler, IDisposable
 
     // ---- State and geometry --------------------------------------------------------------------------
 
+    /// <summary>Whether the window responds to input. A disabled window and its children are greyed out.</summary>
     public bool Enabled
     {
         get { Verify(); return NativeMethods.wxsharp_control_is_enabled(_handle); }
         set { Verify(); NativeMethods.wxsharp_control_enable(_handle, value); }
     }
+    /// <summary>Whether the window is shown. The same as <see cref="Show"/>/<see cref="Hide"/>.</summary>
     public bool Visible
     {
         get { Verify(); return NativeMethods.wxsharp_control_is_shown(_handle); }
         set { Verify(); NativeMethods.wxsharp_control_show(_handle, value); }
     }
+    /// <summary>Whether this window currently has keyboard focus.</summary>
     public bool HasFocus { get { Verify(); return NativeMethods.wxsharp_control_has_focus(_handle); } }
+    /// <summary>Whether the window was created with the given raw wxWidgets style flag.</summary>
     public bool HasFlag(int flag) { Verify(); return NativeMethods.wxsharp_control_has_flag(_handle, flag); }
+    /// <summary>Shows or hides the window.</summary>
     public void Show(bool show = true) { Verify(); NativeMethods.wxsharp_control_show(_handle, show); }
+    /// <summary>Hides the window. Shorthand for <c>Show(false)</c>.</summary>
     public void Hide() => Show(false);
+    /// <summary>Gives this window keyboard focus.</summary>
     public void Focus() { Verify(); NativeMethods.wxsharp_control_focus(_handle); }
+    /// <summary>Re-runs this window's sizer to lay out its children.</summary>
     public void Layout() { Verify(); NativeMethods.wxsharp_control_layout(_handle); }
 
+    /// <summary>The window's outer size in pixels.</summary>
     public Size Size
     {
         get { Verify(); NativeMethods.wxsharp_control_get_size(_handle, out var w, out var h); return new Size(w, h); }
         set { Verify(); NativeMethods.wxsharp_control_set_size(_handle, value.Width, value.Height); }
     }
+    /// <summary>The size of the window's client (content) area, excluding borders and scrollbars.</summary>
     public Size ClientSize
     {
         get { Verify(); NativeMethods.wxsharp_control_get_client_size(_handle, out var w, out var h); return new Size(w, h); }
     }
+    /// <summary>The window's position, relative to its parent's client area.</summary>
     public Point Position
     {
         get { Verify(); NativeMethods.wxsharp_control_get_position(_handle, out var x, out var y); return new Point(x, y); }
         set { Verify(); NativeMethods.wxsharp_control_set_position(_handle, value.X, value.Y); }
     }
+    /// <summary>The size the window would like to be, given its content and sizer.</summary>
     public Size BestSize
     {
         get { Verify(); NativeMethods.wxsharp_control_get_best_size(_handle, out var w, out var h); return new Size(w, h); }
     }
+    /// <summary>The pointer position in this window's client coordinates.</summary>
     public Point MousePosition
     {
         get { Verify(); NativeMethods.wxsharp_control_get_pointer_position(_handle, out var x, out var y); return new Point(x, y); }
     }
+    /// <summary>Resizes the window to its <see cref="BestSize"/>, fitting it around its contents.</summary>
     public void Fit() { Verify(); NativeMethods.wxsharp_control_fit(_handle); }
+    /// <summary>Requests a repaint. <paramref name="eraseBackground"/> clears the background first.</summary>
     public void Refresh(bool eraseBackground = true) { Verify(); NativeMethods.wxsharp_control_refresh(_handle, eraseBackground); }
 
+    /// <summary>The window's background colour. Prefer a <see cref="SystemSettings"/> colour so it follows
+    /// the user's theme.</summary>
     public Colour BackgroundColour
     {
         get { Verify(); return Colour.FromArgb(NativeMethods.wxsharp_control_get_background_colour(_handle)); }
         set { Verify(); NativeMethods.wxsharp_control_set_background_colour(_handle, value.ToArgb()); }
     }
+    /// <summary>The window's foreground (text) colour.</summary>
     public Colour ForegroundColour
     {
         get { Verify(); return Colour.FromArgb(NativeMethods.wxsharp_control_get_foreground_colour(_handle)); }
         set { Verify(); NativeMethods.wxsharp_control_set_foreground_colour(_handle, value.ToArgb()); }
     }
+    /// <summary>The tooltip shown on hover (write-only).</summary>
     public string ToolTip { set { Verify(); NativeMethods.wxsharp_control_set_tooltip(_handle, value); } }
+    /// <summary>The window's border style (write-only).</summary>
     public Border Border { set { Verify(); NativeMethods.wxsharp_control_set_border(_handle, (int)value); } }
+    /// <summary>Sets the font this window draws its text in.</summary>
     public void SetFont(Font font)
     {
         ArgumentNullException.ThrowIfNull(font);
@@ -924,6 +983,8 @@ public abstract partial class Window : EvtHandler, IDisposable
         Invalidate();
         return true;
     }
+    /// <summary>Destroys the native window (and its children), unless this wrapper was adopted, in which
+    /// case it only detaches. Safe to call more than once.</summary>
     public void Dispose() { _ = Destroy(); GC.SuppressFinalize(this); }
 
     internal void InvalidateFromAppShutdown() => Invalidate();
@@ -1019,6 +1080,9 @@ public abstract partial class Window : EvtHandler, IDisposable
 
     /// <summary>Shows a tooltip with a title and more than one line, following <c>wxRichToolTip</c>. This is
     /// what a validation message wants; <see cref="ToolTip"/> allows only a single line and no title.</summary>
+    /// <param name="title">The tooltip's bold title line.</param>
+    /// <param name="message">The tooltip's body text, which may span several lines.</param>
+    /// <param name="icon">An icon shown beside the title.</param>
     /// <param name="timeoutMilliseconds">How long it stays up; 0 leaves it to the platform.</param>
     /// <param name="delayMilliseconds">How long before it appears; 0 shows it at once.</param>
     public void ShowRichToolTip(string title, string message, RichToolTipIcon icon = RichToolTipIcon.None,
@@ -1381,6 +1445,7 @@ public abstract partial class Window : EvtHandler, IDisposable
 /// <summary>Base class for standard controls.</summary>
 public abstract class Control : Window
 {
+    /// <summary>Base constructor for a control with the given parent and id.</summary>
     protected Control(Window parent, int id) : base(parent, id) { }
 
     /// <summary>Wraps a control wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
