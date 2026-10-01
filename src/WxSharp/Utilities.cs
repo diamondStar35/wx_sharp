@@ -7,6 +7,7 @@ namespace WxSharp;
 [Flags]
 public enum BrowserFlags
 {
+    /// <summary>Default behaviour (a new tab in the default browser).</summary>
     None = 0,
 
     /// <summary>Open in a new window rather than a new tab, where the browser distinguishes them.</summary>
@@ -51,11 +52,17 @@ public enum ExecuteFlags
 [Flags]
 public enum MouseButtons
 {
+    /// <summary>No button held.</summary>
     None = 0,
+    /// <summary>The left button.</summary>
     Left = 1,
+    /// <summary>The middle button.</summary>
     Middle = 2,
+    /// <summary>The right button.</summary>
     Right = 4,
+    /// <summary>The first extra (back) button.</summary>
     Aux1 = 8,
+    /// <summary>The second extra (forward) button.</summary>
     Aux2 = 16,
 }
 
@@ -66,17 +73,29 @@ public readonly record struct MouseState(Point Position, MouseButtons Buttons, K
 /// values.</summary>
 public enum OperatingSystemId
 {
+    /// <summary>The platform could not be determined.</summary>
     Unknown = 0,
+    /// <summary>macOS (<c>wxOS_MAC_OSX_DARWIN</c>).</summary>
     MacOsX = 1 << 2,
+    /// <summary>Windows 9x/ME (<c>wxOS_WINDOWS_9X</c>).</summary>
     Windows9x = 1 << 6,
+    /// <summary>Windows NT family (<c>wxOS_WINDOWS_NT</c>).</summary>
     WindowsNt = 1 << 7,
+    /// <summary>Windows CE/embedded (<c>wxOS_WINDOWS_MICRO</c>).</summary>
     WindowsMicro = 1 << 8,
+    /// <summary>Linux (<c>wxOS_UNIX_LINUX</c>).</summary>
     Linux = 1 << 11,
+    /// <summary>FreeBSD (<c>wxOS_UNIX_FREEBSD</c>).</summary>
     Freebsd = 1 << 12,
+    /// <summary>OpenBSD (<c>wxOS_UNIX_OPENBSD</c>).</summary>
     Openbsd = 1 << 13,
+    /// <summary>NetBSD (<c>wxOS_UNIX_NETBSD</c>).</summary>
     Netbsd = 1 << 14,
+    /// <summary>Solaris (<c>wxOS_UNIX_SOLARIS</c>).</summary>
     Solaris = 1 << 15,
+    /// <summary>AIX (<c>wxOS_UNIX_AIX</c>).</summary>
     Aix = 1 << 16,
+    /// <summary>HP-UX (<c>wxOS_UNIX_HPUX</c>).</summary>
     Hpux = 1 << 17,
 }
 

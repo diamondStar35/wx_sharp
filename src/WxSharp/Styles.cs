@@ -265,8 +265,11 @@ public enum TextCtrlStyle
     ProcessEnter = 1 << 3,
     /// <summary>Let Tab be typed into the box instead of moving focus.</summary>
     ProcessTab = 1 << 4,
+    /// <summary>A rich text control that supports per-character styling.</summary>
     Rich = 1 << 5,
+    /// <summary>Right-align the text.</summary>
     AlignRight = 1 << 6,
+    /// <summary>Centre the text.</summary>
     AlignCentre = 1 << 7,
     /// <summary>Keep the selection visible when the box loses focus.</summary>
     ShowSelectionAlways = 1 << 8,
@@ -280,6 +283,7 @@ public enum TextCtrlStyle
 [Flags]
 public enum CheckBoxStyle
 {
+    /// <summary>An ordinary two-state checkbox (the default).</summary>
     TwoState = 0,
 
     /// <summary>Allow the indeterminate state, read and written through <see cref="CheckBox.State"/>.</summary>
@@ -293,7 +297,9 @@ public enum CheckBoxStyle
 /// <summary>The state of a three-state <see cref="CheckBox"/>, following <c>wxCheckBoxState</c>.</summary>
 public enum CheckBoxState
 {
+    /// <summary>Not checked.</summary>
     Unchecked = 0,
+    /// <summary>Checked.</summary>
     Checked = 1,
     /// <summary>Neither checked nor unchecked - "mixed", as a screen reader announces it.</summary>
     Undetermined = 2,
@@ -303,7 +309,9 @@ public enum CheckBoxState
 [Flags]
 public enum SliderStyle
 {
+    /// <summary>A horizontal slider (the default).</summary>
     Horizontal = 0,
+    /// <summary>A vertical slider.</summary>
     Vertical = 1 << 0,
     /// <summary>Show value labels alongside the slider.</summary>
     Labels = 1 << 1,
@@ -338,7 +346,9 @@ public enum ListBoxStyle
 /// <summary>Creation styles for a <see cref="Choice"/> drop-down.</summary>
 public enum ChoiceStyle
 {
+    /// <summary>Keep items in insertion order (the default).</summary>
     Unsorted = 0,
+    /// <summary>Keep items sorted alphabetically.</summary>
     Sorted = 1,
 }
 
@@ -346,6 +356,7 @@ public enum ChoiceStyle
 [Flags]
 public enum StatusBarStyle
 {
+    /// <summary>No status-bar style flags.</summary>
     None = 0,
 
     /// <summary>Show the resize grip in the corner.</summary>
@@ -367,6 +378,7 @@ public enum StatusBarStyle
     /// <summary>Repaint the whole bar when it is resized.</summary>
     FullRepaintOnResize = 0x00010000,
 
+    /// <summary>wxWidgets' default combination: resize grip, end-ellipsis, tooltips and full repaint.</summary>
     Default = SizeGrip | EllipsizeEnd | ShowTips | FullRepaintOnResize,
 }
 
@@ -374,6 +386,7 @@ public enum StatusBarStyle
 [Flags]
 public enum ToolBarStyle
 {
+    /// <summary>No toolbar style flags.</summary>
     None = 0,
 
     /// <summary>Lay the tools out in a row along the top.</summary>
@@ -419,5 +432,6 @@ public enum ToolBarStyle
     /// <summary>Down the right of the window.</summary>
     Right = 0x4000,
 
+    /// <summary>wxWidgets' default: a horizontal toolbar.</summary>
     Default = Horizontal,
 }
