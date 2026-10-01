@@ -9,12 +9,16 @@ public class Choice : Control
     /// <summary>Wraps a Choice wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
     internal Choice(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
 
+    /// <summary>The selected item changed through the drop-down, following <c>wxEVT_CHOICE</c>. Not raised for
+    /// a change made in code via <see cref="SelectedIndex"/>.</summary>
     public event EventHandler<CommandEventArgs> SelectionChanged
     {
         add => AddHandler(WxEvents.ChoiceSelected, value);
         remove => RemoveHandler(WxEvents.ChoiceSelected, value);
     }
 
+    /// <summary>Creates an empty drop-down. Pass <see cref="ChoiceStyle.Sorted"/> to keep items in
+    /// alphabetical order as they are added.</summary>
     public Choice(Window parent, int id = WindowId.Any, ChoiceStyle style = ChoiceStyle.Unsorted,
         Point? position = null, Size? size = null) : base(parent, id)
     {
@@ -58,8 +62,10 @@ public class Choice : Control
     /// <summary>Removes the item at <paramref name="index"/>.</summary>
     public void RemoveAt(int index) => NativeMethods.wxsharp_choice_delete(Handle, index);
 
+    /// <summary>Removes every item.</summary>
     public void Clear() => NativeMethods.wxsharp_choice_clear(Handle);
 
+    /// <summary>How many items the drop-down holds.</summary>
     public int Count => NativeMethods.wxsharp_choice_count(Handle);
 
     /// <summary>Gets or replaces the text of the item at <paramref name="index"/>.</summary>
@@ -72,6 +78,7 @@ public class Choice : Control
     /// <summary>The index of the first item equal to <paramref name="text"/> (case-insensitive), or -1.</summary>
     public int IndexOf(string text) => NativeMethods.wxsharp_choice_find_string(Handle, text);
 
+    /// <summary>The index of the selected item, or -1 when nothing is selected.</summary>
     public int SelectedIndex
     {
         get => NativeMethods.wxsharp_choice_get_selection(Handle);

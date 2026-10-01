@@ -5,6 +5,8 @@ namespace WxSharp;
 /// <summary>A native modal or modeless wxDialog.</summary>
 public class Dialog : Window
 {
+    /// <summary>The dialog is about to close. A handler may veto it through
+    /// <see cref="CloseEventArgs"/> unless the close was forced.</summary>
     public event EventHandler<CloseEventArgs> Closing
     {
         add => AddHandler(WxEvents.Closing, value);
@@ -19,6 +21,15 @@ public class Dialog : Window
         remove => RemoveHandler(WxEvents.MenuCommand, value);
     }
 
+    /// <summary>Creates a <c>wxDialog</c>. A null <paramref name="parent"/> makes a top-level dialog;
+    /// show it with <see cref="ShowModal"/> for a modal dialog or <see cref="Window.Show"/> for a modeless
+    /// one.</summary>
+    /// <param name="parent">The dialog's owner window, or null for a parentless dialog.</param>
+    /// <param name="id">The window identifier, or <see cref="WindowId.Any"/> to assign one.</param>
+    /// <param name="title">The text shown in the dialog's title bar.</param>
+    /// <param name="position">The dialog's position, or null to let the platform place it.</param>
+    /// <param name="size">The dialog's size, or null for the default.</param>
+    /// <param name="style">Dialog style flags.</param>
     public Dialog(Window? parent = null, int id = WindowId.Any, string title = "",
         Point? position = null, Size? size = null, DialogStyle style = DialogStyle.Default)
         : this(parent, id, title, position, size, style, deferNativeCreation: false)
@@ -65,6 +76,8 @@ public class Dialog : Window
         return handle == 0 ? null : Sizer.Attach(handle);
     }
 
+    /// <summary>The text shown in the dialog's title bar. Wraps <c>wxTopLevelWindow::GetTitle</c> and
+    /// <c>SetTitle</c>.</summary>
     public unsafe string Title
     {
         get { var n = NativeMethods.wxsharp_dialog_get_title(Handle, null, 0); if (n <= 0) return string.Empty; var b = new byte[n + 1]; fixed (byte* p = b) _ = NativeMethods.wxsharp_dialog_get_title(Handle, p, n + 1); return Utf8String.Decode(b, n); }

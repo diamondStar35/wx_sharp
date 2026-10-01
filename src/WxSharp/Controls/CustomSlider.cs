@@ -15,6 +15,8 @@ public class CustomSlider : Slider
     /// <summary>How far the Page Up/Down keys move the value.</summary>
     public int PageStep { get; set; } = 10;
 
+    /// <summary>Creates an accessible slider. Arguments mirror <see cref="Slider"/>; the difference is in the
+    /// added keyboard handling and the value-changed notifications, not in construction.</summary>
     public CustomSlider(Window parent, int id = WindowId.Any, int value = 0, int minValue = 0, int maxValue = 100,
         SliderStyle style = SliderStyle.Horizontal, Point? position = null, Size? size = null)
         : base(parent, id, value, minValue, maxValue, style, position, size)

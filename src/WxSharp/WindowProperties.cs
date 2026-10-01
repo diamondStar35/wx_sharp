@@ -19,19 +19,28 @@ public enum BackgroundStyle
 /// <summary>The relative size a control is drawn at, following <c>wxWindowVariant</c>.</summary>
 public enum WindowVariant
 {
+    /// <summary>The usual size, matching the system default.</summary>
     Normal = 0,
+    /// <summary>One step smaller than normal.</summary>
     Small = 1,
+    /// <summary>The smallest variant.</summary>
     Mini = 2,
+    /// <summary>One step larger than normal.</summary>
     Large = 3,
 }
 
 /// <summary>What part of a window a point falls on, following <c>wxHitTest</c>.</summary>
 public enum HitTestResult
 {
+    /// <summary>The point is on no part of the window.</summary>
     NoWhere = 0,
+    /// <summary>The point is on the horizontal scrollbar.</summary>
     HorizontalScrollBar = 1,
+    /// <summary>The point is on the vertical scrollbar.</summary>
     VerticalScrollBar = 2,
+    /// <summary>The point is on the corner between the two scrollbars.</summary>
     Corner = 3,
+    /// <summary>The point is inside the client area.</summary>
     Inside = 4,
 }
 
@@ -47,6 +56,7 @@ public abstract partial class Window
     /// <summary>Lets the window repaint again.</summary>
     public void Thaw() { Verify(); NativeMethods.wxsharp_window_thaw(_handle); }
 
+    /// <summary>Whether the window is currently frozen by <see cref="Freeze"/> and not yet thawed.</summary>
     public bool IsFrozen { get { Verify(); return NativeMethods.wxsharp_window_is_frozen(_handle); } }
 
     /// <summary>Fills the window with its background colour.</summary>
@@ -175,6 +185,8 @@ public abstract partial class Window
         set { Verify(); NativeMethods.wxsharp_window_set_min_client_size(_handle, value.Width, value.Height); }
     }
 
+    /// <summary>The largest client area the window may be given, the counterpart of
+    /// <see cref="MaxSize"/> expressed without the borders.</summary>
     public Size MaxClientSize
     {
         get
@@ -217,6 +229,8 @@ public abstract partial class Window
         return new Point(x, y);
     }
 
+    /// <summary>Converts a point from pixels back to dialog units, using the window's font. The inverse of
+    /// <see cref="ConvertDialogToPixels"/>.</summary>
     public Point ConvertPixelsToDialog(Point point)
     {
         Verify();
@@ -329,30 +343,36 @@ public abstract partial class Window
             position, thumbSize, range, refresh);
     }
 
+    /// <summary>Moves the scrollbar thumb to <paramref name="position"/> without scrolling the content;
+    /// the window must act on it. Wraps <c>wxWindow::SetScrollPos</c>.</summary>
     public void SetScrollPosition(Orientation orientation, int position, bool refresh = true)
     {
         Verify();
         NativeMethods.wxsharp_window_set_scroll_pos(_handle, orientation == Orientation.Vertical, position, refresh);
     }
 
+    /// <summary>The current thumb position of the given scrollbar.</summary>
     public int GetScrollPosition(Orientation orientation)
     {
         Verify();
         return NativeMethods.wxsharp_window_get_scroll_pos(_handle, orientation == Orientation.Vertical);
     }
 
+    /// <summary>The maximum position of the given scrollbar.</summary>
     public int GetScrollRange(Orientation orientation)
     {
         Verify();
         return NativeMethods.wxsharp_window_get_scroll_range(_handle, orientation == Orientation.Vertical);
     }
 
+    /// <summary>The size of the scrollbar thumb, in scroll units — how much of the range is visible.</summary>
     public int GetScrollThumb(Orientation orientation)
     {
         Verify();
         return NativeMethods.wxsharp_window_get_scroll_thumb(_handle, orientation == Orientation.Vertical);
     }
 
+    /// <summary>Whether the window currently has a scrollbar on the given axis.</summary>
     public bool HasScrollbar(Orientation orientation)
     {
         Verify();
@@ -365,9 +385,13 @@ public abstract partial class Window
     /// <summary>Scrolls by whole pages.</summary>
     public bool ScrollPages(int pages) { Verify(); return NativeMethods.wxsharp_window_scroll_pages(_handle, pages); }
 
+    /// <summary>Scrolls up one line.</summary>
     public bool LineUp() => ScrollLines(-1);
+    /// <summary>Scrolls down one line.</summary>
     public bool LineDown() => ScrollLines(1);
+    /// <summary>Scrolls up one page.</summary>
     public bool PageUp() => ScrollPages(-1);
+    /// <summary>Scrolls down one page.</summary>
     public bool PageDown() => ScrollPages(1);
 
     /// <summary>Scrolls the window's contents by a pixel offset.</summary>

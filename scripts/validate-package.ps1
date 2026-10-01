@@ -15,8 +15,11 @@ try {
     $entries = @($archive.Entries | ForEach-Object { $_.FullName })
     $required = @(
         'lib/net8.0/WxSharp.dll',
+        'lib/net8.0/WxSharp.xml',
         'lib/net9.0/WxSharp.dll',
+        'lib/net9.0/WxSharp.xml',
         'lib/net10.0/WxSharp.dll',
+        'lib/net10.0/WxSharp.xml',
         'runtimes/win-x64/native/wx.dll',
         'licenses/wxWidgets.txt',
         'README.md'

@@ -35,20 +35,32 @@ public interface ITextEntry
     /// <summary>Deletes a range.</summary>
     void Remove(int from, int to);
 
+    /// <summary>Clears the contents.</summary>
     void Clear();
+    /// <summary>Whether the field is empty.</summary>
     bool IsEmpty { get; }
 
     // ---- Clipboard and undo ---------------------------------------------------------------------------
 
+    /// <summary>Copies the selection to the clipboard.</summary>
     void Copy();
+    /// <summary>Cuts the selection to the clipboard.</summary>
     void Cut();
+    /// <summary>Pastes the clipboard at the caret.</summary>
     void Paste();
+    /// <summary>Whether there is a selection to copy.</summary>
     bool CanCopy { get; }
+    /// <summary>Whether there is a selection to cut.</summary>
     bool CanCut { get; }
+    /// <summary>Whether the clipboard holds text that can be pasted.</summary>
     bool CanPaste { get; }
+    /// <summary>Undoes the last edit.</summary>
     void Undo();
+    /// <summary>Redoes the last undone edit.</summary>
     void Redo();
+    /// <summary>Whether there is an edit to undo.</summary>
     bool CanUndo { get; }
+    /// <summary>Whether there is an edit to redo.</summary>
     bool CanRedo { get; }
 
     // ---- Caret and selection --------------------------------------------------------------------------
@@ -65,12 +77,15 @@ public interface ITextEntry
     /// <summary>The selected range as [from, to). Equal values mean an empty selection.</summary>
     (int From, int To) Selection { get; set; }
 
+    /// <summary>Selects all text.</summary>
     void SelectAll();
 
     /// <summary>Collapses the selection, leaving the caret where it was.</summary>
     void SelectNone();
 
+    /// <summary>Whether any text is selected.</summary>
     bool HasSelection { get; }
+    /// <summary>The selected text.</summary>
     string SelectedText { get; }
 
     /// <summary>Deletes the selection.</summary>
@@ -78,6 +93,7 @@ public interface ITextEntry
 
     // ---- Constraints and presentation ------------------------------------------------------------------
 
+    /// <summary>Whether the user can edit the field.</summary>
     bool Editable { get; set; }
 
     /// <summary>The most characters the user may type. 0 lifts the limit. Typing past it raises
