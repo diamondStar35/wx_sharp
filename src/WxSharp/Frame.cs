@@ -6,12 +6,15 @@ namespace WxSharp;
 /// <summary>A native top-level wxFrame.</summary>
 public class Frame : Window
 {
+    /// <summary>Raised when the frame is asked to close (<c>wxEVT_CLOSE_WINDOW</c>). Veto on the args to
+    /// keep it open.</summary>
     public event EventHandler<CloseEventArgs> Closing
     {
         add => AddHandler(WxEvents.Closing, value);
         remove => RemoveHandler(WxEvents.Closing, value);
     }
 
+    /// <summary>Raised when the frame is shown or hidden.</summary>
     public event EventHandler<ShowEventArgs> Shown
     {
         add => AddHandler(WxEvents.Shown, value);
@@ -26,12 +29,15 @@ public class Frame : Window
         remove => RemoveHandler(WxEvents.Activated, value);
     }
 
+    /// <summary>Raised when the frame is maximized.</summary>
     public event EventHandler<WxEventArgs> Maximized
     {
         add => AddHandler(WxEvents.Maximized, value);
         remove => RemoveHandler(WxEvents.Maximized, value);
     }
 
+    /// <summary>Raised when the frame is minimized or restored. Check
+    /// <see cref="ActivateEventArgs.Active"/> for which.</summary>
     public event EventHandler<ActivateEventArgs> Iconized
     {
         add => AddHandler(WxEvents.Iconized, value);
@@ -39,7 +45,7 @@ public class Frame : Window
     }
 
     /// <summary>A menu item or accelerator was chosen. Filter by command ID with
-    /// <see cref="Window.Bind{T}"/> when one handler should not see every command.</summary>
+    /// <see cref="EvtHandler.Bind{T}"/> when one handler should not see every command.</summary>
     public event EventHandler<CommandEventArgs> MenuCommand
     {
         add => AddHandler(WxEvents.MenuCommand, value);
@@ -54,6 +60,7 @@ public class Frame : Window
         remove => RemoveHandler(WxEvents.MenuOpened, value);
     }
 
+    /// <summary>Raised when a menu has closed.</summary>
     public event EventHandler<MenuEventArgs> MenuClosed
     {
         add => AddHandler(WxEvents.MenuClosed, value);
@@ -68,6 +75,8 @@ public class Frame : Window
         remove => RemoveHandler(WxEvents.MenuHighlighted, value);
     }
 
+    /// <summary>Creates a top-level <c>wxFrame</c>. Becomes the application's <see cref="App.TopWindow"/> if
+    /// none is set yet. Add a menu bar, toolbar and status bar, then <see cref="Window.Show"/> it.</summary>
     public Frame(Window? parent = null, int id = WindowId.Any, string title = "",
         Point? position = null, Size? size = null, FrameStyle style = FrameStyle.Default) : base(parent, id)
     {
@@ -83,12 +92,15 @@ public class Frame : Window
         if (App.Current!.TopWindow is null) App.Current.TopWindow = this;
     }
 
+    /// <summary>The frame's title bar text.</summary>
     public unsafe string Title
     {
         get { var n = NativeMethods.wxsharp_window_get_title(Handle, null, 0); if (n <= 0) return string.Empty; var b = new byte[n + 1]; fixed (byte* p = b) _ = NativeMethods.wxsharp_window_get_title(Handle, p, n + 1); return Utf8String.Decode(b, n); }
         set { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_title(Handle, value); }
     }
+    /// <summary>The platform's native window handle (HWND on Windows), for interop.</summary>
     public nint NativeHandle { get { OwnerApp.VerifyAccess(); return NativeMethods.wxsharp_window_native_handle(Handle); } }
+    /// <summary>Enters or leaves full-screen mode.</summary>
     public void SetFullScreen(bool fullScreen) { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_fullscreen(Handle, fullScreen); }
 
     /// <summary>Installs a menu bar. The frame takes ownership of <paramref name="menuBar"/>.</summary>
@@ -98,6 +110,7 @@ public class Frame : Window
         NativeMethods.wxsharp_frame_set_menubar(Handle, menuBar.TransferOwnership());
     }
 
+    /// <summary>Sets the frame's title-bar and task-bar icon.</summary>
     public void SetIcon(Icon icon) => NativeMethods.wxsharp_frame_set_icon(Handle,
         icon?.Handle ?? throw new ArgumentNullException(nameof(icon)));
 
@@ -479,12 +492,19 @@ public class Frame : Window
 [Flags]
 public enum FullScreenStyle
 {
+    /// <summary>Hide nothing extra in full-screen mode.</summary>
     None = 0,
+    /// <summary>Hide the menu bar.</summary>
     NoMenuBar = 0x0001,
+    /// <summary>Hide the toolbar.</summary>
     NoToolBar = 0x0002,
+    /// <summary>Hide the status bar.</summary>
     NoStatusBar = 0x0004,
+    /// <summary>Hide the window border.</summary>
     NoBorder = 0x0008,
+    /// <summary>Hide the title bar.</summary>
     NoCaption = 0x0010,
+    /// <summary>Hide all of the above.</summary>
     All = NoMenuBar | NoToolBar | NoStatusBar | NoBorder | NoCaption,
 }
 
@@ -503,7 +523,9 @@ public enum UserAttention
 /// <c>wxContentProtection</c>.</summary>
 public enum ContentProtection
 {
+    /// <summary>The window may be captured normally.</summary>
     None = 0,
+    /// <summary>Ask the platform to exclude the window from screen captures.</summary>
     Enabled = 1,
 }
 

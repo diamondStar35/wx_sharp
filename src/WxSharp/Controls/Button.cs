@@ -8,12 +8,15 @@ public class Button : Control
     /// <summary>Wraps a Button wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
     internal Button(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
 
+    /// <summary>The button was pressed, following <c>wxEVT_BUTTON</c>.</summary>
     public event EventHandler<CommandEventArgs> Click
     {
         add => AddHandler(WxEvents.ButtonClicked, value);
         remove => RemoveHandler(WxEvents.ButtonClicked, value);
     }
 
+    /// <summary>Creates a push button labelled <paramref name="label"/>. The label is read and written through
+    /// the inherited <see cref="Window.Label"/>.</summary>
     public Button(Window parent, int id = WindowId.Any, string label = "", Point? position = null, Size? size = null) : base(parent, id)
     {
         // A subclass may override the wxWidgets virtuals Window exposes, and C++ fixes a vtable at

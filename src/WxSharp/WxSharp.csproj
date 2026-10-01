@@ -9,6 +9,19 @@
          no reflection. The analyzer flags anything that would break Native AOT. -->
     <IsAotCompatible>true</IsAotCompatible>
 
+    <!-- Emit WxSharp.xml next to each lib/<tfm>/WxSharp.dll so IntelliSense tooltips reach package
+         consumers. CS1591 (missing doc on a public member) stays a visible warning on purpose: it is
+         the worklist that keeps the public surface fully documented and guards against regressions. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- SourceLink + symbols: let consumers step into and navigate the library source from VS/VSCode.
+         SourceLink ships in the .NET SDK, so setting PublishRepositoryUrl is enough — no package
+         reference, which also avoids pulling in a flagged transitive Microsoft.Build.Tasks.Git. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
     <PackageId>WxSharp</PackageId>
     <Description>A Native AOT-compatible .NET wrapper over wxWidgets.</Description>
     <Authors>WxSharp contributors</Authors>

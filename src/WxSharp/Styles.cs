@@ -15,16 +15,21 @@ public enum FrameStyle
     None = 0,
     /// <summary>A title bar.</summary>
     Caption = 1 << 0,
+    /// <summary>A minimize button on the title bar.</summary>
     MinimizeBox = 1 << 1,
+    /// <summary>A maximize button on the title bar.</summary>
     MaximizeBox = 1 << 2,
+    /// <summary>A close button on the title bar.</summary>
     CloseBox = 1 << 3,
     /// <summary>The window menu on the title bar, which is also the keyboard route to move and size.</summary>
     SystemMenu = 1 << 4,
     /// <summary>A border the user can drag to resize.</summary>
     ResizeBorder = 1 << 5,
+    /// <summary>Keep the frame above all other windows.</summary>
     StayOnTop = 1 << 6,
     /// <summary>A small-caption tool window, kept out of the task bar and the window list.</summary>
     ToolWindow = 1 << 7,
+    /// <summary>Keep the frame out of the task bar.</summary>
     NoTaskBar = 1 << 8,
     /// <summary>Float above the parent window rather than above everything.</summary>
     FloatOnParent = 1 << 9,
@@ -38,15 +43,22 @@ public enum FrameStyle
 [Flags]
 public enum DialogStyle
 {
+    /// <summary>No decoration at all.</summary>
     None = 0,
+    /// <summary>A title bar.</summary>
     Caption = 1 << 0,
+    /// <summary>A close button on the title bar.</summary>
     CloseBox = 1 << 1,
+    /// <summary>The window menu on the title bar.</summary>
     SystemMenu = 1 << 2,
     /// <summary>Let the user resize the dialog. Worth adding whenever the content can grow - a list of
     /// results, a long message - so it can be made readable at a larger font size.</summary>
     ResizeBorder = 1 << 3,
+    /// <summary>Keep the dialog above all other windows.</summary>
     StayOnTop = 1 << 4,
+    /// <summary>A maximize button on the title bar.</summary>
     MaximizeBox = 1 << 5,
+    /// <summary>A minimize button on the title bar.</summary>
     MinimizeBox = 1 << 6,
 
     /// <summary>wxWidgets' own <c>wxDEFAULT_DIALOG_STYLE</c>, resolved natively.</summary>
@@ -57,6 +69,7 @@ public enum DialogStyle
 [Flags]
 public enum PanelStyle
 {
+    /// <summary>No panel styles; Tab will not move between children.</summary>
     None = 0,
     /// <summary>Let Tab move between the panel's children. Turning it off makes the panel's contents
     /// unreachable from the keyboard.</summary>
@@ -70,9 +83,13 @@ public enum PanelStyle
 [Flags]
 public enum ScrolledStyle
 {
+    /// <summary>No scrollbars.</summary>
     None = 0,
+    /// <summary>A horizontal scrollbar.</summary>
     Horizontal = 1 << 0,
+    /// <summary>A vertical scrollbar.</summary>
     Vertical = 1 << 1,
+    /// <summary>Let Tab move between the window's children.</summary>
     TabTraversal = 1 << 2,
 
     /// <summary>wxWidgets' own <c>wxScrolledWindowStyle</c>: both scrollbars, and nothing else.</summary>
@@ -88,17 +105,24 @@ public enum ListCtrlStyle
     Report = 1 << 0,
     /// <summary>A single-column list.</summary>
     List = 1 << 1,
+    /// <summary>Large-icon view.</summary>
     Icon = 1 << 2,
+    /// <summary>Small-icon view.</summary>
     SmallIcon = 1 << 3,
     /// <summary>Only one row can be selected at a time.</summary>
     SingleSelection = 1 << 4,
+    /// <summary>Hide the column header in report view.</summary>
     NoHeader = 1 << 5,
+    /// <summary>Let the user rename a row by editing its label in place.</summary>
     EditLabels = 1 << 6,
     /// <summary>Virtual mode: the control asks for the text of the rows it is about to draw instead of
     /// storing them, which is what makes a very long list affordable.</summary>
     Virtual = 1 << 7,
+    /// <summary>Draw horizontal rules between rows (report view).</summary>
     HorizontalRules = 1 << 8,
+    /// <summary>Draw vertical rules between columns (report view).</summary>
     VerticalRules = 1 << 9,
+    /// <summary>Keep rows sorted in ascending order.</summary>
     SortAscending = 1 << 10,
 
     /// <summary>wxWidgets' own default, which is <see cref="Icon"/>. Most applications want
@@ -110,17 +134,25 @@ public enum ListCtrlStyle
 [Flags]
 public enum TreeCtrlStyle
 {
+    /// <summary>No tree styles.</summary>
     None = 0,
     /// <summary>Show the expand/collapse buttons.</summary>
     HasButtons = 1 << 0,
     /// <summary>Hide the root item, so the first level reads as the top level.</summary>
     HideRoot = 1 << 1,
+    /// <summary>Draw lines connecting the root item to its children.</summary>
     LinesAtRoot = 1 << 2,
+    /// <summary>Draw a horizontal rule between rows.</summary>
     RowLines = 1 << 3,
+    /// <summary>Let the user rename an item by editing its label in place.</summary>
     EditLabels = 1 << 4,
+    /// <summary>Allow more than one item to be selected at once.</summary>
     Multiple = 1 << 5,
+    /// <summary>Highlight the full row width, not just the label.</summary>
     FullRowHighlight = 1 << 6,
+    /// <summary>Use triangular twist buttons instead of plus/minus boxes.</summary>
     TwistButtons = 1 << 7,
+    /// <summary>Do not draw any connecting lines.</summary>
     NoLines = 1 << 8,
 
     /// <summary>wxWidgets' own <c>wxTR_DEFAULT_STYLE</c>. Resolved natively because it is a different set
@@ -144,7 +176,9 @@ public enum FileDialogStyle
     OverwritePrompt = 1 << 4,
     /// <summary>Change the process working directory to the one chosen.</summary>
     ChangeDirectory = 1 << 5,
+    /// <summary>Show a preview of the selected file.</summary>
     ShowPreview = 1 << 6,
+    /// <summary>Include hidden files in the listing.</summary>
     ShowHidden = 1 << 7,
     /// <summary>Return the link itself rather than what it points at.</summary>
     NoFollowLinks = 1 << 8,
@@ -159,30 +193,45 @@ public enum FileDialogStyle
 [Flags]
 public enum ButtonSizerFlags
 {
+    /// <summary>No buttons.</summary>
     None = 0,
+    /// <summary>An OK button.</summary>
     Ok = 1 << 0,
+    /// <summary>A Cancel button.</summary>
     Cancel = 1 << 1,
+    /// <summary>A Yes button.</summary>
     Yes = 1 << 2,
+    /// <summary>A No button.</summary>
     No = 1 << 3,
+    /// <summary>An Apply button.</summary>
     Apply = 1 << 4,
+    /// <summary>A Close button.</summary>
     Close = 1 << 5,
+    /// <summary>A Help button.</summary>
     Help = 1 << 6,
     /// <summary>Do not make any of them the default button.</summary>
     NoDefault = 1 << 7,
 
+    /// <summary>OK and Cancel buttons together.</summary>
     OkCancel = Ok | Cancel,
+    /// <summary>Yes and No buttons together.</summary>
     YesNo = Yes | No,
 }
 
-/// <summary>The border drawn around a control. Set through <see cref="Control.Border"/>.</summary>
+/// <summary>The border drawn around a control. Set through <see cref="Window.Border"/>.</summary>
 public enum Border
 {
     /// <summary>The platform default border for the control.</summary>
     Default = 0,
+    /// <summary>No border.</summary>
     None = 1,
+    /// <summary>A thin line border.</summary>
     Simple = 2,
+    /// <summary>A border that appears recessed into the surface.</summary>
     Sunken = 3,
+    /// <summary>A border that appears raised above the surface.</summary>
     Raised = 4,
+    /// <summary>A border suitable for a static control such as a label.</summary>
     Static = 5,
     /// <summary>The current theme's border (e.g. the themed edge on Windows).</summary>
     Theme = 6,
@@ -191,8 +240,11 @@ public enum Border
 /// <summary>Horizontal alignment of a control's text.</summary>
 public enum Alignment
 {
+    /// <summary>Align text to the left edge.</summary>
     Left = 0,
+    /// <summary>Centre the text.</summary>
     Centre = 1,
+    /// <summary>Align text to the right edge.</summary>
     Right = 2,
 }
 
@@ -201,16 +253,23 @@ public enum Alignment
 [Flags]
 public enum TextCtrlStyle
 {
+    /// <summary>A single-line text box with no extra styles.</summary>
     None = 0,
+    /// <summary>Allow more than one line of text.</summary>
     MultiLine = 1 << 0,
+    /// <summary>Mask each character, for password entry.</summary>
     Password = 1 << 1,
+    /// <summary>Show the text but do not let the user edit it.</summary>
     ReadOnly = 1 << 2,
     /// <summary>Raise <see cref="TextCtrl.EnterPressed"/> on Enter (implied for single-line boxes).</summary>
     ProcessEnter = 1 << 3,
     /// <summary>Let Tab be typed into the box instead of moving focus.</summary>
     ProcessTab = 1 << 4,
+    /// <summary>A rich text control that supports per-character styling.</summary>
     Rich = 1 << 5,
+    /// <summary>Right-align the text.</summary>
     AlignRight = 1 << 6,
+    /// <summary>Centre the text.</summary>
     AlignCentre = 1 << 7,
     /// <summary>Keep the selection visible when the box loses focus.</summary>
     ShowSelectionAlways = 1 << 8,
@@ -224,6 +283,7 @@ public enum TextCtrlStyle
 [Flags]
 public enum CheckBoxStyle
 {
+    /// <summary>An ordinary two-state checkbox (the default).</summary>
     TwoState = 0,
 
     /// <summary>Allow the indeterminate state, read and written through <see cref="CheckBox.State"/>.</summary>
@@ -237,7 +297,9 @@ public enum CheckBoxStyle
 /// <summary>The state of a three-state <see cref="CheckBox"/>, following <c>wxCheckBoxState</c>.</summary>
 public enum CheckBoxState
 {
+    /// <summary>Not checked.</summary>
     Unchecked = 0,
+    /// <summary>Checked.</summary>
     Checked = 1,
     /// <summary>Neither checked nor unchecked - "mixed", as a screen reader announces it.</summary>
     Undetermined = 2,
@@ -247,7 +309,9 @@ public enum CheckBoxState
 [Flags]
 public enum SliderStyle
 {
+    /// <summary>A horizontal slider (the default).</summary>
     Horizontal = 0,
+    /// <summary>A vertical slider.</summary>
     Vertical = 1 << 0,
     /// <summary>Show value labels alongside the slider.</summary>
     Labels = 1 << 1,
@@ -282,7 +346,9 @@ public enum ListBoxStyle
 /// <summary>Creation styles for a <see cref="Choice"/> drop-down.</summary>
 public enum ChoiceStyle
 {
+    /// <summary>Keep items in insertion order (the default).</summary>
     Unsorted = 0,
+    /// <summary>Keep items sorted alphabetically.</summary>
     Sorted = 1,
 }
 
@@ -290,6 +356,7 @@ public enum ChoiceStyle
 [Flags]
 public enum StatusBarStyle
 {
+    /// <summary>No status-bar style flags.</summary>
     None = 0,
 
     /// <summary>Show the resize grip in the corner.</summary>
@@ -311,6 +378,7 @@ public enum StatusBarStyle
     /// <summary>Repaint the whole bar when it is resized.</summary>
     FullRepaintOnResize = 0x00010000,
 
+    /// <summary>wxWidgets' default combination: resize grip, end-ellipsis, tooltips and full repaint.</summary>
     Default = SizeGrip | EllipsizeEnd | ShowTips | FullRepaintOnResize,
 }
 
@@ -318,6 +386,7 @@ public enum StatusBarStyle
 [Flags]
 public enum ToolBarStyle
 {
+    /// <summary>No toolbar style flags.</summary>
     None = 0,
 
     /// <summary>Lay the tools out in a row along the top.</summary>
@@ -363,5 +432,6 @@ public enum ToolBarStyle
     /// <summary>Down the right of the window.</summary>
     Right = 0x4000,
 
+    /// <summary>wxWidgets' default: a horizontal toolbar.</summary>
     Default = Horizontal,
 }
