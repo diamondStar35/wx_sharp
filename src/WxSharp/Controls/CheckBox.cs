@@ -8,12 +8,16 @@ public class CheckBox : Control
     /// <summary>Wraps a CheckBox wxWidgets created itself. See <see cref="Window.Adopt"/>.</summary>
     internal CheckBox(nint existingHandle, Window? parent) : base(existingHandle, parent) { }
 
+    /// <summary>The box was toggled by the user, following <c>wxEVT_CHECKBOX</c>. Not raised for a change made
+    /// in code via <see cref="Checked"/> or <see cref="State"/>.</summary>
     public event EventHandler<CommandEventArgs> Toggled
     {
         add => AddHandler(WxEvents.CheckBoxToggled, value);
         remove => RemoveHandler(WxEvents.CheckBoxToggled, value);
     }
 
+    /// <summary>Creates a check box labelled <paramref name="label"/>. Pass
+    /// <see cref="CheckBoxStyle.ThreeState"/> for a box that also carries an indeterminate state.</summary>
     public CheckBox(Window parent, int id = WindowId.Any, string label = "", CheckBoxStyle style = CheckBoxStyle.TwoState,
         Point? position = null, Size? size = null) : base(parent, id)
     {
@@ -45,10 +49,21 @@ public class CheckBox : Control
 
     /// <summary>Whether the user can reach the indeterminate state, as opposed to only code.</summary>
     public bool IsThirdStateAllowedForUser => NativeMethods.wxsharp_checkbox_is_3rd_state_allowed_for_user(Handle);
+    /// <summary>The full state including the indeterminate one, following <c>wxCheckBox::Get3StateValue</c>.
+    /// Alias of the <see cref="State"/> getter.</summary>
     public CheckBoxState Get3StateValue() => State;
+    /// <summary>Sets the full state, following <c>wxCheckBox::Set3StateValue</c>. Alias of the
+    /// <see cref="State"/> setter.</summary>
     public void Set3StateValue(CheckBoxState state) => State = state;
+    /// <summary>Whether this box was created with <see cref="CheckBoxStyle.ThreeState"/>, following
+    /// <c>wxCheckBox::Is3State</c>. Alias of <see cref="IsThreeState"/>.</summary>
     public bool Is3State() => IsThreeState;
+    /// <summary>Whether the user can reach the indeterminate state, following
+    /// <c>wxCheckBox::Is3rdStateAllowedForUser</c>. Alias of <see cref="IsThirdStateAllowedForUser"/>.</summary>
     public bool Is3rdStateAllowedForUser() => IsThirdStateAllowedForUser;
+    /// <summary>Sets the colour painted behind the box where the control shows through, following
+    /// <c>wxCheckBox::SetTransparentPartColour</c>. Only meaningful on backgrounds the box cannot match
+    /// itself.</summary>
     public void SetTransparentPartColour(Colour colour)
         => NativeMethods.wxsharp_checkbox_set_transparent_part_colour(Handle, colour.ToArgb());
 }

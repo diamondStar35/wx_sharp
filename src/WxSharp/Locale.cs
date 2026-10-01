@@ -6,8 +6,11 @@ namespace WxSharp;
 /// <summary>Which way a language is written, following <c>wxLayoutDirection</c>.</summary>
 public enum LayoutDirection
 {
+    /// <summary>Direction unspecified; the platform decides.</summary>
     Default = 0,
+    /// <summary>Written left to right, as English is.</summary>
     LeftToRight = 1,
+    /// <summary>Written right to left, as Arabic and Hebrew are; the interface is mirrored.</summary>
     RightToLeft = 2,
 }
 
@@ -38,8 +41,11 @@ public enum LocaleInfo
 /// separator question has two answers.</summary>
 public enum LocaleCategory
 {
+    /// <summary>Formatting of plain numbers.</summary>
     Number = 0,
+    /// <summary>Formatting of dates and times.</summary>
     Date = 1,
+    /// <summary>Formatting of currency amounts.</summary>
     Money = 2,
 
     /// <summary>For the values that only make sense in one category.</summary>
@@ -84,6 +90,7 @@ public sealed class LanguageInfo
         }
     }
 
+    /// <summary>The language this entry describes.</summary>
     public Language Language { get; }
 
     /// <summary>The BCP 47-style tag, such as <c>en-US</c>.</summary>
@@ -116,6 +123,7 @@ public sealed class LanguageInfo
     /// otherwise.</summary>
     public string CanonicalWithRegion => CanonicalRef.Length > 0 ? CanonicalRef : CanonicalName;
 
+    /// <summary>Formats the entry as <c>canonicalName (English description)</c>.</summary>
     public override string ToString() => $"{CanonicalName} ({Description})";
 }
 
@@ -225,6 +233,8 @@ public sealed class Locale : IDisposable
         return Utf8String.Decode(buffer, length);
     }
 
+    /// <summary>Restores the process locale that was in force before this one and frees it. Hold a
+    /// <see cref="Locale"/> for as long as its language should stay in effect.</summary>
     public void Dispose()
     {
         if (_handle == 0) return;
