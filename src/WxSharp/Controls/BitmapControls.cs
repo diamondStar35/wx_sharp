@@ -70,6 +70,8 @@ public class BitmapButton : Control
     }
     /// <summary>Sets the margins around the bitmap, in pixels.</summary>
     public void SetMargins(int x, int y) => NativeMethods.wxsharp_bitmapbutton_set_margins(Handle, x, y);
+    /// <summary>Replaces the bitmap the button shows, following <c>wxBitmapButton.SetBitmapLabel</c>.</summary>
+    public void SetBitmap(Bitmap bitmap) => NativeMethods.wxsharp_bitmapbutton_set_bitmap(Handle, bitmap?.Handle ?? throw new ArgumentNullException(nameof(bitmap)));
     /// <summary>The horizontal margin around the bitmap.</summary>
     public int GetMarginX() => NativeMethods.wxsharp_bitmapbutton_get_margin_x(Handle);
     /// <summary>The vertical margin around the bitmap.</summary>

@@ -722,6 +722,7 @@ wxsharp_handle wxsharp_bitmapbutton_new_close(wxsharp_handle parent, int id, con
     return Common(wxBitmapButton::NewCloseButton(static_cast<wxWindow*>(parent), id, Str(name)), token);
 }
 void wxsharp_bitmapbutton_set_margins(wxsharp_handle ctrl, int x, int y) { static_cast<wxBitmapButton*>(ctrl)->SetMargins(x, y); }
+void wxsharp_bitmapbutton_set_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap) { static_cast<wxBitmapButton*>(ctrl)->SetBitmapLabel(*static_cast<wxBitmap*>(bitmap)); }
 int wxsharp_bitmapbutton_get_margin_x(wxsharp_handle ctrl) { return static_cast<wxBitmapButton*>(ctrl)->GetMarginX(); }
 int wxsharp_bitmapbutton_get_margin_y(wxsharp_handle ctrl) { return static_cast<wxBitmapButton*>(ctrl)->GetMarginY(); }
 wxsharp_handle wxsharp_icon_load(const char* path)
