@@ -34,8 +34,8 @@ internal static unsafe class ItemsInterop
         }
     }
 
-    /// <summary>As <see cref="Invoke(nint, IEnumerable{string}, delegate*{nint, byte**, int, void})"/>, for a
-    /// bulk setter that also takes a position: (handle, items, count, index).</summary>
+    /// <summary>As the three-argument <c>Invoke</c> above, for a bulk setter that also takes a position:
+    /// (handle, items, count, index).</summary>
     internal static void Invoke(nint handle, IEnumerable<string> items, int index,
         delegate*<nint, byte**, int, int, void> native)
     {
