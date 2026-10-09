@@ -585,6 +585,14 @@ extern "C" {
     WXSHARP_API bool wxsharp_system_appearance_is_dark();
     WXSHARP_API int  wxsharp_system_appearance_name(char* buffer, int buffer_length);
 
+    // ---- System options -------------------------------------------------------------------------------
+    // wxSystemOptions is a global name/value store wxWidgets consults at run time. Several keys are read
+    // once during application start-up - "msw.dark-mode" among them - so set those before the App exists.
+    WXSHARP_API void wxsharp_systemoptions_set_option_int(const char* name, int value);
+    WXSHARP_API void wxsharp_systemoptions_set_option_string(const char* name, const char* value);
+    WXSHARP_API int  wxsharp_systemoptions_get_option_int(const char* name);
+    WXSHARP_API bool wxsharp_systemoptions_has_option(const char* name);
+
     // ---- Event binding --------------------------------------------------------------------------------
     // Events are hooked on demand: the managed side binds an event ID the first time something subscribes to
     // it on a window and unbinds it when the last subscriber goes away, so an unobserved event never crosses
@@ -1477,6 +1485,7 @@ extern "C" {
     WXSHARP_API wxsharp_handle wxsharp_bitmapbutton_new_close(wxsharp_handle parent, int id,
                                                               const char* name, long long token);
     WXSHARP_API void wxsharp_bitmapbutton_set_margins(wxsharp_handle ctrl, int x, int y);
+    WXSHARP_API void wxsharp_bitmapbutton_set_bitmap(wxsharp_handle ctrl, wxsharp_handle bitmap);
     WXSHARP_API int wxsharp_bitmapbutton_get_margin_x(wxsharp_handle ctrl);
     WXSHARP_API int wxsharp_bitmapbutton_get_margin_y(wxsharp_handle ctrl);
     WXSHARP_API wxsharp_handle wxsharp_icon_load(const char* path);

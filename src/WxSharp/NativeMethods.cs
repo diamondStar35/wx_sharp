@@ -63,6 +63,11 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_app_enable_dark_mode(int flags);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_app_supports_dark_mode();
 
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_systemoptions_set_option_int(string name, int value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial void wxsharp_systemoptions_set_option_string(string name, string value);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int wxsharp_systemoptions_get_option_int(string name);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_systemoptions_has_option(string name);
+
     // ---- Platform services -------------------------------------------------------------------------
     [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_executable(byte* buffer, int length);
     [LibraryImport(Library)] internal static partial int wxsharp_stdpaths_config_dir(byte* buffer, int length);
@@ -1712,6 +1717,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial nint wxsharp_custom_bitmapbutton_create(nint parent, int id, nint bitmap, long token);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_bitmapbutton_new_close(nint parent, int id, string name, long token);
     [LibraryImport(Library)] internal static partial void wxsharp_bitmapbutton_set_margins(nint ctrl, int x, int y);
+    [LibraryImport(Library)] internal static partial void wxsharp_bitmapbutton_set_bitmap(nint ctrl, nint bitmap);
     [LibraryImport(Library)] internal static partial int wxsharp_bitmapbutton_get_margin_x(nint ctrl);
     [LibraryImport(Library)] internal static partial int wxsharp_bitmapbutton_get_margin_y(nint ctrl);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_icon_load(string path);

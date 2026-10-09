@@ -7,6 +7,7 @@
 #include <wx/clipbrd.h>
 #include <wx/dataobj.h>
 #include <wx/settings.h>
+#include <wx/sysopt.h>
 #include <memory>
 
 namespace
@@ -168,4 +169,32 @@ bool wxsharp_system_appearance_is_dark()
 int wxsharp_system_appearance_name(char* buffer, int buffer_length)
 {
     return CopyToBuffer(wxSystemSettings::GetAppearance().GetName(), buffer, buffer_length);
+}
+
+// ---- System options -------------------------------------------------------------------------------------
+// wxSystemOptions is a global name/value store, independent of the application object, that wxWidgets reads
+// at various points. The one that matters most here is "msw.dark-mode", read while the application starts
+// up (wxApp::Initialize): set to 1 it turns on dark mode when the system uses it, set to 2 it forces dark
+// mode on. Because it is read during start-up, it must be set before the App is created - which is safe,
+// as these calls do not need a running application.
+
+void wxsharp_systemoptions_set_option_int(const char* name, int value)
+{
+    wxSystemOptions::SetOption(wxString::FromUTF8(name ? name : ""), value);
+}
+
+void wxsharp_systemoptions_set_option_string(const char* name, const char* value)
+{
+    wxSystemOptions::SetOption(wxString::FromUTF8(name ? name : ""), wxString::FromUTF8(value ? value : ""));
+}
+
+int wxsharp_systemoptions_get_option_int(const char* name)
+{
+    const wxString key = wxString::FromUTF8(name ? name : "");
+    return wxSystemOptions::HasOption(key) ? wxSystemOptions::GetOptionInt(key) : 0;
+}
+
+bool wxsharp_systemoptions_has_option(const char* name)
+{
+    return wxSystemOptions::HasOption(wxString::FromUTF8(name ? name : ""));
 }
