@@ -13,18 +13,24 @@ void wxsharp_listbox_append(wxsharp_handle ctrl, const char* item) { static_cast
 void wxsharp_listbox_insert(wxsharp_handle ctrl, const char* item, int index) { static_cast<wxListBox*>(ctrl)->Insert(Str(item), index); }
 
 // Bulk item operations. The whole list crosses the ABI in a single call and reaches wxWidgets as one
-// wxArrayString, which it preallocates and fills natively - far cheaper than one Append per item. A caller
-// that is refreshing an already-shown list and wants it to settle as a single change can wrap these in the
-// window's Freeze/Thaw; it is not forced here, where the control is usually still being built.
+// wxArrayString. On MSW each item is still a separate LB_ADDSTRING to the native control, and letting the
+// control recalculate and redraw between every one makes a long list crawl, so the window is frozen for the
+// duration - which collapses a per-item cost into a single settle, whether or not the list is shown yet.
 void wxsharp_listbox_set(wxsharp_handle ctrl, const char** items, int count)
 {
-    static_cast<wxListBox*>(ctrl)->Set(StrArray(items, count));
+    auto* lb = static_cast<wxListBox*>(ctrl);
+    lb->Freeze();
+    lb->Set(StrArray(items, count));
+    lb->Thaw();
 }
 
 void wxsharp_listbox_append_many(wxsharp_handle ctrl, const char** items, int count)
 {
     if (count <= 0) return;
-    static_cast<wxListBox*>(ctrl)->Append(StrArray(items, count));
+    auto* lb = static_cast<wxListBox*>(ctrl);
+    lb->Freeze();
+    lb->Append(StrArray(items, count));
+    lb->Thaw();
 }
 
 void wxsharp_listbox_insert_many(wxsharp_handle ctrl, const char** items, int count, int index)
