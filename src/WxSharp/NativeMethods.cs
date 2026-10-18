@@ -282,6 +282,15 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int wxsharp_message_box(nint parent, string message, string caption, int style);
 
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    internal static partial bool wxsharp_notification_show(
+        nint parent, string title, string message, int flags, int timeout);
+
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    internal static partial bool wxsharp_notification_use_toasts(string shortcutPath, string appId);
+
     [LibraryImport(Library)]
     internal static partial void wxsharp_shutdown();
 
@@ -363,7 +372,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)]
     internal static partial void wxsharp_canvas_set_text_colour(nint ctrl, uint argb);
 
-        [LibraryImport(Library)] internal static partial void wxsharp_canvas_set_font(nint ctrl, nint font);
+    [LibraryImport(Library)] internal static partial void wxsharp_canvas_set_font(nint ctrl, nint font);
 
     [LibraryImport(Library)]
     internal static partial void wxsharp_canvas_draw_rectangle(nint ctrl, int x, int y, int width, int height);
@@ -407,7 +416,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)]
     [return: MarshalAs(UnmanagedType.U1)]
     internal static partial bool wxsharp_control_accepts_focus_recursively(nint ctrl);
-        [LibraryImport(Library)] internal static partial nint wxsharp_control_get_font(nint ctrl);
+    [LibraryImport(Library)] internal static partial nint wxsharp_control_get_font(nint ctrl);
 
     [LibraryImport(Library)]
     [return: MarshalAs(UnmanagedType.U1)]
@@ -463,7 +472,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)]
     internal static partial uint wxsharp_control_get_foreground_colour(nint ctrl);
 
-        [LibraryImport(Library)] internal static partial void wxsharp_control_set_font(nint ctrl, nint font);
+    [LibraryImport(Library)] internal static partial void wxsharp_control_set_font(nint ctrl, nint font);
     // ---- Font --------------------------------------------------------------------------------------
     [LibraryImport(Library)] internal static partial nint wxsharp_font_create_empty();
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial nint wxsharp_font_create(double pointSize, int pixelWidth, int pixelHeight, [MarshalAs(UnmanagedType.U1)] bool usePixels, int family, int style, int weight, [MarshalAs(UnmanagedType.U1)] bool underlined, [MarshalAs(UnmanagedType.U1)] bool strikethrough, string face, int encoding, int flags);
@@ -1582,10 +1591,12 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_unbind(nint window, int eventId);
     [LibraryImport(Library)] internal static partial void wxsharp_window_unbind_all(nint window);
 
-    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)]
+    [LibraryImport(Library)]
+    [return: MarshalAs(UnmanagedType.U1)]
     internal static partial bool wxsharp_app_bind(int eventId, long token);
 
-    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)]
+    [LibraryImport(Library)]
+    [return: MarshalAs(UnmanagedType.U1)]
     internal static partial bool wxsharp_app_unbind(int eventId);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_event_propagates(int eventId);
 

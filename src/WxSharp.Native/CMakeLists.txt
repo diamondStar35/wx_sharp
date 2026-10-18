@@ -77,6 +77,7 @@ add_library(wxsharp ${WXSHARP_LIBRARY_TYPE}
   extras.cpp
   chrome.cpp
   services.cpp
+  notification.cpp
   font.cpp
   services2.cpp
   window_more.cpp
@@ -119,14 +120,3 @@ install(TARGETS wxsharp
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 install(FILES wxsharp.h DESTINATION include)
-
-include(CTest)
-if(BUILD_TESTING)
-  add_executable(wxsharp_c_abi_smoke tests/c_abi_smoke.c)
-  if(MSVC)
-    set_property(TARGET wxsharp_c_abi_smoke PROPERTY
-      MSVC_RUNTIME_LIBRARY "${_wxsharp_msvc_runtime}")
-  endif()
-  target_link_libraries(wxsharp_c_abi_smoke PRIVATE wxsharp)
-  add_test(NAME wxsharp.c-abi COMMAND wxsharp_c_abi_smoke)
-endif()

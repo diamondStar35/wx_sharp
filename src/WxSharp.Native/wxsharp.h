@@ -420,6 +420,9 @@ extern "C" {
     WXSHARP_API bool wxsharp_yield(bool only_if_needed);
     WXSHARP_API int  wxsharp_message_box(wxsharp_handle parent, const char* message, const char* caption,
                                           int style);
+    WXSHARP_API bool wxsharp_notification_show(wxsharp_handle parent, const char* title,
+                                                const char* message, int flags, int timeout);
+    WXSHARP_API bool wxsharp_notification_use_toasts(const char* shortcut_path, const char* app_id);
     WXSHARP_API void wxsharp_shutdown();
 
 
