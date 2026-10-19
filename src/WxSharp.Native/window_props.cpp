@@ -176,6 +176,7 @@ void wxsharp_window_to_dip(wxsharp_handle window, int* width, int* height)
 
 void wxsharp_window_raise(wxsharp_handle window) { W(window)->Raise(); }
 void wxsharp_window_lower(wxsharp_handle window) { W(window)->Lower(); }
+void wxsharp_window_update(wxsharp_handle window) { W(window)->Update(); }
 bool wxsharp_window_is_shown_on_screen(wxsharp_handle window) { return W(window)->IsShownOnScreen(); }
 bool wxsharp_window_close_any(wxsharp_handle window, bool force) { return W(window)->Close(force); }
 void wxsharp_window_center_any(wxsharp_handle window, bool on_parent)

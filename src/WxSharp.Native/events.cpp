@@ -332,9 +332,9 @@ namespace
                 map.emplace(id, EventRow{ id, type, fill, flags });
             };
 
-            // Window lifecycle and geometry. DESTROY and PAINT are deliberately absent: they are reported
-            // by the owning window itself (see TrackWindow) and by the canvas, which owns the device
-            // context for the duration of the paint.
+            // Window lifecycle and geometry. DESTROY is reported by TrackWindow for every window. Canvas
+            // reports PAINT itself while its managed drawing device context is live; every other window
+            // binds the ordinary wxEVT_PAINT row below, matching Phoenix's EVT_PAINT behavior.
             add(WXSHARP_EV_CLOSE, wxEVT_CLOSE_WINDOW, FillClose, ROW_VETOABLE);
             add(WXSHARP_EV_SHOW, wxEVT_SHOW, FillShow);
             add(WXSHARP_EV_ACTIVATE, wxEVT_ACTIVATE, FillActivate);
@@ -357,6 +357,7 @@ namespace
             add(WXSHARP_EV_MENU_OPEN, wxEVT_MENU_OPEN, FillMenu);
             add(WXSHARP_EV_MENU_CLOSE, wxEVT_MENU_CLOSE, FillMenu);
             add(WXSHARP_EV_MENU_HIGHLIGHT, wxEVT_MENU_HIGHLIGHT, FillMenu);
+            add(WXSHARP_EV_PAINT, wxEVT_PAINT, FillNone);
 
             // Mouse.
             add(WXSHARP_EV_LEFT_DOWN, wxEVT_LEFT_DOWN, FillMouse);

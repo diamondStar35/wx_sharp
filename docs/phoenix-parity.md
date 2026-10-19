@@ -108,10 +108,19 @@ list store. Typed events remain the preferred C# API, with `Bind` available for
 dynamic event selection.
 
 The event catalogue in `WxEvents` follows Phoenix's `wx.EVT_*` naming and covers
-window lifecycle and geometry, the full mouse set, the four keyboard events
+window lifecycle, geometry and paint events, the full mouse set, the four keyboard events
 (`CharHook`, `KeyDown`, `KeyUp`, `Char`), control commands, book controls, and
 the list, tree, data-view, splitter and grid events. Adding another is one row
 in the table in `events.cpp` and one `EventType<T>` here.
+
+Like Phoenix's `EVT_PAINT`, `Window.Paint` is available on every window. A
+`Canvas` reports it through its buffered drawing context; other windows use the
+ordinary native `wxEVT_PAINT` binding and observers call `Skip()` to preserve
+the window's default painting.
+
+`Window.Update()` also follows Phoenix: it immediately paints invalid areas
+instead of waiting for the next event-loop turn. It is intended for the rare
+case where a lightweight shell must be presented before heavier UI work starts.
 
 Run `python scripts/coverage-report.py` for a measured diff of the managed
 surface against the wxWidgets headers, per type. It is the authority on what is

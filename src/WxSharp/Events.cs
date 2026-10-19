@@ -172,10 +172,10 @@ internal static class EventId
     internal const int CallAfter = 1001;
 
     /// <summary>Events the native side reports without being asked. Destruction has to be observed for every
-    /// window; paints are driven by the canvas, which owns the device context; timer ticks come from the
-    /// timer object rather than from a window. Subscribing to these must not attempt a native bind.</summary>
+    /// window and timer ticks come from the timer object rather than from a window. Canvas handles its paint
+    /// binding separately while its drawing device context is live.</summary>
     internal static bool IsAlwaysReported(int eventId)
-        => eventId is Destroy or Paint or Timer;
+        => eventId is Destroy or Timer;
 }
 
 /// <summary>The layout of <c>wxsharp_event</c> (version 2). Field order and types must match exactly.</summary>

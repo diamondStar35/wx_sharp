@@ -465,6 +465,7 @@ extern "C" {
 
     WXSHARP_API void wxsharp_window_raise(wxsharp_handle window);
     WXSHARP_API void wxsharp_window_lower(wxsharp_handle window);
+    WXSHARP_API void wxsharp_window_update(wxsharp_handle window);
     WXSHARP_API bool wxsharp_window_is_shown_on_screen(wxsharp_handle window);
     WXSHARP_API bool wxsharp_window_close_any(wxsharp_handle window, bool force);
     WXSHARP_API void wxsharp_window_center_any(wxsharp_handle window, bool on_parent);

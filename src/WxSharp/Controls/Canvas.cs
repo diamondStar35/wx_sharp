@@ -2,7 +2,7 @@ using System;
 
 namespace WxSharp;
 
-/// <summary>A generic custom-drawn surface. It raises <see cref="Paint"/> when it needs repainting; draw from
+/// <summary>A generic custom-drawn surface. It raises <see cref="Window.Paint"/> when it needs repainting; draw from
 /// that handler with the <c>Draw*</c>/<c>Set*</c> methods (they only take effect during a paint). The canvas
 /// refuses keyboard focus and is skipped by assistive technology, so it is a purely visual layer - it never
 /// affects tab order or speech. Call <see cref="Window.Refresh"/> to request a repaint after state changes;
@@ -12,19 +12,23 @@ namespace WxSharp;
 /// context), but with the drawing driven from managed code.</summary>
 public class Canvas : Control
 {
-    /// <summary>Raised when the canvas must repaint. Issue draw calls from the handler.</summary>
-    public event EventHandler<PaintEventArgs> Paint
-    {
-        add => AddHandler(WxEvents.Paint, value);
-        remove => RemoveHandler(WxEvents.Paint, value);
-    }
-
     /// <summary>Creates a canvas at an optional position and size. Add it to a sizer for managed layout.</summary>
     public Canvas(Window parent, int id = WindowId.Any, Point? position = null, Size? size = null) : base(parent, id)
     {
         var initialSize = size ?? new Size(100, 100);
         Initialize(NativeMethods.wxsharp_canvas_create(parent.Handle, id, initialSize.Width, initialSize.Height, Token));
         ApplyInitialGeometry(position, null);
+    }
+
+    // Canvas reports paint directly from its native OnPaint while the buffered drawing context is alive.
+    // Other windows use Window's ordinary native event binding.
+    private protected override bool BindNative(int eventId)
+        => eventId == EventId.Paint || base.BindNative(eventId);
+
+    private protected override void UnbindNative(int eventId)
+    {
+        if (eventId != EventId.Paint)
+            base.UnbindNative(eventId);
     }
 
     // ---- Draw state (valid during a Paint handler) -------------------------------------------------------

@@ -628,6 +628,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_window_to_dip(nint window, ref int width, ref int height);
     [LibraryImport(Library)] internal static partial void wxsharp_window_raise(nint window);
     [LibraryImport(Library)] internal static partial void wxsharp_window_lower(nint window);
+    [LibraryImport(Library)] internal static partial void wxsharp_window_update(nint window);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_is_shown_on_screen(nint window);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_window_close_any(nint window, [MarshalAs(UnmanagedType.U1)] bool force);
     [LibraryImport(Library)] internal static partial void wxsharp_window_center_any(nint window, [MarshalAs(UnmanagedType.U1)] bool onParent);

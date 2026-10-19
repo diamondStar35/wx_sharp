@@ -48,6 +48,14 @@ public abstract partial class Window
 {
     // ---- Repaint batching -----------------------------------------------------------------------------
 
+    /// <summary>Raised when this window must repaint. Call <see cref="WxEventArgs.Skip"/> when observing the
+    /// event so the window continues with its normal drawing, matching Phoenix's <c>EVT_PAINT</c>.</summary>
+    public event EventHandler<PaintEventArgs> Paint
+    {
+        add => AddHandler(WxEvents.Paint, value);
+        remove => RemoveHandler(WxEvents.Paint, value);
+    }
+
     /// <summary>Stops the window repainting until <see cref="Thaw"/>. Wrap a bulk update in this and the
     /// window redraws once instead of once per change. Calls nest; every <see cref="Freeze"/> needs its
     /// <see cref="Thaw"/>.</summary>
@@ -295,6 +303,10 @@ public abstract partial class Window
 
     /// <summary>Puts the window behind its siblings.</summary>
     public void Lower() { Verify(); NativeMethods.wxsharp_window_lower(_handle); }
+
+    /// <summary>Immediately repaints invalid areas instead of waiting for the next event-loop turn. This is
+    /// Phoenix's <c>Window.Update()</c>; use it sparingly because ordinary repainting should remain queued.</summary>
+    public void Update() { Verify(); NativeMethods.wxsharp_window_update(_handle); }
 
     /// <summary>Whether the window and every ancestor is shown, so it is really on screen.</summary>
     public bool IsShownOnScreen
