@@ -60,6 +60,9 @@ public enum DialogStyle
     MaximizeBox = 1 << 5,
     /// <summary>A minimize button on the title bar.</summary>
     MinimizeBox = 1 << 6,
+    /// <summary>Prevent wxWidgets from choosing an owner when the dialog is created without a parent.
+    /// Combine with <see cref="Window.Show"/> for an independent modeless window.</summary>
+    NoParent = 1 << 7,
 
     /// <summary>wxWidgets' own <c>wxDEFAULT_DIALOG_STYLE</c>, resolved natively.</summary>
     Default = 1 << 30,

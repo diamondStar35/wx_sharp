@@ -67,6 +67,12 @@ enter the event loop. Nothing is created behind your back: if you want a panel,
 make one; if you want a layout, assign a sizer. All UI work happens on the `App`
 thread, and `Wx.CallAfter` is the thread-safe way in from a background thread.
 
+For an independent modeless dialog, create a `Dialog` with `parent: null` and
+`DialogStyle.Default | DialogStyle.NoParent`, then call `Show()`. Without
+`NoParent`, wxWidgets can choose the active or main window as the native owner
+even when the managed parent is null. `ShowModal()` still disables other
+application windows regardless of ownership.
+
 A few windows do come from wxWidgets itself — the buttons behind
 `Dialog.CreateButtonSizer`, for one. Lookups such as `Window.FindWindowById` and
 `Window.FindFocus` wrap those on demand, typed as the class wxWidgets reports,

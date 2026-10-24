@@ -808,6 +808,7 @@ inline long MapDialogStyle(int s)
     if (s & 16) f |= wxSTAY_ON_TOP;
     if (s & 32) f |= wxMAXIMIZE_BOX;
     if (s & 64) f |= wxMINIMIZE_BOX;
+    if (s & 128) f |= wxDIALOG_NO_PARENT;
     return f;
 }
 

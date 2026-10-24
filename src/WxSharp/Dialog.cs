@@ -21,10 +21,11 @@ public class Dialog : Window
         remove => RemoveHandler(WxEvents.MenuCommand, value);
     }
 
-    /// <summary>Creates a <c>wxDialog</c>. A null <paramref name="parent"/> makes a top-level dialog;
-    /// show it with <see cref="ShowModal"/> for a modal dialog or <see cref="Window.Show"/> for a modeless
-    /// one.</summary>
-    /// <param name="parent">The dialog's owner window, or null for a parentless dialog.</param>
+    /// <summary>Creates a <c>wxDialog</c>. Show it with <see cref="ShowModal"/> for a modal dialog or
+    /// <see cref="Window.Show"/> for a modeless one. To create an independent modeless window, pass a null
+    /// parent and include <see cref="DialogStyle.NoParent"/> in the style.</summary>
+    /// <param name="parent">The dialog's owner window. When null, wxWidgets may use the active or main
+    /// window unless <see cref="DialogStyle.NoParent"/> is set.</param>
     /// <param name="id">The window identifier, or <see cref="WindowId.Any"/> to assign one.</param>
     /// <param name="title">The text shown in the dialog's title bar.</param>
     /// <param name="position">The dialog's position, or null to let the platform place it.</param>
