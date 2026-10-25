@@ -183,6 +183,11 @@ namespace
         data.key_code = list.GetKeyCode();
         data.int_value = list.GetKeyCode();
         SetText(data, list.GetLabel());
+        if (e.GetEventType() == wxEVT_LIST_CACHE_HINT)
+        {
+            data.old_item = list.GetCacheFrom();
+            data.item = list.GetCacheTo();
+        }
     }
 
     void FillTree(wxEvent& e, wxsharp_event& data)

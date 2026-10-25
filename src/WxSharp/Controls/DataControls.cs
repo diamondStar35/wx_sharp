@@ -9,6 +9,19 @@ namespace WxSharp;
 /// the other.</summary>
 public class ListCtrl : Control
 {
+    private readonly bool _virtual;
+    private Func<long, int, string>? _itemText;
+    private Func<int>? _itemCount;
+    private long _dataCount;
+
+    /// <summary>A virtual list is preparing a range of rows. This is a hint, not a request to
+    /// synchronously fetch them. Post any UI changes after the event has returned.</summary>
+    public event EventHandler<ListEventArgs> CacheHint
+    {
+        add => AddHandler(WxEvents.ListCacheHint, value);
+        remove => RemoveHandler(WxEvents.ListCacheHint, value);
+    }
+
     /// <summary>A row became selected. Fires once per row, so a range selection raises it repeatedly.</summary>
     public event EventHandler<ListEventArgs> ItemSelected
     {
@@ -126,12 +139,21 @@ public class ListCtrl : Control
     /// <see cref="ListCtrlStyle.Report"/> for the multi-column report view.</summary>
     public ListCtrl(Window parent, int id = WindowId.Any, ListCtrlStyle style = ListCtrlStyle.Default)
         : base(parent, id)
-        => Initialize(GetType() == typeof(ListCtrl)
+    {
+        _virtual = (style & ListCtrlStyle.Virtual) != 0;
+        Initialize(GetType() == typeof(ListCtrl)
             ? NativeMethods.wxsharp_listctrl_create(parent.Handle, id, (int)style, Token)
             : NativeMethods.wxsharp_custom_listctrl_create(parent.Handle, id, (int)style, Token));
+    }
 
     /// <summary>The number of rows.</summary>
     public long Count => NativeMethods.wxsharp_listctrl_count(Handle);
+
+    /// <summary>The first visible row, following wxListCtrl.GetTopItem.</summary>
+    public long TopItem => NativeMethods.wxsharp_listctrl_top_item(Handle);
+
+    /// <summary>The number of whole rows fitting in the visible area, following wxListCtrl.GetCountPerPage.</summary>
+    public int CountPerPage => NativeMethods.wxsharp_listctrl_count_per_page(Handle);
 
     // ---- Columns -------------------------------------------------------------------------------------
 
@@ -279,6 +301,39 @@ public class ListCtrl : Control
 
     // ---- Virtual mode --------------------------------------------------------------------------------
 
+    /// <summary>Binds a virtual list to managed rows and a cell-text function without requiring a
+    /// subclass or creating native items. The source and callback are used only on the UI thread.
+    /// A new source clears selection without moving keyboard focus.</summary>
+    public void SetDataSource<T>(IReadOnlyList<T> data, Func<T, int, string> itemText)
+    {
+        Verify();
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(itemText);
+        if (!_virtual) throw new InvalidOperationException("A data source requires a virtual list.");
+        if (_dataCount != 0) SetItemCount(0);
+        _itemText = (row, column) => row >= 0 && row < data.Count ? itemText(data[(int)row], column) : string.Empty;
+        _itemCount = () => data.Count;
+        if (_dataCount != data.Count) SetItemCount(data.Count);
+    }
+
+    /// <summary>Publishes a changed source count. Appending redraws only the new rows and preserves
+    /// selection, focus and scroll position. Existing cells can be changed with RefreshItem/RefreshItems.</summary>
+    public void UpdateItemCount()
+    {
+        Verify();
+        if (_itemCount is null) throw new InvalidOperationException("No data source is attached.");
+        var count = _itemCount();
+        var previous = _dataCount;
+        if (count == previous) return;
+        SetItemCount(count);
+        if (count > previous) RefreshItems(previous, count - 1);
+        else if (count > 0)
+        {
+            var first = Math.Clamp(TopItem, 0, count - 1);
+            RefreshItems(first, Math.Min(count - 1, first + Math.Max(1, CountPerPage)));
+        }
+    }
+
     /// <summary>Tells a virtual list how many rows it has. The control then asks
     /// <see cref="OnGetItemText"/> for each row as it draws it, so a list of any size costs only what is
     /// on screen. Requires <see cref="ListCtrlStyle.Virtual"/>.</summary>
@@ -286,6 +341,7 @@ public class ListCtrl : Control
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         NativeMethods.wxsharp_listctrl_set_item_count(Handle, count);
+        _dataCount = count;
     }
 
     /// <summary>Supplies the text of one cell of a virtual list. Override it when the control was created
@@ -304,7 +360,8 @@ public class ListCtrl : Control
     /// <summary>Supplies the checked state for an item in a virtual list with check boxes.</summary>
     protected virtual bool OnGetItemIsChecked(long item) => false;
 
-    internal string GetVirtualItemText(long item, int column) => OnGetItemText(item, column) ?? string.Empty;
+    internal string GetVirtualItemText(long item, int column) => (_itemText is null
+        ? OnGetItemText(item, column) : _itemText(item, column)) ?? string.Empty;
     internal int GetVirtualItemImage(long item) => OnGetItemImage(item);
     internal int GetVirtualItemColumnImage(long item, int column) => OnGetItemColumnImage(item, column);
     internal bool GetVirtualItemIsChecked(long item) => OnGetItemIsChecked(item);
@@ -481,7 +538,8 @@ public class TreeCtrl : Control
     /// <summary>Adds the (possibly hidden) root item with the given label and returns it.</summary>
     public TreeItemId AddRoot(string text) => new(NativeMethods.wxsharp_tree_add_root(Handle, text));
     /// <summary>Appends a child under <paramref name="parent"/> and returns it.</summary>
-    public TreeItemId Add(TreeItemId parent, string text) => new(NativeMethods.wxsharp_tree_append(Handle, parent.Value, text));
+    public TreeItemId Add(TreeItemId parent, string text)
+        => new(NativeMethods.wxsharp_tree_append(Handle, parent.Value, text));
 
     /// <summary>Inserts a child before <paramref name="position"/> rather than at the end.</summary>
     public TreeItemId Insert(TreeItemId parent, int position, string text)
@@ -513,23 +571,55 @@ public class TreeCtrl : Control
     }
 
     /// <summary>Scrolls and expands ancestors so an item is visible.</summary>
-    public void EnsureVisible(TreeItemId item) => NativeMethods.wxsharp_tree_ensure_visible(Handle, item.Value);
+    public void EnsureVisible(TreeItemId item)
+    {
+        CheckItem(item, allowHiddenRoot: false);
+        NativeMethods.wxsharp_tree_ensure_visible(Handle, item.Value);
+    }
 
     /// <summary>Clears the selection.</summary>
     public void Unselect() => NativeMethods.wxsharp_tree_unselect(Handle);
     /// <summary>Deletes an item and its subtree.</summary>
     public void Remove(TreeItemId item)
     {
-        // Drop the item's data with the item. wxWidgets is free to hand the same ID out again, so leaving
-        // it behind would both leak and let a new item inherit a deleted one's data.
-        _itemData?.Remove(item.Value);
+        CheckItem(item);
+        var removed = RememberSubtree(item);
         NativeMethods.wxsharp_tree_delete(Handle, item.Value);
+        foreach (var id in removed) _itemData?.Remove(id);
+    }
+
+    /// <summary>Deletes all descendants and their managed item data, retaining the item itself.</summary>
+    public void DeleteChildren(TreeItemId item)
+    {
+        CheckItem(item);
+        var removed = GetChildren(item).SelectMany(RememberSubtree).ToArray();
+        NativeMethods.wxsharp_tree_delete_children(Handle, item.Value);
+        foreach (var id in removed) _itemData?.Remove(id);
+    }
+
+    private List<long> RememberSubtree(TreeItemId item)
+    {
+        // Keep managed data available to synchronous deletion handlers, then discard every deleted ID.
+        // Native item IDs can be reused; retaining descendant data would leak it into unrelated rows.
+        var items = new List<long>();
+        if (_itemData is null) return items;
+        var pending = new Stack<TreeItemId>();
+        pending.Push(item);
+        while (pending.Count > 0)
+        {
+            var next = pending.Pop();
+            items.Add(next.Value);
+            foreach (var child in GetChildren(next)) pending.Push(child);
+        }
+        return items;
     }
     /// <summary>Deletes every item, root included. <see cref="Root"/> becomes invalid until a new one is added.</summary>
     public void Clear()
     {
-        _itemData?.Clear();
+        var removed = _itemData?.Keys.ToArray();
         NativeMethods.wxsharp_tree_delete_all(Handle);
+        if (removed is not null)
+            foreach (var id in removed) _itemData?.Remove(id);
     }
     /// <summary>An item's label.</summary>
     public unsafe string GetText(TreeItemId item)
@@ -550,11 +640,67 @@ public class TreeCtrl : Control
 
     internal int CompareItems(TreeItemId first, TreeItemId second) => OnCompareItems(first, second);
     /// <summary>Expands or collapses an item.</summary>
-    public void Expand(TreeItemId item, bool expand = true) => NativeMethods.wxsharp_tree_expand(Handle, item.Value, expand);
+    public void Expand(TreeItemId item, bool expand = true)
+    {
+        CheckItem(item, allowHiddenRoot: false);
+        NativeMethods.wxsharp_tree_expand(Handle, item.Value, expand);
+    }
+    /// <summary>Collapses an item. A hidden root cannot be collapsed; use CollapseAllChildren instead.</summary>
+    public void Collapse(TreeItemId item) => Expand(item, expand: false);
+    /// <summary>Toggles one item's expansion state, following wxTreeCtrl.Toggle.</summary>
+    public void Toggle(TreeItemId item)
+    {
+        CheckItem(item, allowHiddenRoot: false);
+        NativeMethods.wxsharp_tree_toggle(Handle, item.Value);
+    }
+    /// <summary>Collapses an item and deletes its children, unless a collapsing handler vetoes it.</summary>
+    public void CollapseAndReset(TreeItemId item)
+    {
+        CheckItem(item, allowHiddenRoot: false);
+        var descendants = GetChildren(item).SelectMany(RememberSubtree).ToArray();
+        NativeMethods.wxsharp_tree_collapse_and_reset(Handle, item.Value);
+        if (_itemData is not null && GetChildCount(item) == 0)
+            foreach (var id in descendants) _itemData.Remove(id);
+    }
+    /// <summary>Expands a subtree, safely skipping a hidden root as wxWidgets does.</summary>
+    public void ExpandAllChildren(TreeItemId item)
+    {
+        CheckItem(item);
+        NativeMethods.wxsharp_tree_expand_children(Handle, item.Value);
+    }
+    /// <summary>Collapses a subtree, safely skipping a hidden root as wxWidgets does.</summary>
+    public void CollapseAllChildren(TreeItemId item)
+    {
+        CheckItem(item);
+        NativeMethods.wxsharp_tree_collapse_children(Handle, item.Value);
+    }
+    /// <summary>Whether the root is an invisible container rather than a selectable or expandable row.</summary>
+    public bool IsRootHidden => NativeMethods.wxsharp_tree_has_hidden_root(Handle);
+
+    private void CheckItem(TreeItemId item, bool allowHiddenRoot = true)
+    {
+        Verify();
+        if (!item.IsValid) throw new ArgumentException("The item is not valid.", nameof(item));
+        if (!allowHiddenRoot && IsRootHidden && item == Root)
+            throw new ArgumentException("A hidden root cannot be expanded, collapsed, selected, or scrolled into view.", nameof(item));
+    }
+
+    /// <summary>Finds the item and the part of it under a point in tree client coordinates.</summary>
+    public TreeItemId HitTest(Point point, out TreeHitTestFlags flags)
+    {
+        Verify();
+        var item = NativeMethods.wxsharp_tree_hit_test(Handle, point.X, point.Y, out var nativeFlags);
+        flags = (TreeHitTestFlags)nativeFlags;
+        return new TreeItemId(item);
+    }
     /// <summary>Whether an item is expanded.</summary>
     public bool IsExpanded(TreeItemId item) => NativeMethods.wxsharp_tree_is_expanded(Handle, item.Value);
     /// <summary>The selected item. Setting it selects that item.</summary>
-    public TreeItemId Selection { get => new(NativeMethods.wxsharp_tree_get_selection(Handle)); set => NativeMethods.wxsharp_tree_select(Handle, value.Value); }
+    public TreeItemId Selection
+    {
+        get => new(NativeMethods.wxsharp_tree_get_selection(Handle));
+        set { CheckItem(value, allowHiddenRoot: false); NativeMethods.wxsharp_tree_select(Handle, value.Value); }
+    }
 
     /// <summary>How many items the tree holds, root included. Follows <c>wxTreeCtrl.GetCount</c>.</summary>
     public int Count => NativeMethods.wxsharp_tree_get_count(Handle);
@@ -570,6 +716,14 @@ public class TreeCtrl : Control
     /// <see cref="GetChildCount"/> being non-zero: a tree filled on demand marks a branch as having
     /// children before it has any, so the expander is drawn and the branch can be opened.</summary>
     public bool ItemHasChildren(TreeItemId item) => NativeMethods.wxsharp_tree_item_has_children(Handle, item.Value);
+
+    /// <summary>Shows or hides an item's expansion button without creating children. Use this for branches
+    /// populated asynchronously when expanded, following <c>wxTreeCtrl.SetItemHasChildren</c>.</summary>
+    public void SetItemHasChildren(TreeItemId item, bool hasChildren = true)
+    {
+        CheckItem(item);
+        NativeMethods.wxsharp_tree_set_item_has_children(Handle, item.Value, hasChildren);
+    }
 
     // Item data is held here rather than in wxWidgets. wxTreeItemData is an owned native object, and
     // handing a managed object's address to C++ to hold across a garbage collection is the kind of lifetime

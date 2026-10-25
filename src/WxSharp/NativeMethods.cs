@@ -1374,6 +1374,14 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] internal static partial void wxsharp_tree_expand_all(nint ctrl);
     [LibraryImport(Library)] internal static partial void wxsharp_tree_collapse_all(nint ctrl);
     [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_tree_item_has_children(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_set_item_has_children(nint ctrl, long item, [MarshalAs(UnmanagedType.U1)] bool hasChildren);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_delete_children(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_toggle(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_collapse_and_reset(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_expand_children(nint ctrl, long item);
+    [LibraryImport(Library)] internal static partial void wxsharp_tree_collapse_children(nint ctrl, long item);
+    [LibraryImport(Library)][return: MarshalAs(UnmanagedType.U1)] internal static partial bool wxsharp_tree_has_hidden_root(nint ctrl);
+    [LibraryImport(Library)] internal static partial long wxsharp_tree_hit_test(nint ctrl, int x, int y, out int flags);
 
     [LibraryImport(Library)] internal static partial nint wxsharp_grid_create(nint parent, int id, int rows, int columns, long token);
     [LibraryImport(Library)] internal static partial nint wxsharp_custom_grid_create(nint parent, int id, int rows, int columns, long token);
@@ -1603,6 +1611,8 @@ internal static unsafe partial class NativeMethods
 
     // ---- Virtual list controls ----
     [LibraryImport(Library)] internal static partial void wxsharp_listctrl_set_item_count(nint ctrl, long count);
+    [LibraryImport(Library)] internal static partial long wxsharp_listctrl_top_item(nint ctrl);
+    [LibraryImport(Library)] internal static partial int wxsharp_listctrl_count_per_page(nint ctrl);
     [LibraryImport(Library)] internal static partial void wxsharp_listctrl_refresh_item(nint ctrl, long item);
     [LibraryImport(Library)] internal static partial void wxsharp_listctrl_refresh_items(nint ctrl, long from, long to);
 

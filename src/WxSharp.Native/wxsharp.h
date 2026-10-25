@@ -1290,6 +1290,8 @@ extern "C" {
     WXSHARP_API long long wxsharp_listctrl_next_selected(wxsharp_handle ctrl, long long after);
     // Virtual mode: tell the control how many rows there are and it will ask for each one as it draws.
     WXSHARP_API void wxsharp_listctrl_set_item_count(wxsharp_handle ctrl, long long count);
+    WXSHARP_API long long wxsharp_listctrl_top_item(wxsharp_handle ctrl);
+    WXSHARP_API int wxsharp_listctrl_count_per_page(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_listctrl_refresh_item(wxsharp_handle ctrl, long long item);
     WXSHARP_API void wxsharp_listctrl_refresh_items(wxsharp_handle ctrl, long long from, long long to);
     WXSHARP_API wxsharp_handle wxsharp_treectrl_create(wxsharp_handle parent, int id, int style, long long token);
@@ -1308,6 +1310,14 @@ extern "C" {
     WXSHARP_API void wxsharp_tree_expand_all(wxsharp_handle ctrl);
     WXSHARP_API void wxsharp_tree_collapse_all(wxsharp_handle ctrl);
     WXSHARP_API bool wxsharp_tree_item_has_children(wxsharp_handle ctrl, long long item);
+    WXSHARP_API void wxsharp_tree_set_item_has_children(wxsharp_handle ctrl, long long item, bool has_children);
+    WXSHARP_API void wxsharp_tree_delete_children(wxsharp_handle ctrl, long long item);
+    WXSHARP_API void wxsharp_tree_toggle(wxsharp_handle ctrl, long long item);
+    WXSHARP_API void wxsharp_tree_collapse_and_reset(wxsharp_handle ctrl, long long item);
+    WXSHARP_API void wxsharp_tree_expand_children(wxsharp_handle ctrl, long long item);
+    WXSHARP_API void wxsharp_tree_collapse_children(wxsharp_handle ctrl, long long item);
+    WXSHARP_API bool wxsharp_tree_has_hidden_root(wxsharp_handle ctrl);
+    WXSHARP_API long long wxsharp_tree_hit_test(wxsharp_handle ctrl, int x, int y, int* flags);
     WXSHARP_API void wxsharp_tree_unselect(wxsharp_handle ctrl);
     WXSHARP_API long long wxsharp_tree_get_root(wxsharp_handle ctrl);
     WXSHARP_API long long wxsharp_tree_get_parent(wxsharp_handle ctrl, long long item);

@@ -163,6 +163,42 @@ public enum TreeCtrlStyle
     Default = 1 << 30,
 }
 
+/// <summary>Where a point lies in a tree control, following the wxTREE_HITTEST flags.</summary>
+[Flags]
+public enum TreeHitTestFlags
+{
+    /// <summary>No part of the control was identified.</summary>
+    None = 0,
+    /// <summary>Above the control's client area.</summary>
+    Above = 0x0001,
+    /// <summary>Below the control's client area.</summary>
+    Below = 0x0002,
+    /// <summary>Inside the control, away from any item.</summary>
+    Nowhere = 0x0004,
+    /// <summary>On an item's expansion button.</summary>
+    OnButton = 0x0008,
+    /// <summary>On an item's image.</summary>
+    OnIcon = 0x0010,
+    /// <summary>On the indentation before an item.</summary>
+    OnIndent = 0x0020,
+    /// <summary>On an item's text.</summary>
+    OnLabel = 0x0040,
+    /// <summary>On the empty area following an item's text.</summary>
+    OnRight = 0x0080,
+    /// <summary>On an item's state image.</summary>
+    OnStateIcon = 0x0100,
+    /// <summary>To the left of the control's client area.</summary>
+    ToLeft = 0x0200,
+    /// <summary>To the right of the control's client area.</summary>
+    ToRight = 0x0400,
+    /// <summary>On the upper half of an item.</summary>
+    OnUpperPart = 0x0800,
+    /// <summary>On the lower half of an item.</summary>
+    OnLowerPart = 0x1000,
+    /// <summary>On an item's image or text, matching wxTREE_HITTEST_ONITEM.</summary>
+    OnItem = OnIcon | OnLabel,
+}
+
 /// <summary>Creation styles for a <see cref="FileDialog"/>.</summary>
 [Flags]
 public enum FileDialogStyle

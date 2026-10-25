@@ -467,6 +467,9 @@ void wxsharp_listctrl_set_item_count(wxsharp_handle ctrl, long long count)
     static_cast<wxListCtrl*>(ctrl)->SetItemCount(static_cast<long>(count));
 }
 
+long long wxsharp_listctrl_top_item(wxsharp_handle ctrl) { return static_cast<wxListCtrl*>(ctrl)->GetTopItem(); }
+int wxsharp_listctrl_count_per_page(wxsharp_handle ctrl) { return static_cast<wxListCtrl*>(ctrl)->GetCountPerPage(); }
+
 void wxsharp_listctrl_refresh_item(wxsharp_handle ctrl, long long item)
 {
     static_cast<wxListCtrl*>(ctrl)->RefreshItem(static_cast<long>(item));
@@ -568,6 +571,25 @@ long long wxsharp_tree_get_selection(wxsharp_handle ctrl) { return TreeValue(sta
 int wxsharp_tree_get_count(wxsharp_handle ctrl) { return static_cast<int>(static_cast<wxTreeCtrl*>(ctrl)->GetCount()); }
 void wxsharp_tree_expand_all(wxsharp_handle ctrl) { static_cast<wxTreeCtrl*>(ctrl)->ExpandAll(); }
 void wxsharp_tree_collapse_all(wxsharp_handle ctrl) { static_cast<wxTreeCtrl*>(ctrl)->CollapseAll(); }
+void wxsharp_tree_set_item_has_children(wxsharp_handle ctrl, long long item, bool has_children)
+{
+    static_cast<wxTreeCtrl*>(ctrl)->SetItemHasChildren(TreeId(item), has_children);
+}
+
+void wxsharp_tree_delete_children(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->DeleteChildren(TreeId(item)); }
+void wxsharp_tree_toggle(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->Toggle(TreeId(item)); }
+void wxsharp_tree_collapse_and_reset(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->CollapseAndReset(TreeId(item)); }
+void wxsharp_tree_expand_children(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->ExpandAllChildren(TreeId(item)); }
+void wxsharp_tree_collapse_children(wxsharp_handle ctrl, long long item) { static_cast<wxTreeCtrl*>(ctrl)->CollapseAllChildren(TreeId(item)); }
+bool wxsharp_tree_has_hidden_root(wxsharp_handle ctrl) { return static_cast<wxTreeCtrl*>(ctrl)->HasFlag(wxTR_HIDE_ROOT); }
+long long wxsharp_tree_hit_test(wxsharp_handle ctrl, int x, int y, int* flags)
+{
+    int hit = 0;
+    const auto item = static_cast<wxTreeCtrl*>(ctrl)->HitTest(wxPoint(x, y), hit);
+    if (flags) *flags = hit;
+    return TreeValue(item);
+}
+
 bool wxsharp_tree_item_has_children(wxsharp_handle ctrl, long long item)
 {
     return static_cast<wxTreeCtrl*>(ctrl)->ItemHasChildren(TreeId(item));

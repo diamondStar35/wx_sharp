@@ -607,6 +607,10 @@ public sealed class PaintEventArgs : WxEventArgs
 /// <summary>An event from a <see cref="ListCtrl"/>.</summary>
 public sealed class ListEventArgs : NotifyEventArgs
 {
+    /// <summary>The first row requested by a virtual-list cache hint.</summary>
+    public long CacheFrom { get; }
+    /// <summary>The last row requested by a virtual-list cache hint, inclusive.</summary>
+    public long CacheTo { get; }
     /// <summary>The zero-based index of the item the event concerns.</summary>
     public long Index { get; }
     /// <summary>The column the event concerns, for a report-view list.</summary>
@@ -620,6 +624,8 @@ public sealed class ListEventArgs : NotifyEventArgs
 
     internal ListEventArgs(EvtHandler source, in NativeEvent e) : base(source, e)
     {
+        CacheFrom = e.OldItem;
+        CacheTo = e.Item;
         Index = e.Item;
         Column = e.Column;
         Label = e.GetText();

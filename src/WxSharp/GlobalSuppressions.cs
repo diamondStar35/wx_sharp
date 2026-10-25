@@ -38,6 +38,13 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage(
     "Naming",
     "CA1711:Identifiers should not have incorrect suffix",
+    Justification = "A bit-flags enum over the wxTREE_HITTEST_* constants.",
+    Scope = "type",
+    Target = "~T:WxSharp.TreeHitTestFlags")]
+
+[assembly: SuppressMessage(
+    "Naming",
+    "CA1711:Identifiers should not have incorrect suffix",
     Justification = "A bit-flags enum over the wxBROWSER_* constants.",
     Scope = "type",
     Target = "~T:WxSharp.BrowserFlags")]

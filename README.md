@@ -98,6 +98,22 @@ progress dialogs.
 Accelerator tables parse and format the same shortcut strings wxWidgets accepts,
 so keyboard shortcuts can be stored as text and configured by the user.
 
+`TreeCtrl.SetItemHasChildren` marks unloaded branches as expandable. Handle
+`ItemExpanding` to load their children on demand without inserting placeholder rows.
+
+Virtual lists expose `TopItem` and `CountPerPage` so callers can refresh only
+visible rows when their backing data changes.
+`ListCtrl.SetDataSource` also accepts a managed list and a cell-text function without a subclass.
+Append to that source on the UI thread and call `UpdateItemCount` to publish only the added rows.
+The `CacheHint` event supplies `CacheFrom` and `CacheTo` for asynchronous paging.
+
+Trees also expose hit testing, subtree expansion and collapse, `Toggle`,
+`CollapseAndReset`, and `DeleteChildren`. Deleting descendants releases their
+managed item data. A hidden root is only a container: expand or collapse its
+subtree with `ExpandAllChildren` or `CollapseAllChildren`, rather than calling
+`Expand` or `Collapse` on the root itself. Invalid direct hidden-root operations
+are rejected before entering the native control.
+
 ## Building from source
 
 The repository includes prebuilt wxWidgets binaries for Windows x64, so a normal
