@@ -25,6 +25,14 @@
 #include <wx/statbmp.h>
 #include <wx/bmpbuttn.h>
 #include <wx/progdlg.h>
+#ifdef __WXMSW__
+#include <commctrl.h>
+#if wxMAJOR_VERSION == 3 && wxMINOR_VERSION == 3 && wxRELEASE_NUMBER == 3
+// GetAppearance().IsDark() also covers dark high-contrast palettes. Use the exported state
+// used by wxListCtrl itself so this optimization only touches its dark-mode row renderer.
+namespace wxMSWDarkMode { WXDLLIMPEXP_CORE bool IsActive(); }
+#endif
+#endif
 
 namespace
 {
@@ -377,6 +385,32 @@ namespace
     public:
         WxSharpListCtrl(wxWindow* parent, int id, long style, long long token)
             : wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize, style), m_token(token) {}
+
+#ifdef __WXMSW__
+        bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM* result) override
+        {
+#if wxMAJOR_VERSION == 3 && wxMINOR_VERSION == 3 && wxRELEASE_NUMBER == 3
+            auto* draw = reinterpret_cast<NMLVCUSTOMDRAW*>(lParam);
+            if (draw->nmcd.hdr.code == NM_CUSTOMDRAW && draw->nmcd.hdr.hwndFrom == GetHandle()
+                && HasFlag(wxLC_REPORT) && draw->nmcd.dwDrawStage == CDDS_ITEMPREPAINT
+                && wxMSWDarkMode::IsActive())
+            {
+                // wxWidgets 3.3.3 paints the entire dark row from every subitem callback, drawing
+                // an N-column row N times. Run that existing painter once at the item stage.
+                // Keep its colours, attributes, images, checkboxes, column order and focus drawing.
+                const auto stage = draw->nmcd.dwDrawStage;
+                const auto column = draw->iSubItem;
+                draw->nmcd.dwDrawStage = CDDS_SUBITEM | CDDS_ITEMPREPAINT;
+                draw->iSubItem = 0;
+                const bool handled = wxListCtrl::MSWOnNotify(idCtrl, lParam, result);
+                draw->nmcd.dwDrawStage = stage;
+                draw->iSubItem = column;
+                if (handled && *result == CDRF_SKIPDEFAULT) return true;
+            }
+#endif
+            return wxListCtrl::MSWOnNotify(idCtrl, lParam, result);
+        }
+#endif
 
     protected:
         wxString OnGetItemText(long item, long column) const override

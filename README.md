@@ -142,6 +142,14 @@ binaries is a separate, deliberate step:
 .\scripts\build-wxwidgets-windows.ps1 -MsvcRoot D:\path\to\msvc
 ```
 
+## List rendering
+
+On Windows, the bundled wxWidgets 3.3.3 report-list dark renderer paints a whole
+row for each column notification. WxSharp routes that painter once per row,
+preserving its native colours, selection, focus and column order while avoiding
+repeated drawing. The optimization applies to that version's dark-mode path;
+other versions and modes use their original rendering.
+
 ## Distribution
 
 The Windows package carries `wx.dll` and the two wxWidgets DLLs as `win-x64`
