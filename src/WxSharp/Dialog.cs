@@ -94,7 +94,7 @@ public class Dialog : Window
 
     /// <summary>Shows the dialog and returns the command ID it ended with - whatever was passed to
     /// <see cref="EndModal"/>, or the ID of the button pressed. Compare against <see cref="StandardId"/>.</summary>
-    public int ShowModal() { OwnerApp.VerifyAccess(); return NativeMethods.wxsharp_dialog_show_modal(Handle); }
+    public virtual int ShowModal() { OwnerApp.VerifyAccess(); return NativeMethods.wxsharp_dialog_show_modal(Handle); }
 
     /// <summary>Closes a modal dialog, and makes <see cref="ShowModal"/> return <paramref name="result"/>.</summary>
     public void EndModal(int result) { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_dialog_end_modal(Handle, result); }

@@ -42,7 +42,7 @@ public enum TextEntryDialogStyle
 /// if (dialog.ShowModal() == StandardId.Ok)
 ///     Load(dialog.Path);
 /// </code></example>
-public sealed unsafe class FileDialog : Dialog
+public sealed unsafe partial class FileDialog : Dialog
 {
     /// <summary>Creates a file open/save dialog. Show it with <see cref="Dialog.ShowModal"/>, then read
     /// <see cref="Path"/> (or <see cref="GetPaths"/> for a multiple selection).</summary>
@@ -65,23 +65,23 @@ public sealed unsafe class FileDialog : Dialog
     /// <see cref="GetPaths"/>.</summary>
     public string Path
     {
-        get => ReadDialogString(NativeMethods.wxsharp_filedlg_get_path);
-        set { Verify(); NativeMethods.wxsharp_filedlg_set_path(Handle, value); }
+        get { Verify(); return _customization?.Paths is { Length: > 0 } paths ? paths[0] : ReadDialogString(NativeMethods.wxsharp_filedlg_get_path); }
+        set { Verify(); _customization?.ResetResults(); NativeMethods.wxsharp_filedlg_set_path(Handle, value); }
     }
 
     /// <summary>The folder the chosen file is in - what the player used to have to derive from the
     /// path.</summary>
     public string Directory
     {
-        get => ReadDialogString(NativeMethods.wxsharp_filedlg_get_directory);
-        set { Verify(); NativeMethods.wxsharp_filedlg_set_directory(Handle, value); }
+        get { Verify(); return _customization?.Paths is { Length: > 0 } paths ? System.IO.Path.GetDirectoryName(paths[0]) ?? string.Empty : ReadDialogString(NativeMethods.wxsharp_filedlg_get_directory); }
+        set { Verify(); _customization?.ResetResults(); NativeMethods.wxsharp_filedlg_set_directory(Handle, value); }
     }
 
     /// <summary>The chosen file's name, without its folder.</summary>
     public string FileName
     {
-        get => ReadDialogString(NativeMethods.wxsharp_filedlg_get_filename);
-        set { Verify(); NativeMethods.wxsharp_filedlg_set_filename(Handle, value); }
+        get { Verify(); return _customization?.Paths is { Length: > 0 } paths ? System.IO.Path.GetFileName(paths[0]) : ReadDialogString(NativeMethods.wxsharp_filedlg_get_filename); }
+        set { Verify(); _customization?.ResetResults(); NativeMethods.wxsharp_filedlg_set_filename(Handle, value); }
     }
 
     /// <summary>The filter string, in wxWidgets' own form: <c>"Audio|*.mp3;*.wav|All files|*.*"</c>.</summary>
@@ -111,6 +111,7 @@ public sealed unsafe class FileDialog : Dialog
     public string[] GetPaths()
     {
         Verify();
+        if (_customization?.Paths is { } results) return (string[])results.Clone();
         var count = NativeMethods.wxsharp_filedlg_path_count(Handle);
         var paths = new string[count];
         for (var i = 0; i < count; i++)
@@ -125,6 +126,7 @@ public sealed unsafe class FileDialog : Dialog
     public string[] GetFileNames()
     {
         Verify();
+        if (_customization?.Paths is { } results) return Array.ConvertAll(results, path => System.IO.Path.GetFileName(path));
         var count = NativeMethods.wxsharp_filedlg_path_count(Handle);
         var names = new string[count];
         for (var i = 0; i < count; i++)
@@ -137,7 +139,7 @@ public sealed unsafe class FileDialog : Dialog
 }
 
 /// <summary>Asks for a folder, following <c>wxDirDialog</c>.</summary>
-public sealed unsafe class DirDialog : Dialog
+public sealed unsafe partial class DirDialog : Dialog
 {
     /// <summary>Creates a folder-chooser dialog. Show it with <see cref="Dialog.ShowModal"/>, then read
     /// <see cref="Path"/>.</summary>
@@ -157,8 +159,8 @@ public sealed unsafe class DirDialog : Dialog
     /// <summary>The chosen folder.</summary>
     public string Path
     {
-        get => ReadDialogString(NativeMethods.wxsharp_dirdlg_get_path);
-        set { Verify(); NativeMethods.wxsharp_dirdlg_set_path(Handle, value); }
+        get { Verify(); return _customization?.Paths is { Length: > 0 } paths ? paths[0] : ReadDialogString(NativeMethods.wxsharp_dirdlg_get_path); }
+        set { Verify(); _customization?.ResetResults(); NativeMethods.wxsharp_dirdlg_set_path(Handle, value); }
     }
 
     /// <summary>The prompt shown to the user.</summary>
@@ -173,6 +175,7 @@ public sealed unsafe class DirDialog : Dialog
     public string[] GetPaths()
     {
         Verify();
+        if (_customization?.Paths is { } results) return (string[])results.Clone();
         var count = NativeMethods.wxsharp_dirdlg_path_count(Handle);
         var paths = new string[count];
         for (var i = 0; i < count; i++)

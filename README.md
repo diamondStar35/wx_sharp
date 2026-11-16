@@ -23,6 +23,43 @@ enough that porting between them is mostly mechanical.
 - **Ready for Native AOT.** No reflection-based marshalling, so applications
   publish to a single self-contained executable with fast startup.
 
+## Native dialog customization
+
+`FileDialog.SetCustomizeHook()` attaches a `FileDialogCustomizeHook`, following
+Phoenix. Override `AddCustomControls` to create buttons, checkboxes, radio buttons,
+choices, edit fields, and static text through the supplied `FileDialogCustomize`.
+Override `UpdateCustomControls` to react to navigation and selection changes, and
+`TransferDataFromCustomControls` to copy accepted values before the controls go away.
+The hook is retained by its dialog. Controls are not windows and belong to one showing;
+using them after it ends throws `ObjectDisposedException`.
+
+On Windows, labelled choices and edit fields expose their own accessible names
+through both Microsoft Active Accessibility and UI Automation.
+
+The Windows implementation also supports `DirDialog.SetCustomizeHook`,
+`DirDialog.CurrentlySelectedPath`, labelled choices, and `FileDialogChoice.Set`
+for replacing choices while asynchronous information is being loaded. These are
+extensions to Phoenix. Customization currently returns `false` on other platforms.
+File and folder picking stays in the modern Windows Common Item Dialog, with its
+standard confirmation and cancellation buttons. Dialogs without a hook are unchanged.
+
+```csharp
+sealed class Options : FileDialogCustomizeHook
+{
+    private FileDialogCheckBox? _enabled;
+    public bool Enabled { get; private set; }
+
+    public override void AddCustomControls(FileDialogCustomize customizer)
+        => _enabled = customizer.AddCheckBox("Enable option");
+
+    public override void TransferDataFromCustomControls()
+        => Enabled = _enabled!.Checked;
+}
+```
+
+Run the dialog checks with `dotnet test --project tests/WxSharp.Tests.csproj -c Release`
+after staging the native wrapper with `scripts/build-wrapper-windows.ps1`.
+
 ## Requirements
 
 - .NET 8, 9, or 10

@@ -2013,6 +2013,20 @@ extern "C" {
     WXSHARP_API bool wxsharp_number_entry_dialog(wxsharp_handle parent, const char* message,
                                                  const char* prompt, const char* caption, long long value,
                                                  long long minimum, long long maximum, long long* result);
+    // One Common Item Dialog showing owns its customization context and controls.
+    typedef int (*wxsharp_item_dialog_cb)(long long token, int operation, int id, int value);
+    WXSHARP_API wxsharp_handle wxsharp_item_dialog_create(wxsharp_handle dialog, bool folders, wxsharp_item_dialog_cb callback, long long token);
+    WXSHARP_API void wxsharp_item_dialog_destroy(wxsharp_handle context);
+    WXSHARP_API int wxsharp_item_dialog_show(wxsharp_handle context);
+    WXSHARP_API void wxsharp_item_dialog_close(wxsharp_handle context);
+    WXSHARP_API int wxsharp_item_dialog_text(wxsharp_handle context, int kind, int index, char* buffer, int length);
+    WXSHARP_API int wxsharp_item_dialog_count(wxsharp_handle context);
+    WXSHARP_API int wxsharp_item_dialog_filter(wxsharp_handle context);
+    WXSHARP_API int wxsharp_item_dialog_add(wxsharp_handle context, int kind, const char* label);
+    WXSHARP_API int wxsharp_item_dialog_items(wxsharp_handle context, int id, const char* const* items, int count);
+    WXSHARP_API int wxsharp_item_dialog_number(wxsharp_handle context, int id, int property, bool write, int* value);
+    WXSHARP_API int wxsharp_item_dialog_set_text(wxsharp_handle context, int id, const char* value);
+
     WXSHARP_API bool wxsharp_colour_dialog(wxsharp_handle parent, unsigned int initial,
                                            unsigned int* result);
 #ifdef __cplusplus

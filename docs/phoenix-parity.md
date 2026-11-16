@@ -7,6 +7,21 @@ events, and services.
 
 This document distinguishes behavioral compatibility from API completeness.
 
+## Dialog customization
+
+`FileDialogCustomizeHook`, `FileDialogCustomize`, and the six `FileDialog*`
+custom-control types follow Phoenix's creation, update, and accepted-value transfer
+model. These are dialog-owned event handlers, not windows. Button, checkbox,
+radio-button, and choice events use the same typed events and `Bind` interface as
+ordinary controls. Edit fields have no text-change event in the native shell API.
+
+The Windows backend uses the Common Item Dialog for customized Open and Save
+dialogs. It also supports folder picking through `DirDialog.SetCustomizeHook`,
+`CurrentlySelectedPath`, labelled choices, and dynamic `FileDialogChoice.Set`.
+These are explicit Windows extensions, not upstream Phoenix capabilities.
+`SetCustomizeHook` returns false on unsupported platforms. Controls expire after
+each showing; retain copied values in the hook rather than the controls themselves.
+
 ## Implemented behavior
 
 | Area | WxSharp behavior |

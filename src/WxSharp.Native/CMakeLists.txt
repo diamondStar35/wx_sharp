@@ -82,10 +82,13 @@ add_library(wxsharp ${WXSHARP_LIBRARY_TYPE}
   services2.cpp
   window_more.cpp
   dialogs.cpp
+  dialogs/item_dialog.cpp
+  dialogs/accessibility.cpp
   virtuals.cpp)
 
 if(WIN32)
   target_sources(wxsharp PRIVATE wxsharp.rc)
+  target_link_libraries(wxsharp PRIVATE ole32 oleacc oleaut32 shell32 uuid)
 endif()
 
 target_compile_features(wxsharp PRIVATE cxx_std_17)
