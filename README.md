@@ -73,6 +73,9 @@ For an independent modeless dialog, create a `Dialog` with `parent: null` and
 even when the managed parent is null. `ShowModal()` still disables other
 application windows regardless of ownership.
 
+`Window.NativeHandle` exposes the platform window handle (HWND on Windows) for
+interop with native dialogs and other APIs that require an owner window.
+
 A few windows do come from wxWidgets itself — the buttons behind
 `Dialog.CreateButtonSizer`, for one. Lookups such as `Window.FindWindowById` and
 `Window.FindFocus` wrap those on demand, typed as the class wxWidgets reports,

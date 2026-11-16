@@ -99,7 +99,7 @@ public class Frame : Window
         set { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_title(Handle, value); }
     }
     /// <summary>The platform's native window handle (HWND on Windows), for interop.</summary>
-    public nint NativeHandle { get { OwnerApp.VerifyAccess(); return NativeMethods.wxsharp_window_native_handle(Handle); } }
+    public new nint NativeHandle => base.NativeHandle;
     /// <summary>Enters or leaves full-screen mode.</summary>
     public void SetFullScreen(bool fullScreen) { OwnerApp.VerifyAccess(); NativeMethods.wxsharp_window_set_fullscreen(Handle, fullScreen); }
 

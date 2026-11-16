@@ -272,6 +272,9 @@ public abstract partial class Window : EvtHandler, IDisposable
 
     internal nint Handle { get { EnsureAlive(); return _handle; } }
 
+    /// <summary>The platform's native window handle (HWND on Windows), for interop.</summary>
+    public nint NativeHandle { get { OwnerApp.VerifyAccess(); return NativeMethods.wxsharp_window_native_handle(Handle); } }
+
     /// <summary>Adopts the native window a subclass just created, completing construction. Throws if
     /// <paramref name="handle"/> is zero (wxWidgets failed to create the window).</summary>
     protected void Initialize(nint handle)
